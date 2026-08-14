@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# DVC manages large artifacts; ignore the cache itself
+/.dvc/cache
+/.dvc/tmp
+
+# Quarto
+/.quarto/
+*_files/
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Hook telemetry — appended by the Stop hook after every turn, so it can
+# never stay committed-clean. Durable copy lives in ~/.claude/state.db.
+_meta/token_log.ndjson
+
+# Large binary artifacts that should not be in Git
+*.ckpt
+*.pt
+*.bin
+*.safetensors
+*.parquet
+*.arrow
+*.tar
+*.tar.gz
+*.zip

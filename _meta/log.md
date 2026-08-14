@@ -11,3 +11,7 @@ skills; read by `/lint`.
 2026-08-14 20:15 ingest raw/papers/matthews2024kinetix.pdf → literature/papers/matthews2024kinetix.md
 2026-08-14 20:15 ingest raw/repos/michaeltmatthews-jax2d.md → literature/repos/michaeltmatthews-jax2d.md
 2026-08-14 20:15 ingest seeded 11 concepts; solver/engine MoC candidate noted in index
+2026-08-14 21:00 fetch-paper arXiv 2211.13051 (Powderworld) → raw/papers/frans2022powderworld.pdf
+2026-08-14 21:00 fetch-paper arXiv 2212.07906 (Flow-Lenia) → raw/papers/plantec2022flow.pdf
+2026-08-14 21:00 fetch-paper arXiv 2311.16080 (XLB) → raw/papers/ataei2023xlb.pdf
+2026-08-14 21:00 fetch-paper dgp.toronto.edu ns.pdf (Stable Fluids) → raw/papers/stam1999stable.pdf

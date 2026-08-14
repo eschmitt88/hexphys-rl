@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hexphys Lab</title>
+<title>Hexphys Fields</title>
 </head>
 <body>
 <style>
@@ -15,226 +15,161 @@
   font-display: swap;
 }
 :root {
-  --bg: #F7F5F1;
-  --panel: #FDFCF9;
-  --panel2: #EFECE4;
-  --ink: #21272E;
-  --muted: #6E675C;
-  --line: #E0DBD0;
-  --accent: #C96F22;
-  --accent-ink: #A05515;
-  --accent2: #2E7D74;
+  --bg: #F4F6F4;
+  --panel: #FBFCFA;
+  --panel2: #E9EEEA;
+  --ink: #212A28;
+  --muted: #64716C;
+  --line: #D8E0DA;
+  --accent: #23756C;
+  --accent-ink: #175E56;
+  --accent2: #C96F22;
+  --accent2-ink: #A05515;
   --good: #3E8E4C;
   --bad: #C4453C;
-  --kbd-bg: #ECE8DF;
-  --kbd-line: #CFC9BC;
-  --hero-grad: radial-gradient(ellipse at 30% 20%, #F3EDE2 0%, #F7F5F1 60%);
-  --sim-node: #4A5361;
-  --sim-ghost: #B7B1A5;
+  --kbd-bg: #E6EBE6;
+  --kbd-line: #C4CFC7;
+  --hero-grad: radial-gradient(ellipse at 70% 15%, #E8EFE9 0%, #F4F6F4 60%);
 }
-:root:not([data-theme="light"]) { }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #14181D;
-    --panel: #1B2026;
-    --panel2: #232932;
-    --ink: #E8E4DC;
-    --muted: #98A0AB;
-    --line: #2B323C;
-    --accent: #E8944A;
-    --accent-ink: #F0A660;
-    --accent2: #4BB3A7;
+    --bg: #121817;
+    --panel: #18201E;
+    --panel2: #202A27;
+    --ink: #E2E8E4;
+    --muted: #93A29B;
+    --line: #28332F;
+    --accent: #4BB3A7;
+    --accent-ink: #63C4B8;
+    --accent2: #E8944A;
+    --accent2-ink: #F0A660;
     --good: #58C06A;
     --bad: #E06055;
-    --kbd-bg: #232932;
-    --kbd-line: #3A424E;
-    --hero-grad: radial-gradient(ellipse at 30% 20%, #1A2027 0%, #14181D 60%);
-    --sim-node: #AEB6C2;
-    --sim-ghost: #4A525E;
+    --kbd-bg: #202A27;
+    --kbd-line: #35423D;
+    --hero-grad: radial-gradient(ellipse at 70% 15%, #16201D 0%, #121817 60%);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #14181D;
-  --panel: #1B2026;
-  --panel2: #232932;
-  --ink: #E8E4DC;
-  --muted: #98A0AB;
-  --line: #2B323C;
-  --accent: #E8944A;
-  --accent-ink: #F0A660;
-  --accent2: #4BB3A7;
+  --bg: #121817;
+  --panel: #18201E;
+  --panel2: #202A27;
+  --ink: #E2E8E4;
+  --muted: #93A29B;
+  --line: #28332F;
+  --accent: #4BB3A7;
+  --accent-ink: #63C4B8;
+  --accent2: #E8944A;
+  --accent2-ink: #F0A660;
   --good: #58C06A;
   --bad: #E06055;
-  --kbd-bg: #232932;
-  --kbd-line: #3A424E;
-  --hero-grad: radial-gradient(ellipse at 30% 20%, #1A2027 0%, #14181D 60%);
-  --sim-node: #AEB6C2;
-  --sim-ghost: #4A525E;
+  --kbd-bg: #202A27;
+  --kbd-line: #35423D;
+  --hero-grad: radial-gradient(ellipse at 70% 15%, #16201D 0%, #121817 60%);
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 h1, h2, h3 { font-family: 'Bricolage', system-ui, sans-serif; text-wrap: balance; line-height: 1.12; }
 h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); font-weight: 800; margin: 0 0 .5rem; letter-spacing: -0.015em; }
 h3 { font-size: 1.12rem; font-weight: 650; margin: 1.4rem 0 .4rem; }
 p { max-width: 68ch; }
 a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 a:hover { color: var(--accent); }
-code, kbd, .mono { font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; font-size: .88em; }
+code, kbd { font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; font-size: .88em; }
 code { background: var(--panel2); padding: .1em .35em; border-radius: 4px; }
-kbd {
-  display: inline-block; min-width: 1.7em; text-align: center;
-  background: var(--kbd-bg); border: 1px solid var(--kbd-line);
-  border-bottom-width: 2.5px; border-radius: 5px;
-  padding: .1em .4em; font-size: .82em; line-height: 1.5;
-}
+kbd { display: inline-block; min-width: 1.7em; text-align: center; background: var(--kbd-bg);
+  border: 1px solid var(--kbd-line); border-bottom-width: 2.5px; border-radius: 5px;
+  padding: .1em .4em; font-size: .82em; line-height: 1.5; }
 .wrap { max-width: 1060px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
-
-nav.top {
-  position: sticky; top: 0; z-index: 50;
+nav.top { position: sticky; top: 0; z-index: 50;
   background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
-}
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 nav.top .wrap { display: flex; align-items: center; gap: 1.1rem; height: 52px; }
-.wordmark {
-  font-family: 'Bricolage', sans-serif; font-weight: 800; font-size: 1.02rem;
-  letter-spacing: .04em; color: var(--ink); text-decoration: none;
-  display: flex; align-items: center; gap: .45rem;
-}
+.wordmark { font-family: 'Bricolage', sans-serif; font-weight: 800; font-size: 1.02rem;
+  letter-spacing: .04em; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: .45rem; }
 .wordmark svg { display: block; }
-nav.top a.nl {
-  color: var(--muted); text-decoration: none; font-size: .86rem;
-  letter-spacing: .05em; text-transform: uppercase;
-}
+nav.top a.nl { color: var(--muted); text-decoration: none; font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; }
 nav.top a.nl:hover { color: var(--accent); }
 nav.top .spacer { flex: 1; }
 @media (max-width: 720px) { nav.top a.nl { display: none; } nav.top a.nl.keep { display: inline; } }
-
 header.hero { position: relative; background: var(--hero-grad); border-bottom: 1px solid var(--line); }
-header.hero .stage { position: relative; height: min(66vh, 560px); min-height: 380px; }
-header.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
-.hero-copy {
-  position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none;
-  padding: 0 clamp(16px, 4vw, 40px) clamp(20px, 4vh, 40px);
-  max-width: 1060px; margin: 0 auto;
-}
-.hero-copy h1 {
-  font-size: clamp(2.5rem, 7vw, 4.6rem); font-weight: 800; margin: 0;
-  letter-spacing: -0.025em;
-}
-.hero-copy h1 .amber { color: var(--accent); }
+header.hero .stage { position: relative; height: min(64vh, 540px); min-height: 380px; overflow: hidden; }
+header.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.hero-copy { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none;
+  padding: 0 clamp(16px, 4vw, 40px) clamp(20px, 4vh, 40px); max-width: 1060px; margin: 0 auto; }
+.hero-copy h1 { font-size: clamp(2.5rem, 7vw, 4.6rem); font-weight: 800; margin: 0; letter-spacing: -0.025em; }
+.hero-copy h1 .teal { color: var(--accent); }
 .hero-copy p.sub { font-size: clamp(1rem, 2vw, 1.2rem); color: var(--muted); margin: .5rem 0 0; max-width: 56ch; }
-.hero-hint {
-  position: absolute; top: 14px; right: 16px; font-size: .78rem; color: var(--muted);
-  letter-spacing: .06em; text-transform: uppercase;
-}
-
+.hero-hint { position: absolute; top: 14px; right: 16px; font-size: .78rem; color: var(--muted);
+  letter-spacing: .06em; text-transform: uppercase; }
 section { padding: clamp(2.6rem, 6vh, 4.4rem) 0; }
 section + section { border-top: 1px solid var(--line); }
-.eyebrow {
-  font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--accent-ink); font-weight: 600; margin: 0 0 .35rem;
-}
+.eyebrow { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent-ink); font-weight: 600; margin: 0 0 .35rem; }
 .lede { font-size: 1.06rem; }
 .note { color: var(--muted); font-size: .92rem; }
-
-.demo {
-  margin-top: 1.3rem; border: 1px solid var(--line); border-radius: 14px;
-  background: var(--panel); overflow: hidden;
-}
-.demo .bar {
-  display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; align-items: center;
-  padding: .65rem .9rem; border-bottom: 1px solid var(--line); background: var(--panel);
-  font-size: .86rem;
-}
+.demo { margin-top: 1.3rem; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+.demo .bar { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; align-items: center;
+  padding: .65rem .9rem; border-bottom: 1px solid var(--line); background: var(--panel); font-size: .86rem; }
 .demo .bar .grow { flex: 1; }
 .demo canvas { display: block; width: 100%; touch-action: none; background: var(--panel); }
+.demo canvas.pix { image-rendering: pixelated; }
 .demo .bar label { display: inline-flex; gap: .5rem; align-items: center; color: var(--muted); }
 .demo .bar output { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .84rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 input[type=range] { accent-color: var(--accent); width: 130px; }
-button.btn {
-  font: inherit; font-size: .84rem; color: var(--ink);
-  background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
-  padding: .3rem .8rem; cursor: pointer;
-}
+button.btn { font: inherit; font-size: .84rem; color: var(--ink); background: var(--panel2);
+  border: 1px solid var(--line); border-radius: 8px; padding: .3rem .8rem; cursor: pointer; }
 button.btn:hover { border-color: var(--accent); color: var(--accent-ink); }
-button.btn:focus-visible, canvas:focus-visible, a:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
-}
+button.btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--panel); }
+button.btn:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); }
 .chip .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-
 .cols { display: grid; gap: 1rem 2.4rem; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); align-items: start; }
-
 .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 1.4rem; }
-.card {
-  border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
-  padding: 1.1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: .55rem;
-}
+.card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+  padding: 1.1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: .55rem; }
 .card .venue { font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .card h3 { margin: 0; font-size: 1.06rem; }
-.card p { font-size: .9rem; margin: 0; color: var(--ink); }
+.card p { font-size: .9rem; margin: 0; }
 .card .steal { font-size: .86rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: .55rem; margin-top: .2rem; }
 .card .steal b { color: var(--accent-ink); font-weight: 600; }
 .card a.plink { font-size: .84rem; margin-top: auto; }
-
-.pipeline { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.2rem 0 .4rem; align-items: center; }
-.stage-pill {
-  border: 1px solid var(--line); background: var(--panel); border-radius: 999px;
-  padding: .32rem .9rem; font-size: .85rem; white-space: nowrap;
-}
-.stage-pill.now { border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.pipeline .arrow { color: var(--muted); }
-
 .keys-legend { display: flex; flex-wrap: wrap; gap: .9rem 1.6rem; margin: .8rem 0; font-size: .9rem; color: var(--muted); }
-.energy-wrap { display: flex; align-items: center; gap: .5rem; }
-.energy { width: 120px; height: 10px; border-radius: 5px; background: var(--panel2); overflow: hidden; border: 1px solid var(--line); }
-.energy i { display: block; height: 100%; background: var(--good); width: 100%; transition: width .15s linear; }
-
-.padgrid { display: grid; grid-template-columns: repeat(3, 44px); gap: 6px; }
-.padgrid button.btn { padding: .45rem 0; text-align: center; font-family: ui-monospace, Menlo, monospace; }
-
+.twin { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow-x: auto; margin-top: 1.2rem; }
+.twin table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 560px; }
+.twin th, .twin td { text-align: left; padding: .55rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.twin th { font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.twin tr:last-child td { border-bottom: none; }
+.twin td:first-child { color: var(--muted); white-space: nowrap; }
 footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--muted); font-size: .88rem; }
 footer a { color: var(--muted); }
-
-table.meta { border-collapse: collapse; font-size: .9rem; margin-top: .6rem; }
-table.meta td { padding: .25rem .9rem .25rem 0; vertical-align: top; }
-table.meta td:first-child { color: var(--muted); white-space: nowrap; }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 
 <nav class="top">
   <div class="wrap">
     <a class="wordmark" href="#top">
-      <svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M9 1 L17 5.5 V14.5 L9 19 L1 14.5 V5.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
-      HEXPHYS LAB
+      <svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M9 1 L17 5.5 V14.5 L9 19 L1 14.5 V5.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M4 12 Q7 9 9 12 T14 12" fill="none" stroke="var(--accent2)" stroke-width="1.6"/></svg>
+      HEXPHYS FIELDS
     </a>
     <div class="spacer"></div>
-    <a class="nl" href="#lattice">Lattice</a>
-    <a class="nl" href="#solver">Solver</a>
+    <a class="nl" href="#solvers">Solvers</a>
+    <a class="nl keep" href="#agents">Agents</a>
     <a class="nl" href="#sources">Sources</a>
-    <a class="nl keep" href="#playground">Playground</a>
     <a class="nl" href="#roadmap">Roadmap</a>
-    <a class="nl keep" href="fields.html">Fields ↗</a>
+    <a class="nl" href="dashboard.html">↖ Lab</a>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="stage">
-    <canvas id="cv-hero" aria-label="Interactive soft-body hex lattice — drag the blobs"></canvas>
-    <div class="hero-hint" id="hero-hint">drag the blobs</div>
+    <canvas id="cv-hero" aria-label="Interactive fluid — drag to stir the smoke"></canvas>
+    <div class="hero-hint">drag to stir</div>
     <div class="hero-copy">
-      <h1>Matter you can <span class="amber">grab</span>.<br>Agents that build themselves.</h1>
-      <p class="sub">A learning dashboard for <strong>hexphys-rl</strong>: a hex-lattice soft-body engine, solved sloppily on purpose, where RL agents will push, glue, and eat their way to locomotion.</p>
+      <h1>Nothing moves.<br><span class="teal">Everything flows.</span></h1>
+      <p class="sub">The Eulerian twin of the <a style="pointer-events:auto" href="dashboard.html">Hexphys Lab</a>: a fixed grid where matter is a field, solvers are stencils, and agents are patterns that learn to steer the flow.</p>
     </div>
   </div>
 </header>
@@ -242,154 +177,189 @@ table.meta td:first-child { color: var(--muted); white-space: nowrap; }
 <section>
   <div class="wrap">
     <p class="eyebrow">The premise</p>
-    <h2>Trade error for speed, then spend the speed on learning</h2>
+    <h2>Same philosophy, transposed to a grid</h2>
     <div class="cols">
       <div>
-        <p class="lede">Every body in this world is the same thing: <strong>point masses on a triangular lattice, joined by bonds</strong>. The hexes you see are just the cells around each mass. Bonds are constraints with a stiffness (compliance), a damping, and a breaking force — set per element-type pair by a small chemistry table.</p>
-        <p>An agent is one distinguished mass with up to six bonded neighbours. Its whole action space is local: <em>push</em> (change a bond's rest length — a muscle) and <em>glue / unglue</em> (create or destroy a bond). Bodies aren't given; they're recruited from the world's material, one bond at a time.</p>
+        <p class="lede">In the Lagrangian gym, particles move and carry the state. Here the grid is fixed and <strong>values flow through it</strong>: occupancy, velocity, pressure, nutrient, heat. Every update is a local stencil applied uniformly — computationally an image-to-image map, which makes this world even friendlier to GPU fleets than the lattice engine. And the Lagrangian engine's most expensive subsystem, contact detection, <em>does not exist</em>: two things can't overlap because a cell holds one value.</p>
+        <p>The tolerance-for-speed premise carries over exactly. XPBD under-converges constraint projection and error becomes <em>softness</em>; Stable Fluids under-converges pressure projection and error becomes <em>viscosity and slight compressibility</em>. One idea, two costumes — and the same iteration-count dial, which you can turn yourself in Demo 02.</p>
       </div>
-      <div>
-        <p>The engine solves its constraints with <strong>XPBD</strong>, deliberately under-converged: a handful of iterations per step instead of hundreds. The error shows up as <em>softness</em>, never as explosion — which is exactly the tolerance a game can afford and a research solver can't. Because every world runs the identical computation graph (max degree 6 → fixed-shape arrays + masks), thousands of worlds batch on one GPU under <code>vmap</code>.</p>
-        <p>That throughput is the budget RL spends. The curriculum:</p>
-        <div class="pipeline">
-          <span class="stage-pill now">1 · Engine</span><span class="arrow">→</span>
-          <span class="stage-pill">2 · Scripted agents</span><span class="arrow">→</span>
-          <span class="stage-pill">3 · Locomotion RL</span><span class="arrow">→</span>
-          <span class="stage-pill">4 · Construction</span><span class="arrow">→</span>
-          <span class="stage-pill">5 · Self-play</span>
-        </div>
+      <div class="twin">
+        <table>
+          <tr><th></th><th>Lab (Lagrangian)</th><th>Fields (Eulerian)</th></tr>
+          <tr><td>state</td><td>particles + bond table</td><td>fields on a fixed grid</td></tr>
+          <tr><td>solver</td><td>XPBD constraint projection</td><td>CA rules · pressure projection · stream+collide</td></tr>
+          <tr><td>error dial</td><td>iterations → softness</td><td>iterations → viscosity</td></tr>
+          <tr><td>contact</td><td>spatial hash + repulsion</td><td>free — one value per cell</td></tr>
+          <tr><td>actions</td><td>continuous muscles → PPO</td><td>discrete local ops → DQN family</td></tr>
+          <tr><td>observation</td><td>entity tokens + adjacency</td><td>field patch = image → CNN</td></tr>
+          <tr><td>chemistry</td><td>bond-affinity table</td><td>native — reaction-diffusion</td></tr>
+        </table>
       </div>
     </div>
   </div>
 </section>
 
-<section id="lattice">
+<section id="solvers">
   <div class="wrap">
-    <p class="eyebrow">Demo 01 · the lattice</p>
-    <h2>Three materials, one bond table</h2>
-    <p>Same lattice, three rows of the chemistry table. <strong>Rubber</strong> has high compliance — floppy but unbreakable. <strong>Stone</strong> is near-rigid. <strong>Glass</strong> is rigid too, but its bonds carry a breaking force: the solver's per-bond Lagrange multiplier λ is a free stress readout, and when it exceeds the threshold, the bond is gone. Pick things up and throw them. Bonds glow red as λ approaches breaking.</p>
+    <p class="eyebrow">Demo 01 · rules</p>
+    <h2>Falling sand — physics as local rules</h2>
+    <p>The cheapest rung of the ladder: each cell holds a material, and each step applies a handful of neighbor-swap rules — sand sinks, water spreads, walls stand. No equations, no solver, yet piles, puddles and channels emerge. This is Powderworld's regime: expressive enough to build rich RL task distributions, trivially parallel, and honest about being <em>rules, not mechanics</em>. Paint with the mouse.</p>
     <div class="demo">
       <div class="bar">
-        <span class="chip"><span class="dot" style="background:#C96F22"></span>rubber · soft</span>
-        <span class="chip"><span class="dot" style="background:#5B6B87"></span>stone · stiff</span>
-        <span class="chip"><span class="dot" style="background:#4BB3A7"></span>glass · stiff, brittle</span>
+        <button class="btn mat" data-mat="2" aria-pressed="true" type="button">sand</button>
+        <button class="btn mat" data-mat="3" aria-pressed="false" type="button">water</button>
+        <button class="btn mat" data-mat="1" aria-pressed="false" type="button">wall</button>
+        <button class="btn mat" data-mat="0" aria-pressed="false" type="button">erase</button>
         <span class="grow"></span>
-        <button class="btn" id="mat-reset" type="button">Reset</button>
+        <output id="sand-out">·</output>
+        <button class="btn" id="sand-reset" type="button">Reset</button>
       </div>
-      <canvas id="cv-materials" style="aspect-ratio: 21/9" aria-label="Materials sandbox: draggable rubber, stone and glass blobs"></canvas>
+      <canvas id="cv-sand" class="pix" style="aspect-ratio: 8/5" aria-label="Falling sand sandbox — paint materials with the mouse"></canvas>
     </div>
-    <p class="note">What to notice: nothing here is a special case. Softness, rigidity and shattering are the <em>same constraint</em> with different α (compliance) and break-λ values — the whole materials system is a 6×6 table the RL environment can randomize.</p>
+    <p class="note">What to notice: the update is embarrassingly local — a cell only ever looks at its neighbors. That's why a falling-sand world scales to fleets of parallel environments without any of the solver care the demos below need.</p>
+
+    <p class="eyebrow" style="margin-top:3rem">Demo 02 · projection</p>
+    <h2>Stable Fluids — the iteration dial again</h2>
+    <p>Stam's 1999 scheme, the Eulerian sibling of XPBD: <strong>advect</strong> velocity by tracing backwards along itself (semi-Lagrangian — unconditionally stable, any timestep), then <strong>project</strong> it back to divergence-free with an iterative Jacobi pressure solve. The projection is where your budget goes, and the slider below is the same dial you turned on the XPBD chains. Starve it and the smoke goes spongy and compressible — it never explodes.</p>
+    <div class="demo">
+      <div class="bar">
+        <label>pressure iterations <input type="range" id="fl-iters" min="1" max="60" step="1" value="20"> <output id="fl-iters-out">20</output></label>
+        <span class="grow"></span>
+        <output id="fl-div-out">residual divergence ·</output>
+        <button class="btn" id="fl-reset" type="button">Reset</button>
+      </div>
+      <canvas id="cv-fluid" style="aspect-ratio: 8/5" aria-label="Stable Fluids smoke — drag to stir, slider sets pressure iterations"></canvas>
+    </div>
+    <p class="note">Drag to stir, then pull iterations down to 1–3 and watch the residual-divergence readout climb: the fluid visibly springs and puffs (mass isn't locally conserved), but the sim stays stable. The other honest cost of this scheme: semi-Lagrangian advection smears small vortices (numerical diffusion) — the standard fix, vorticity confinement, is deliberately left out so you can see the raw trade.</p>
+
+    <p class="eyebrow" style="margin-top:3rem">Demo 03 · populations</p>
+    <h2>Lattice-Boltzmann — mesoscopic and proud</h2>
+    <p>The third solver family tracks not macroscopic velocity but <strong>nine population densities per cell</strong> (D2Q9), each drifting along one lattice direction. A step is two purely local operations: <em>stream</em> populations to neighbors, <em>collide</em> them toward local equilibrium. Pressure never gets solved — it's implicit in the populations. Below: channel flow past an obstacle; drag the disc, and lower the viscosity until a von Kármán vortex street sheds.</p>
+    <div class="demo">
+      <div class="bar">
+        <label>viscosity <input type="range" id="lbm-visc" min="0" max="100" step="1" value="72"> <output id="lbm-visc-out">·</output></label>
+        <span class="grow"></span>
+        <output id="lbm-status">stable</output>
+        <button class="btn" id="lbm-reset" type="button">Reset</button>
+      </div>
+      <canvas id="cv-lbm" style="aspect-ratio: 12/4.5" aria-label="Lattice-Boltzmann channel flow past a draggable obstacle, colored by vorticity"></canvas>
+    </div>
+    <p class="note">Two lessons here. First, locality: unlike the pressure solve above, <em>nothing</em> in LBM reaches across the grid — it's the most GPU-native scheme of the three (XLB hits hundreds of MLUPS in JAX). Second, the contrast with Stable Fluids: BGK-LBM has a real stability floor — push viscosity to the far left and stir the wake hard, and the sim can blow up — a watchdog catches the NaNs and auto-resets. Unconditional stability is a property you buy with the projection scheme, not a birthright of grids. And a hex footnote: the 1986 FHP lattice gas, LBM's ancestor, <em>had</em> to be hexagonal — square lattices lack the rotational symmetry to recover isotropic Navier-Stokes. The hexes were load-bearing all along.</p>
   </div>
 </section>
 
-<section id="solver">
+<section id="agents">
   <div class="wrap">
-    <p class="eyebrow">Demo 02 · the solver</p>
-    <h2>Why XPBD, in one slider</h2>
-    <p>Both chains hang under the same gravity with the same intended stiffness, solved with the iteration budget you choose. The left chain is vanilla <strong>PBD</strong>: each iteration moves particles a fraction <code>k</code> toward satisfying each bond — so the <em>effective stiffness depends on how many iterations you run</em>. The right chain is <strong>XPBD</strong>: a per-bond multiplier λ and compliance α̃ = α/Δt² make stiffness a material property, independent of the budget.</p>
+    <p class="eyebrow">Demo 04 · embodiment I</p>
+    <h2>Cell-entity — the engineer ant</h2>
+    <p>The recommended first embodiment: the agent occupies one cell and acts locally — move, build, dig. Here a spring gushes from the plateau and drains toward your den on the right. Keep the den dry: dam the stream, or dig a diversion channel to the drain on the left edge. You have a budget of blocks; water you wall off is water you don't bail.</p>
+    <div class="keys-legend">
+      <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> move</span>
+      <span><kbd>B</kbd> build block (facing)</span>
+      <span><kbd>X</kbd> dig (facing)</span>
+      <span><kbd>R</kbd> reset</span>
+    </div>
     <div class="demo">
       <div class="bar">
-        <label>solver iterations <input type="range" id="iter-slider" min="0" max="6" step="1" value="4"> <output id="iter-out">8</output></label>
-        <label>hung mass <input type="range" id="mass-slider" min="1" max="10" step="1" value="4"> <output id="mass-out">4×</output></label>
+        <output id="dam-blocks">blocks 60</output>
+        <output id="dam-flood">den flood 0%</output>
         <span class="grow"></span>
-        <output id="stretch-out">PBD +0.0% · XPBD +0.0%</output>
+        <span class="note" id="dam-status">click the canvas to take the controls</span>
+        <button class="btn" id="dam-reset" type="button">Reset</button>
       </div>
-      <canvas id="cv-chains" style="aspect-ratio: 21/10" aria-label="PBD versus XPBD hanging chains comparison"></canvas>
+      <canvas id="cv-dam" class="pix" tabindex="0" style="aspect-ratio: 8/5" aria-label="Dam-building game — drive the ant with arrow keys, build and dig to keep the den dry"></canvas>
     </div>
-    <p class="note">Drag the slider from 1 to 50 and watch the readout: the PBD chain quietly becomes a different material, while XPBD's sag stays put and low budgets merely add bounce. That consistency is the license to run 4–8 iterations per step across thousands of parallel worlds — <strong>error becomes softness, not lies</strong>. (One honest caveat from the paper: it validates Gauss-Seidel sweeps; a fully-parallel Jacobi solver, which a GPU wants, converges slower and needs under-relaxation — Kinetix settled on partially-batched solves for the same reason.)</p>
+    <p class="note">This is the DQN-shaped task: ~8 discrete actions, an image-patch observation, and brutally delayed reward — the block you place now pays off when the flood doesn't happen later. Procedurally generate the terrain and you have a Powderworld-style task distribution for free.</p>
+
+    <p class="eyebrow" style="margin-top:3rem">Demo 05 · embodiment II</p>
+    <h2>Field creature — you are a distribution</h2>
+    <p>No body at all: the agent <em>is</em> a conserved mass field, Flow-Lenia style. Your only actuation biases the flow your own mass advects along; cohesion pulls it toward its own center of mass. Steer the blob over the green nutrient to feed it — and mind the tuning: too little cohesion and you smear apart, too little motility and you starve.</p>
+    <div class="keys-legend">
+      <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> steer</span>
+      <span><kbd>Space</kbd> stop</span>
+      <span><kbd>R</kbd> reset</span>
+    </div>
+    <div class="demo">
+      <div class="bar">
+        <label>cohesion <input type="range" id="cr-coh" min="0" max="100" step="1" value="55"> <output id="cr-coh-out">·</output></label>
+        <label>motility <input type="range" id="cr-mot" min="0" max="100" step="1" value="60"> <output id="cr-mot-out">·</output></label>
+        <span class="grow"></span>
+        <output id="cr-mass">mass 100%</output>
+        <span class="note" id="cr-status">click the canvas to take the controls</span>
+        <button class="btn" id="cr-reset" type="button">Reset</button>
+      </div>
+      <canvas id="cv-creature" tabindex="0" style="aspect-ratio: 8/5" aria-label="Field-creature demo — steer a blob of conserved mass over nutrient patches"></canvas>
+    </div>
+    <p class="note">The enabling property is mass conservation — it's what keeps the creature a localized <em>individual</em> instead of Lenia's ghostly gliders (this demo cheats with renormalized semi-Lagrangian advection; Flow-Lenia does it properly with flux integrals). The cohesion–motility tension you can feel in your hands is the actual control problem an RL policy would face, with fragmentation as the failure mode.</p>
+
+    <p class="eyebrow" style="margin-top:3rem">Demo 06 · embodiment III</p>
+    <h2>Force field — the disembodied baseline</h2>
+    <p>The weakest form of embodiment: the agent isn't <em>in</em> the world at all, it just applies forces to it. Herd the rising smoke into the target ring with mouse drags. Easy for you — your hands already know fluid dynamics — which is exactly why it makes a good calibration baseline for RL and a poor main event: no locality constraint, no body to lose, nothing at stake.</p>
+    <div class="demo">
+      <div class="bar">
+        <output id="hd-score">captured 0%</output>
+        <output id="hd-best">best 0%</output>
+        <span class="grow"></span>
+        <button class="btn" id="hd-reset" type="button">Reset</button>
+      </div>
+      <canvas id="cv-herd" style="aspect-ratio: 8/5" aria-label="Force-field herding — drag to push smoke into the target ring"></canvas>
+    </div>
   </div>
 </section>
 
 <section id="sources">
   <div class="wrap">
     <p class="eyebrow">The bookshelf</p>
-    <h2>Four sources, and what we take from each</h2>
-    <p>Full literature notes with claims, numbers, and critiques live in the repo under <code>literature/</code>; concepts distilled from them under <code>concepts/</code>.</p>
+    <h2>Four sources for the Eulerian track</h2>
+    <p>Full notes in the repo under <code>literature/</code>, joining the Lagrangian four.</p>
     <div class="cards">
       <div class="card">
-        <span class="venue">MiG 2016 · NVIDIA</span>
-        <h3>XPBD — compliant constrained dynamics</h3>
-        <p>Extends position-based dynamics with a per-constraint multiplier λ and compliance α, making stiffness independent of timestep and iteration count. Validated against a Newton solver; costs &lt;2% over PBD.</p>
-        <p class="steal"><b>We take:</b> the whole solver. Compliance = our chemistry's stiffness column; λ = free bond-stress readout for breakage and proprioception; iteration count = the speed dial.</p>
-        <a class="plink" href="https://matthias-research.github.io/pages/publications/XPBD.pdf">paper ↗</a>
+        <span class="venue">ICLR 2023 · MIT</span>
+        <h3>Powderworld — rich task distributions</h3>
+        <p>A GPU falling-sand gym built to study generalization: many elements, one interaction rulebook, procedurally generated worlds — with sobering findings on when task complexity helps RL and when it hurts.</p>
+        <p class="steal"><b>We take:</b> the element-interaction-matrix engine pattern and the task-distribution mindset for the cell-entity curriculum.</p>
+        <a class="plink" href="https://arxiv.org/abs/2211.13051">paper ↗</a>
       </div>
       <div class="card">
-        <span class="venue">NeurIPS 2021 · MIT CSAIL</span>
-        <h3>Evolution Gym — evolving soft robots</h3>
-        <p>Benchmark of 30+ tasks for co-designing voxel soft robots: outer loop evolves the body (GA beats CPPN/BO), inner loop trains control with PPO. Mass-spring sim, penalty contact, CPU-bound — hours per run.</p>
-        <p class="steal"><b>We take:</b> the lattice-body representation, actuator rest-length actions, and the task taxonomy. <b>We differ:</b> morphology changes <em>during</em> the episode, and XPBD replaces fragile penalty springs.</p>
-        <a class="plink" href="https://arxiv.org/abs/2201.09863">paper ↗</a>
+        <span class="venue">SIGGRAPH 1999 · Alias|wavefront</span>
+        <h3>Stable Fluids — projection with a dial</h3>
+        <p>Semi-Lagrangian advection + pressure projection: the first unconditionally stable fluid solver, built for interactivity over accuracy. Error shows up as extra viscosity, never as explosion.</p>
+        <p class="steal"><b>We take:</b> the whole scheme — and the under-converged Jacobi projection as the exact Eulerian analogue of under-converged XPBD.</p>
+        <a class="plink" href="https://www.dgp.toronto.edu/public_user/stam/reality/Research/pdf/ns.pdf">paper ↗</a>
       </div>
       <div class="card">
-        <span class="venue">ICLR 2025 · FLAIR Oxford</span>
-        <h3>Kinetix — general agents from open-ended physics</h3>
-        <p>One transformer policy trained on billions of procedurally generated 2D physics tasks; zero-shots unseen levels and fine-tunes past what tabula-rasa PPO can solve. 824K env-steps/sec inside a full RL loop on one GPU.</p>
-        <p class="steal"><b>We take:</b> the throughput bar, the learnability-curriculum (SFL) recipe for random-task training, and the entity-token transformer with adjacency-masked attention as the policy for variable bodies.</p>
-        <a class="plink" href="https://arxiv.org/abs/2410.23208">paper ↗</a>
+        <span class="venue">ALIFE 2023 · Inria / Google</span>
+        <h3>Flow-Lenia — creatures from conservation</h3>
+        <p>Adds mass conservation to Lenia by turning the update into flow along an affinity gradient — and localized, individual creatures fall out where vanilla Lenia has unbounded ghosts.</p>
+        <p class="steal"><b>We take:</b> conservation as the enabler of field-creature embodiment, and flow-bias as the natural actuation channel for an RL-controlled blob.</p>
+        <a class="plink" href="https://arxiv.org/abs/2212.07906">paper ↗</a>
       </div>
       <div class="card">
-        <span class="venue">Engine · MIT license</span>
-        <h3>Jax2D — the engine under Kinetix</h3>
-        <p>Box2D-lineage rigid-body engine in pure JAX. Its trick: every scene runs the <em>same computation graph</em> (fixed shapes + masks), so heterogeneous scenes vmap together — unlike Brax's per-morphology compilation.</p>
-        <p class="steal"><b>We take:</b> the fixed-shape/mask pattern — our degree-≤6 lattice makes it an N×6 bond table where glue/unglue just flips mask bits. <b>We skip:</b> its O(n²) pairwise collision; the lattice gives us spatial hashing.</p>
-        <a class="plink" href="https://github.com/MichaelTMatthews/Jax2D">repo ↗</a>
+        <span class="venue">Comput. Phys. Commun. 2024 · Autodesk</span>
+        <h3>XLB — lattice-Boltzmann in JAX</h3>
+        <p>Differentiable, massively parallel LBM library: D2Q9/D3Q19/D3Q27, BGK &amp; KBC collision, distributed sharding, hundreds of MLUPS — the reference for what stream+collide costs on real hardware.</p>
+        <p class="steal"><b>We take:</b> JAX implementation patterns for stream+collide, and the throughput/stability data for the solver bake-off.</p>
+        <a class="plink" href="https://arxiv.org/abs/2311.16080">paper ↗</a>
       </div>
     </div>
-  </div>
-</section>
-
-<section id="playground">
-  <div class="wrap">
-    <p class="eyebrow">Demo 03 · the playground</p>
-    <h2>Drive a creature by hand</h2>
-    <p>This is the agent's-eye view of the world — the exact action space RL will get, wired to your keyboard instead of a policy. Six muscles around a core, glue, and an energy budget. Feel how awkward locomotion is before any learning: that awkwardness is the reward landscape.</p>
-    <div class="keys-legend">
-      <span><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> hold to contract a muscle</span>
-      <span><kbd>Shift</kbd>+key extend instead</span>
-      <span><kbd>G</kbd> glue nearby material</span>
-      <span><kbd>U</kbd> unglue</span>
-      <span><kbd>R</kbd> reset</span>
-    </div>
-    <div class="demo">
-      <div class="bar">
-        <span class="energy-wrap"><span class="note">energy</span><span class="energy"><i id="energy-bar"></i></span></span>
-        <output id="food-out">pellets 0 / 6</output>
-        <span class="grow"></span>
-        <span class="note" id="pg-status">click the canvas to take the controls</span>
-        <button class="btn" id="pg-reset" type="button">Reset</button>
-      </div>
-      <canvas id="cv-playground" tabindex="0" style="aspect-ratio: 16/9" aria-label="Keyboard-driven hex creature playground"></canvas>
-      <div class="bar" style="border-top:1px solid var(--line); border-bottom:none">
-        <div class="padgrid" aria-hidden="true">
-          <button class="btn" data-muscle="0">Q</button><button class="btn" data-muscle="1">W</button><button class="btn" data-muscle="2">E</button>
-          <button class="btn" data-muscle="3">A</button><button class="btn" data-muscle="4">S</button><button class="btn" data-muscle="5">D</button>
-        </div>
-        <span class="note">or press-and-hold these — try <kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd> in a rolling rhythm to travel right. Muscles drain energy; green pellets refill it. Glue grabs the grey debris — drag it home as a tool, or a limb.</span>
-      </div>
-    </div>
-    <p class="note">Everything the creature just did — contract, extend, glue, unglue, eat — is a masked write into an N×6 bond table. The RL formulation falls out directly: multi-discrete action per edge slot, egocentric lattice observation, energy as the primal reward currency.</p>
   </div>
 </section>
 
 <section id="roadmap">
   <div class="wrap">
     <p class="eyebrow">Where this goes</p>
-    <h2>The road from toy to fleet</h2>
+    <h2>The value-based half of the curriculum</h2>
     <div class="cols">
       <div>
         <h3>Next experiments</h3>
-        <p><strong>1. Solver characterization.</strong> Port this solver to JAX; measure Jacobi-XPBD error and divergence at 1–8 iterations on lattices of 10–1000 nodes. Target: &gt;100K env-steps/sec batched.</p>
-        <p><strong>2. Locomotion baseline.</strong> Fixed hex-flower body, PPO, "travel right" reward — the navigate-to-target sanity check that validates the whole training loop before anything clever.</p>
-        <p><strong>3. Construction curriculum.</strong> Introduce glue/unglue actions; start from pre-built bodies and anneal toward bare cores.</p>
+        <p><strong>1. Solver bake-off in JAX.</strong> Port all three (CA rules, Stable-Fluids projection, D2Q9 LBM) as batched <code>vmap</code> environments; measure steps/sec at 64×64 across 1–4096 parallel worlds. Pick the gym's default on data.</p>
+        <p><strong>2. DQN on the dam game.</strong> Discrete actions, CNN over an egocentric field patch, procedurally generated terrain — the value-based counterpart of the Lab's PPO locomotion baseline.</p>
+        <p><strong>3. Field-creature control.</strong> Replace your arrow keys with a policy emitting flow-bias fields; study the cohesion–motility trade as a learned behavior.</p>
       </div>
       <div>
-        <h3>Project facts</h3>
-        <table class="meta">
-          <tr><td>repo</td><td><a href="https://github.com/eschmitt88/hexphys-rl">github.com/eschmitt88/hexphys-rl</a></td></tr>
-          <tr><td>stack</td><td>JAX solver + RL loop · JS demos (this page)</td></tr>
-          <tr><td>knowledge</td><td><code>literature/</code> 4 notes · <code>concepts/</code> 11 seeds · solver MoC brewing</td></tr>
-          <tr><td>this page</td><td>hand-rolled XPBD in ~600 lines of JS — the same math the JAX engine will vectorize</td></tr>
-        </table>
+        <h3>Why two gyms</h3>
+        <p>The Lab teaches continuous control and constraint solvers (PPO territory); Fields teaches discrete spatial decisions, image observations, and transport physics (DQN territory). Both share the meta-lessons — fixed computation graphs for vmap fleets, deliberate under-convergence as the speed dial, and eventually UED over generated tasks. One repo, two worlds, the whole modern RL toolbox between them.</p>
+        <p class="note">Sibling page: <a href="dashboard.html">Hexphys Lab</a> — the Lagrangian dashboard with the XPBD demos this page keeps pointing at.</p>
       </div>
     </div>
   </div>
@@ -397,7 +367,7 @@ table.meta td:first-child { color: var(--muted); white-space: nowrap; }
 
 <footer>
   <div class="wrap">
-    hexphys-rl · learning dashboard · built 2026-08-14 · physics runs live in this page — no libraries, no network
+    hexphys-rl · fields dashboard · built 2026-08-14 · all seven sims run live in this page — no libraries, no network
   </div>
 </footer>
 
@@ -405,633 +375,684 @@ table.meta td:first-child { color: var(--muted); white-space: nowrap; }
 (function () {
 'use strict';
 
-/* ---------- palette (re-read periodically so theme flips propagate) ---------- */
-var css = {};
+/* ---------- palette ---------- */
+var css = {}, rgb = {};
+function hex2rgb(h) {
+  h = (h || '#808080').trim();
+  if (h.charAt(0) === '#') h = h.slice(1);
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  var n = parseInt(h, 16);
+  return [ (n >> 16) & 255, (n >> 8) & 255, n & 255 ];
+}
 function refreshPalette() {
   var s = getComputedStyle(document.documentElement);
-  ['--panel','--panel2','--ink','--muted','--line','--accent','--accent2','--good','--bad','--sim-node','--sim-ghost']
-    .forEach(function (k) { css[k] = s.getPropertyValue(k).trim(); });
+  ['--panel', '--panel2', '--ink', '--muted', '--line', '--accent', '--accent2', '--good', '--bad']
+    .forEach(function (k) { css[k] = s.getPropertyValue(k).trim(); rgb[k] = hex2rgb(css[k]); });
 }
 refreshPalette();
-
 var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------- tiny XPBD engine ---------- */
-function World(opts) {
-  this.parts = [];      // {x,y,ox,oy,vx,vy,w,r,color}
-  this.bonds = [];      // {a,b,rest,rest0,alpha,lambda,breakLam,active,kind,mode,k}
-  this.gravity = opts.gravity || 0;
-  this.iters = opts.iters || 8;
-  this.damping = opts.damping || 0.995;
-  this.floor = opts.floor || null;      // y coord fn(w,h) evaluated at resize
-  this.walls = opts.walls || false;
-  this.contact = opts.contact || false; // particle-particle repulsion
-  this.w = 100; this.h = 100;
-}
-World.prototype.addP = function (x, y, m, r, color) {
-  this.parts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, w: m > 0 ? 1 / m : 0, r: r, color: color });
-  return this.parts.length - 1;
-};
-World.prototype.addB = function (a, b, alpha, breakLam, kind) {
-  var dx = this.parts[b].x - this.parts[a].x, dy = this.parts[b].y - this.parts[a].y;
-  var rest = Math.sqrt(dx * dx + dy * dy);
-  var bond = { a: a, b: b, rest: rest, rest0: rest, alpha: alpha || 0, lambda: 0,
-               breakLam: breakLam || Infinity, active: true, kind: kind || 'bond', mode: 'xpbd', k: 1 };
-  this.bonds.push(bond);
-  return bond;
-};
-World.prototype.step = function (dt) {
-  var i, p, b, n = this.parts.length;
-  for (i = 0; i < n; i++) {
-    p = this.parts[i];
-    if (p.w === 0) { p.ox = p.x; p.oy = p.y; continue; }
-    p.vy += this.gravity * dt;
-    p.vx *= this.damping; p.vy *= this.damping;
-    p.ox = p.x; p.oy = p.y;
-    p.x += p.vx * dt; p.y += p.vy * dt;
-  }
-  var dt2 = dt * dt;
-  for (i = 0; i < this.bonds.length; i++) this.bonds[i].lambda = 0;
-  for (var it = 0; it < this.iters; it++) {
-    for (i = 0; i < this.bonds.length; i++) {
-      b = this.bonds[i];
-      if (!b.active) continue;
-      var pa = this.parts[b.a], pb = this.parts[b.b];
-      var dx = pb.x - pa.x, dy = pb.y - pa.y;
-      var d = Math.sqrt(dx * dx + dy * dy) || 1e-9;
-      var C = d - b.rest;
-      var wsum = pa.w + pb.w;
-      if (wsum === 0) continue;
-      var corr;
-      if (b.mode === 'pbd') {
-        corr = -b.k * C / wsum;             // stiffness re-applied per iteration → iteration-dependent
-      } else {
-        var at = b.alpha / dt2;
-        var dl = (-C - at * b.lambda) / (wsum + at);
-        b.lambda += dl;
-        corr = dl;
-      }
-      var nx = dx / d, ny = dy / d;
-      pa.x -= pa.w * corr * nx; pa.y -= pa.w * corr * ny;
-      pb.x += pb.w * corr * nx; pb.y += pb.w * corr * ny;
-    }
-    this.solveStatic();
-    if (this.contact) this.solveContacts();
-  }
-  for (i = 0; i < this.bonds.length; i++) {
-    b = this.bonds[i];
-    if (b.active && Math.abs(b.lambda) / dt2 > b.breakLam) b.active = false;
-  }
-  var inv = 1 / dt;
-  for (i = 0; i < n; i++) {
-    p = this.parts[i];
-    if (p.w === 0) continue;
-    p.vx = (p.x - p.ox) * inv; p.vy = (p.y - p.oy) * inv;
-  }
-};
-World.prototype.solveStatic = function () {
-  var fy = this.floorY, i, p;
-  for (i = 0; i < this.parts.length; i++) {
-    p = this.parts[i];
-    if (p.w === 0) continue;
-    if (fy != null && p.y + p.r > fy) { p.y = fy - p.r; p.x -= (p.x - p.ox) * 0.35; } // crude friction
-    if (this.walls) {
-      if (p.x - p.r < 0) p.x = p.r;
-      if (p.x + p.r > this.w) p.x = this.w - p.r;
-      if (p.y - p.r < 0) p.y = p.r;
-    }
-  }
-};
-World.prototype.solveContacts = function () {
-  // spatial hash on ~2*max radius cells
-  var cell = 26, map = {}, i, j, p, key;
-  for (i = 0; i < this.parts.length; i++) {
-    p = this.parts[i];
-    key = ((p.x / cell) | 0) + ',' + ((p.y / cell) | 0);
-    (map[key] || (map[key] = [])).push(i);
-  }
-  var bonded = this._bondedSet();
-  for (i = 0; i < this.parts.length; i++) {
-    p = this.parts[i];
-    var cx = (p.x / cell) | 0, cy = (p.y / cell) | 0;
-    for (var gx = cx - 1; gx <= cx + 1; gx++) for (var gy = cy - 1; gy <= cy + 1; gy++) {
-      var list = map[gx + ',' + gy];
-      if (!list) continue;
-      for (var li = 0; li < list.length; li++) {
-        j = list[li];
-        if (j <= i) continue;
-        if (bonded[i + '_' + j]) continue;
-        var q = this.parts[j];
-        var dx = q.x - p.x, dy = q.y - p.y;
-        var rr = p.r + q.r + 2;
-        var d2 = dx * dx + dy * dy;
-        if (d2 > rr * rr || d2 === 0) continue;
-        var d = Math.sqrt(d2), pen = rr - d, ws = p.w + q.w;
-        if (ws === 0) continue;
-        var nx = dx / d, ny = dy / d, c = pen / ws;
-        p.x -= p.w * c * nx; p.y -= p.w * c * ny;
-        q.x += q.w * c * nx; q.y += q.w * c * ny;
-      }
-    }
-  }
-};
-World.prototype._bondedSet = function () {
-  // rebuilt each call — glue/breakage mutate the list, and sizes here are tiny
-  var s = {}, k, b;
-  for (k = 0; k < this.bonds.length; k++) {
-    b = this.bonds[k];
-    if (!b.active) continue;
-    s[Math.min(b.a, b.b) + '_' + Math.max(b.a, b.b)] = true;
-  }
-  return s;
-};
+function lerp3(a, b, t) { return [ a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t ]; }
 
-/* ---------- canvas plumbing ---------- */
-function Sim(canvasId, opts) {
-  var self = this;
-  this.cv = document.getElementById(canvasId);
-  this.cx = this.cv.getContext('2d');
-  this.world = new World(opts);
-  this.visible = false;
-  this.running = !REDUCED;
-  this.build = opts.build;
-  this.draw = opts.draw;
-  this.tick = opts.tick || null;
-  this.grabbed = -1;
-  this.pointer = { x: 0, y: 0 };
-  new ResizeObserver(function () { self.resize(); }).observe(this.cv);
-  new IntersectionObserver(function (es) { self.visible = es[es.length - 1].isIntersecting; }, { threshold: 0.05 }).observe(this.cv);
-  this.cv.addEventListener('pointerdown', function (e) { self.onDown(e); });
-  this.cv.addEventListener('pointermove', function (e) { self.onMove(e); });
-  this.cv.addEventListener('pointerup', function (e) { self.onUp(e); });
-  this.cv.addEventListener('pointercancel', function (e) { self.onUp(e); });
-  this.resize();
-}
-Sim.prototype.resize = function () {
-  var dpr = Math.min(devicePixelRatio || 1, 2);
-  var r = this.cv.getBoundingClientRect();
-  if (r.width === 0) return;
-  this.cv.width = Math.round(r.width * dpr);
-  this.cv.height = Math.round(r.height * dpr);
-  this.dpr = dpr;
-  var w = this.world;
-  var fresh = w.w !== r.width || w.h !== r.height;
-  w.w = r.width; w.h = r.height;
-  if (fresh) { this.rebuild(); }
-};
-Sim.prototype.rebuild = function () {
-  this.world.parts = []; this.world.bonds = [];
-  this.build(this.world);
-};
-Sim.prototype.toLocal = function (e) {
-  var r = this.cv.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-};
-Sim.prototype.onDown = function (e) {
-  var p = this.toLocal(e), best = -1, bd = 30 * 30, w = this.world;
-  for (var i = 0; i < w.parts.length; i++) {
-    var q = w.parts[i];
-    if (q.w === 0 || q.noGrab) continue;
-    var d = (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y);
-    if (d < bd) { bd = d; best = i; }
-  }
-  this.running = true;
-  if (best >= 0) {
-    this.grabbed = best;
-    this.savedW = w.parts[best].w;
-    w.parts[best].w = 0;
-    this.cv.setPointerCapture(e.pointerId);
-    this.cv.style.cursor = 'grabbing';
-  }
-  this.pointer = p;
-};
-Sim.prototype.onMove = function (e) {
-  var prev = this.pointer, now = performance.now();
-  this.pointer = this.toLocal(e);
-  var dtp = (now - (this.ptrTime || now)) / 1000;
-  if (dtp > 0.001) {
-    this.ptrVX = (this.pointer.x - prev.x) / dtp;
-    this.ptrVY = (this.pointer.y - prev.y) / dtp;
-  }
-  this.ptrTime = now;
-  if (this.grabbed >= 0) {
-    var q = this.world.parts[this.grabbed];
-    q.x = this.pointer.x; q.y = this.pointer.y;
-    q.vx = 0; q.vy = 0;
-  }
-};
-Sim.prototype.onUp = function () {
-  if (this.grabbed >= 0) {
-    var q = this.world.parts[this.grabbed];
-    q.w = this.savedW;
-    // impart the pointer's recent velocity so blobs can be thrown
-    q.vx = Math.max(-900, Math.min(900, this.ptrVX || 0));
-    q.vy = Math.max(-900, Math.min(900, this.ptrVY || 0));
-    this.grabbed = -1;
-    this.cv.style.cursor = 'grab';
-  }
-};
-Sim.prototype.frame = function (dt) {
-  if (!this.visible || !this.running) return;
-  if (this.tick) this.tick(this.world, dt);
-  var sub = 2, i;
-  for (i = 0; i < sub; i++) this.world.step(dt / sub);
-  var cx = this.cx;
-  cx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-  this.draw(cx, this.world);
-};
-
-/* drawing helpers */
-function hexPath(cx, x, y, r) {
-  cx.beginPath();
-  for (var i = 0; i < 6; i++) {
-    var a = Math.PI / 6 + i * Math.PI / 3;
-    var px = x + r * Math.cos(a), py = y + r * Math.sin(a);
-    if (i === 0) cx.moveTo(px, py); else cx.lineTo(px, py);
-  }
-  cx.closePath();
-}
-function drawBonds(cx, w, widthFn, colorFn) {
-  for (var i = 0; i < w.bonds.length; i++) {
-    var b = w.bonds[i];
-    if (!b.active) continue;
-    var pa = w.parts[b.a], pb = w.parts[b.b];
-    cx.strokeStyle = colorFn ? colorFn(b) : css['--sim-ghost'];
-    cx.lineWidth = widthFn ? widthFn(b) : 2;
-    cx.beginPath(); cx.moveTo(pa.x, pa.y); cx.lineTo(pb.x, pb.y); cx.stroke();
-  }
-}
-function drawParts(cx, w) {
-  for (var i = 0; i < w.parts.length; i++) {
-    var p = w.parts[i];
-    if (p.hidden) continue;
-    // token names ('--accent') resolve live so theme flips recolor the sim
-    cx.fillStyle = p.color ? (p.color.charAt(0) === '-' ? css[p.color] : p.color) : css['--sim-node'];
-    hexPath(cx, p.x, p.y, p.r);
-    cx.fill();
-  }
-}
-function clear(cx, w) {
-  cx.fillStyle = css['--panel'];
-  cx.fillRect(0, 0, w.w, w.h);
-}
-
-/* build a hex-flower blob: rings of triangular lattice, all-pairs-adjacent bonds */
-function blob(w, cx0, cy0, rings, spacing, mass, radius, color, alpha, breakLam) {
-  var ids = [], q, r;
-  for (q = -rings; q <= rings; q++) {
-    for (r = Math.max(-rings, -q - rings); r <= Math.min(rings, -q + rings); r++) {
-      var x = cx0 + spacing * (q + r / 2);
-      var y = cy0 + spacing * r * 0.8660254;
-      ids.push(w.addP(x, y, mass, radius, color));
-    }
-  }
-  for (var i = 0; i < ids.length; i++) {
-    for (var j = i + 1; j < ids.length; j++) {
-      var a = w.parts[ids[i]], b = w.parts[ids[j]];
-      var dx = a.x - b.x, dy = a.y - b.y;
-      if (dx * dx + dy * dy < spacing * spacing * 1.3) w.addB(ids[i], ids[j], alpha, breakLam);
-    }
-  }
-  return ids;
-}
-
+/* ---------- canvas plumbing: grid-resolution canvas, CSS-scaled ---------- */
 var sims = [];
-
-/* ---------- HERO: zero-g wobble toys ---------- */
-var heroInteracted = false;
-sims.push(new Sim('cv-hero', {
-  gravity: 0, iters: 8, damping: 0.985, contact: true,
-  build: function (w) {
-    var s = Math.min(w.w, w.h);
-    blob(w, w.w * 0.62, w.h * 0.42, 3, Math.max(26, s * 0.055), 1, 6, '--accent', 0.004);
-    blob(w, w.w * 0.28, w.h * 0.55, 2, Math.max(24, s * 0.05), 1, 6, '--accent2', 0.0008);
-    blob(w, w.w * 0.82, w.h * 0.72, 1, Math.max(22, s * 0.05), 1, 6, '--sim-node', 0.00005);
-    w.anchors = w.parts.map(function (p) { return { x: p.x, y: p.y }; });
-    w.t = 0;
-  },
-  tick: function (w, dt) {
-    w.t += dt;
-    for (var i = 0; i < w.parts.length; i++) {
-      var p = w.parts[i], a = w.anchors[i];
-      if (p.w === 0) continue;
-      p.vx += (a.x - p.x) * 0.9 * dt;
-      p.vy += (a.y - p.y) * 0.9 * dt;
-      if (!heroInteracted) { // gentle ambient breathing until touched
-        p.vx += Math.sin(w.t * 0.9 + i) * 1.1 * dt;
-        p.vy += Math.cos(w.t * 0.7 + i * 1.7) * 1.1 * dt;
-      }
-    }
-  },
-  draw: function (cx, w) {
-    clear(cx, w);
-    drawBonds(cx, w, function () { return 1.5; }, function () { return css['--line']; });
-    drawParts(cx, w);
+function GridSim(id, W, H, hooks) {
+  var self = this;
+  this.id = id; this.W = W; this.H = H;
+  this.cv = document.getElementById(id);
+  this.cv.width = W; this.cv.height = H;
+  this.cx = this.cv.getContext('2d');
+  this.img = this.cx.createImageData(W, H);
+  this.step = hooks.step; this.render = hooks.render;
+  this.overlay = hooks.overlay || null;
+  this.reset = hooks.reset;
+  this.substeps = hooks.substeps || 1;
+  this.visible = false; this.running = !REDUCED;
+  this.pointer = { x: 0, y: 0, px: 0, py: 0, down: false };
+  new IntersectionObserver(function (es) { self.visible = es[es.length - 1].isIntersecting; }, { threshold: 0.05 }).observe(this.cv);
+  function loc(e) {
+    var r = self.cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
   }
-}));
-document.getElementById('cv-hero').addEventListener('pointerdown', function () {
-  heroInteracted = true;
-  document.getElementById('hero-hint').style.opacity = 0.4;
-});
-
-/* ---------- MATERIALS ---------- */
-var ALPHA = { rubber: 0.01, stone: 0.00002, glass: 0.00002 };
-var matSim = new Sim('cv-materials', {
-  gravity: 900, iters: 10, damping: 0.999, walls: true, contact: true,
-  build: function (w) {
-    w.floorY = w.h - 14;
-    var sp = Math.max(24, Math.min(w.w, w.h) * 0.075);
-    blob(w, w.w * 0.2, w.h * 0.4, 2, sp, 1, 6, '#C96F22', ALPHA.rubber);
-    blob(w, w.w * 0.5, w.h * 0.4, 2, sp, 1.4, 6, '#5B6B87', ALPHA.stone);
-    blob(w, w.w * 0.8, w.h * 0.4, 2, sp, 1, 6, '#4BB3A7', ALPHA.glass, 26000);
-  },
-  draw: function (cx, w) {
-    clear(cx, w);
-    cx.fillStyle = css['--panel2'];
-    cx.fillRect(0, w.floorY, w.w, w.h - w.floorY);
-    drawBonds(cx, w, function () { return 2; }, function (b) {
-      if (b.breakLam < Infinity) {
-        // λ/dt² ≈ bond force; substep dt = 1/120 → 1/dt² = 14400
-        var f = Math.abs(b.lambda) * 14400 / b.breakLam;
-        if (f > 0.5) return css['--bad'];
-      }
-      return css['--line'];
-    });
-    drawParts(cx, w);
-  }
-});
-sims.push(matSim);
-document.getElementById('mat-reset').addEventListener('click', function () { matSim.rebuild(); });
-
-/* ---------- CHAINS: PBD vs XPBD ---------- */
-var ITER_STOPS = [1, 2, 4, 8, 16, 32, 50];
-var chainSim = new Sim('cv-chains', {
-  gravity: 700, iters: 8, damping: 0.995,
-  build: function (w) {
-    var n = 14, i;
-    var x1 = w.w * 0.3, x2 = w.w * 0.7, y0 = 24;
-    var seg = Math.max(14, (w.h - 110) / n);
-    w.chainRest = n * seg;
-    w.pbdIds = []; w.xpbdIds = [];
-    var prev = w.addP(x1, y0, 0, 5, css['--muted']);
-    for (i = 1; i <= n; i++) {
-      var id = w.addP(x1 + (Math.random() - 0.5) * 2, y0 + i * seg, i === n ? 4 : 1, i === n ? 13 : 4, '#5B6B87');
-      var b = w.addB(prev, id, 0);
-      b.mode = 'pbd'; b.k = 0.25;
-      w.pbdIds.push(id); prev = id;
-    }
-    w.pbdWeight = prev;
-    prev = w.addP(x2, y0, 0, 5, css['--muted']);
-    for (i = 1; i <= n; i++) {
-      var id2 = w.addP(x2 + (Math.random() - 0.5) * 2, y0 + i * seg, i === n ? 4 : 1, i === n ? 13 : 4, css['--accent']);
-      w.addB(prev, id2, 0.00012);
-      w.xpbdIds.push(id2); prev = id2;
-    }
-    w.xpbdWeight = prev;
-    w.anchor1 = { x: x1, y: y0 }; w.anchor2 = { x: x2, y: y0 };
-  },
-  draw: function (cx, w) {
-    clear(cx, w);
-    drawBonds(cx, w, function () { return 2.5; }, function (b) { return b.mode === 'pbd' ? '#5B6B87' : css['--accent']; });
-    drawParts(cx, w);
-    cx.fillStyle = css['--muted'];
-    cx.font = '600 12px ui-monospace, Menlo, monospace';
-    cx.textAlign = 'center';
-    cx.fillText('PBD  ·  k fixed at 0.25', w.anchor1.x, 16);
-    cx.fillText('XPBD  ·  α fixed', w.anchor2.x, 16);
-    // stretch readout
-    function stretch(anchor, weight) {
-      var dy = Math.hypot(w.parts[weight].x - anchor.x, w.parts[weight].y - anchor.y);
-      return (dy / w.chainRest - 1) * 100;
-    }
-    var sp = stretch(w.anchor1, w.pbdWeight), sx = stretch(w.anchor2, w.xpbdWeight);
-    var out = document.getElementById('stretch-out');
-    if (out) out.textContent = 'stretch  PBD ' + (sp >= 0 ? '+' : '') + sp.toFixed(1) + '%  ·  XPBD ' + (sx >= 0 ? '+' : '') + sx.toFixed(1) + '%';
-  }
-});
-sims.push(chainSim);
-var iterSlider = document.getElementById('iter-slider');
-var massSlider = document.getElementById('mass-slider');
-function applyChainControls() {
-  var it = ITER_STOPS[+iterSlider.value];
-  chainSim.world.iters = it;
-  document.getElementById('iter-out').textContent = it;
-  var m = +massSlider.value;
-  document.getElementById('mass-out').textContent = m + '×';
-  var w = chainSim.world;
-  if (w.pbdWeight != null) { w.parts[w.pbdWeight].w = 1 / m; w.parts[w.xpbdWeight].w = 1 / m; }
+  this.cv.addEventListener('pointerdown', function (e) {
+    var p = loc(e);
+    self.pointer.px = p.x; self.pointer.py = p.y;
+    self.pointer.x = p.x; self.pointer.y = p.y;
+    self.pointer.down = true; self.running = true;
+    self.cv.setPointerCapture(e.pointerId);
+    if (hooks.onPointer) hooks.onPointer(self.pointer, 'down');
+  });
+  this.cv.addEventListener('pointermove', function (e) {
+    var p = loc(e);
+    self.pointer.px = self.pointer.x; self.pointer.py = self.pointer.y;
+    self.pointer.x = p.x; self.pointer.y = p.y;
+    if (hooks.onPointer) hooks.onPointer(self.pointer, 'move');
+  });
+  function up() { self.pointer.down = false; if (hooks.onPointer) hooks.onPointer(self.pointer, 'up'); }
+  this.cv.addEventListener('pointerup', up);
+  this.cv.addEventListener('pointercancel', up);
+  this.reset(this);
+  sims.push(this);
 }
-iterSlider.addEventListener('input', applyChainControls);
-massSlider.addEventListener('input', applyChainControls);
-applyChainControls();
-
-/* ---------- PLAYGROUND ---------- */
-var MUSCLE_DIRS = 6;
-var pg = {
-  held: [false, false, false, false, false, false],
-  extend: false,
-  energy: 100,
-  eaten: 0
+GridSim.prototype.frame = function () {
+  if (!this.visible || !this.running) {
+    if (!this._drewStatic && this.visible) { this.paint(); this._drewStatic = true; }
+    return;
+  }
+  for (var s = 0; s < this.substeps; s++) this.step(this);
+  this.paint();
 };
-var pgSim = new Sim('cv-playground', {
-  gravity: 900, iters: 10, damping: 0.999, walls: true, contact: true,
-  build: function (w) {
-    w.floorY = w.h - 16;
-    pg.energy = 100; pg.eaten = 0;
-    // creature: core + 6 around, spokes are muscles (indexed by direction), rim bonds
-    var cxp = w.w * 0.18, cyp = w.floorY - 90, R = 34;
-    w.core = w.addP(cxp, cyp, 1.2, 8, '--accent');
-    w.outer = [];
-    var i;
-    for (i = 0; i < 6; i++) {
-      var ang = Math.PI / 6 + i * Math.PI / 3; // pointy-top hex: QWE top row, ASD bottom
-      w.outer.push(w.addP(cxp + R * Math.cos(ang), cyp + R * Math.sin(ang), 1, 6.5, '--accent2'));
+GridSim.prototype.paint = function () {
+  this.render(this, this.img.data);
+  this.cx.putImageData(this.img, 0, 0);
+  if (this.overlay) this.overlay(this, this.cx);
+};
+GridSim.prototype.fill = function (data, col) {
+  for (var i = 0, n = this.W * this.H * 4; i < n; i += 4) {
+    data[i] = col[0]; data[i + 1] = col[1]; data[i + 2] = col[2]; data[i + 3] = 255;
+  }
+};
+
+/* ---------- shared field math ---------- */
+function bilinear(f, W, H, x, y) {
+  x = Math.max(0.5, Math.min(W - 1.5, x));
+  y = Math.max(0.5, Math.min(H - 1.5, y));
+  var i0 = x | 0, j0 = y | 0, i1 = i0 + 1, j1 = j0 + 1;
+  var sx = x - i0, sy = y - j0;
+  return (f[j0 * W + i0] * (1 - sx) + f[j0 * W + i1] * sx) * (1 - sy)
+       + (f[j1 * W + i0] * (1 - sx) + f[j1 * W + i1] * sx) * sy;
+}
+function advect(dst, src, u, v, W, H, dt, dissip) {
+  for (var j = 1; j < H - 1; j++) for (var i = 1; i < W - 1; i++) {
+    var k = j * W + i;
+    dst[k] = bilinear(src, W, H, i - dt * u[k], j - dt * v[k]) * dissip;
+  }
+}
+
+/* ---------- Stable Fluids engine (used by hero, demo 02, demo 06) ---------- */
+function Fluid(W, H) {
+  this.W = W; this.H = H;
+  var n = W * H;
+  this.u = new Float32Array(n); this.v = new Float32Array(n);
+  this.u0 = new Float32Array(n); this.v0 = new Float32Array(n);
+  this.dye = new Float32Array(n); this.dye0 = new Float32Array(n);
+  this.p = new Float32Array(n); this.div = new Float32Array(n);
+  this.iters = 20;
+  this.residual = 0;
+}
+Fluid.prototype.splat = function (x, y, du, dv, amount, radius) {
+  var W = this.W, H = this.H, r2 = radius * radius;
+  var i0 = Math.max(1, x - radius | 0), i1 = Math.min(W - 2, x + radius | 0);
+  var j0 = Math.max(1, y - radius | 0), j1 = Math.min(H - 2, y + radius | 0);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var dx = i - x, dy = j - y, d2 = dx * dx + dy * dy;
+    if (d2 > r2) continue;
+    var w = 1 - Math.sqrt(d2) / radius, k = j * W + i;
+    this.u[k] += du * w; this.v[k] += dv * w;
+    this.dye[k] = Math.min(1.6, this.dye[k] + amount * w);
+  }
+};
+Fluid.prototype.bnd = function () {
+  var W = this.W, H = this.H, i, j;
+  for (i = 0; i < W; i++) {
+    this.u[i] = 0; this.v[i] = 0; this.u[(H - 1) * W + i] = 0; this.v[(H - 1) * W + i] = 0;
+  }
+  for (j = 0; j < H; j++) {
+    this.u[j * W] = 0; this.v[j * W] = 0; this.u[j * W + W - 1] = 0; this.v[j * W + W - 1] = 0;
+  }
+};
+Fluid.prototype.step = function (dt) {
+  var W = this.W, H = this.H, i, j, k, it;
+  this.u0.set(this.u); this.v0.set(this.v);
+  advect(this.u, this.u0, this.u0, this.v0, W, H, dt, 0.999);
+  advect(this.v, this.v0, this.u0, this.v0, W, H, dt, 0.999);
+  this.bnd();
+  // projection
+  var p = this.p, div = this.div, u = this.u, v = this.v;
+  for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+    k = j * W + i;
+    div[k] = -0.5 * (u[k + 1] - u[k - 1] + v[k + W] - v[k - W]);
+    // p intentionally NOT zeroed: warm-start from last frame's solution,
+    // so the iteration budget goes to new divergence, not re-deriving old p
+  }
+  // SOR (ω=1.7): in-place sweep + over-relaxation so smooth divergence
+  // modes actually converge within a game-sized iteration budget
+  for (it = 0; it < this.iters; it++) {
+    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+      k = j * W + i;
+      var pn = (p[k - 1] + p[k + 1] + p[k - W] + p[k + W] + div[k]) * 0.25;
+      p[k] += 1.7 * (pn - p[k]);
     }
-    w.muscles = [];
-    for (i = 0; i < 6; i++) {
-      var mb = w.addB(w.core, w.outer[i], 0.0006);
-      mb.kind = 'muscle'; w.muscles.push(mb);
+  }
+  for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+    k = j * W + i;
+    u[k] -= 0.5 * (p[k + 1] - p[k - 1]);
+    v[k] -= 0.5 * (p[k + W] - p[k - W]);
+  }
+  this.bnd();
+  // residual divergence (post-projection), for the readout
+  var res = 0, cnt = 0;
+  for (j = 1; j < H - 1; j += 2) for (i = 1; i < W - 1; i += 2) {
+    k = j * W + i;
+    res += Math.abs(u[k + 1] - u[k - 1] + v[k + W] - v[k - W]) * 0.5; cnt++;
+  }
+  this.residual = res / cnt;
+  this.dye0.set(this.dye);
+  advect(this.dye, this.dye0, this.u, this.v, W, H, dt, 0.994);
+};
+
+function fluidRender(sim, fl, data, hot) {
+  var bg = rgb['--panel'], base = rgb['--accent'], top = rgb[hot ? '--accent2' : '--ink'];
+  for (var k = 0, n = fl.W * fl.H; k < n; k++) {
+    var d = fl.dye[k];
+    var c;
+    if (d <= 0.02) c = bg;
+    else if (d < 0.85) c = lerp3(bg, base, d / 0.85);
+    else c = lerp3(base, top, Math.min(1, (d - 0.85) / 0.6));
+    var o = k * 4;
+    data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
+  }
+}
+
+/* ---- hero: ambient swirl + drag ---- */
+var heroT = 0;
+new GridSim('cv-hero', 176, 99, {
+  reset: function (s) { s.fl = new Fluid(176, 99); s.fl.iters = 14; },
+  step: function (s) {
+    var fl = s.fl;
+    heroT += 0.016;
+    // two ambient emitters orbiting slowly
+    var a = heroT * 0.35;
+    fl.splat(50 + 18 * Math.cos(a), 70 + 8 * Math.sin(a * 1.3), 12 * Math.cos(a * 0.7), -26, 0.16, 5);
+    fl.splat(126 + 20 * Math.cos(a * 0.8 + 2), 66 + 9 * Math.sin(a + 1), -10 * Math.sin(a), -22, 0.13, 5);
+    if (s.pointer.down) {
+      fl.splat(s.pointer.x, s.pointer.y, (s.pointer.x - s.pointer.px) * 6, (s.pointer.y - s.pointer.py) * 6, 0.25, 6);
     }
-    for (i = 0; i < 6; i++) {
-      var rb = w.addB(w.outer[i], w.outer[(i + 1) % 6], 0.0015);
-      rb.kind = 'rim';
-    }
-    // debris: two grey triangles to glue
-    function tri(x, y) {
-      var a = w.addP(x, y, 0.8, 6, '--sim-node');
-      var b = w.addP(x + 24, y, 0.8, 6, '--sim-node');
-      var c = w.addP(x + 12, y - 20, 0.8, 6, '--sim-node');
-      w.addB(a, b, 0.0004); w.addB(b, c, 0.0004); w.addB(c, a, 0.0004);
-      return [a, b, c];
-    }
-    w.debris = [].concat(tri(w.w * 0.45, w.floorY - 12), tri(w.w * 0.55, w.floorY - 12));
-    // food pellets (static sensors, not particles)
-    w.food = [];
-    for (i = 0; i < 6; i++) {
-      w.food.push({ x: w.w * (0.35 + 0.6 * (i / 5)) - w.w * 0.05 + (i % 2) * w.w * 0.03,
-                    y: w.floorY - 12 - (i % 3) * 54, eaten: false });
-    }
-    w.glued = [];
+    fl.step(0.9);
   },
-  tick: function (w, dt) {
-    var i;
-    var canAct = pg.energy > 0;
-    var activeCount = 0;
-    for (i = 0; i < 6; i++) {
-      var m = w.muscles[i];
-      if (pg.held[i] && canAct) {
-        m.rest = m.rest0 * (pg.extend ? 1.55 : 0.55);
-        activeCount++;
-      } else {
-        m.rest = m.rest0;
+  render: function (s, data) { fluidRender(s, s.fl, data, true); }
+});
+
+/* ---- demo 02: iteration dial ---- */
+var flSim = new GridSim('cv-fluid', 144, 90, {
+  reset: function (s) { s.fl = new Fluid(144, 90); },
+  step: function (s) {
+    var fl = s.fl;
+    fl.iters = +document.getElementById('fl-iters').value;
+    fl.splat(30, 82, 0, -30, 0.2, 4);
+    fl.splat(112, 82, 0, -30, 0.2, 4);
+    if (s.pointer.down) {
+      fl.splat(s.pointer.x, s.pointer.y, (s.pointer.x - s.pointer.px) * 6, (s.pointer.y - s.pointer.py) * 6, 0.22, 6);
+    }
+    fl.step(0.9);
+    document.getElementById('fl-div-out').textContent = 'residual divergence ' + (fl.residual * 1000).toFixed(1) + ' m‰';
+  },
+  render: function (s, data) { fluidRender(s, s.fl, data, true); }
+});
+document.getElementById('fl-iters').addEventListener('input', function () {
+  document.getElementById('fl-iters-out').textContent = this.value;
+});
+document.getElementById('fl-reset').addEventListener('click', function () { flSim.reset(flSim); });
+
+/* ---------- falling sand engine ---------- */
+var EMPTY = 0, WALL = 1, SAND = 2, WATER = 3;
+function sandStep(g, W, H, flip) {
+  // bottom-up; alternate horizontal sweep to avoid drift bias
+  for (var j = H - 2; j >= 0; j--) {
+    var i0 = flip ? W - 2 : 1, i1 = flip ? 0 : W - 1, di = flip ? -1 : 1;
+    for (var i = i0; i !== i1; i += di) {
+      var k = j * W + i, c = g[k];
+      if (c === SAND) {
+        var b = k + W;
+        if (g[b] === EMPTY || g[b] === WATER) { g[k] = g[b]; g[b] = SAND; continue; }
+        var d1 = b + di, d2 = b - di;
+        if (i + di > 0 && i + di < W - 1 && (g[d1] === EMPTY || g[d1] === WATER)) { g[k] = g[d1]; g[d1] = SAND; continue; }
+        if (i - di > 0 && i - di < W - 1 && (g[d2] === EMPTY || g[d2] === WATER)) { g[k] = g[d2]; g[d2] = SAND; continue; }
+      } else if (c === WATER) {
+        var bw = k + W;
+        if (g[bw] === EMPTY) { g[k] = EMPTY; g[bw] = WATER; continue; }
+        var w1 = bw + di, w2 = bw - di;
+        if (i + di > 0 && i + di < W - 1 && g[w1] === EMPTY) { g[k] = EMPTY; g[w1] = WATER; continue; }
+        if (i - di > 0 && i - di < W - 1 && g[w2] === EMPTY) { g[k] = EMPTY; g[w2] = WATER; continue; }
+        var s1 = k + di, s2 = k - di;
+        if (i + di > 0 && i + di < W - 1 && g[s1] === EMPTY) { g[k] = EMPTY; g[s1] = WATER; continue; }
+        if (i - di > 0 && i - di < W - 1 && g[s2] === EMPTY) { g[k] = EMPTY; g[s2] = WATER; continue; }
       }
     }
-    if (activeCount > 0) pg.energy = Math.max(0, pg.energy - 7 * activeCount * dt);
-    // eat food
-    for (i = 0; i < w.food.length; i++) {
-      var f = w.food[i];
-      if (f.eaten) continue;
-      for (var j = 0; j < w.outer.length; j++) {
-        var p = w.parts[w.outer[j]];
-        if ((p.x - f.x) * (p.x - f.x) + (p.y - f.y) * (p.y - f.y) < 15 * 15) {
-          f.eaten = true; pg.eaten++;
-          pg.energy = Math.min(100, pg.energy + 30);
-          break;
-        }
-      }
+  }
+}
+function sandColor(c, k) {
+  var t = (k * 2654435761 >>> 0) % 13 / 13 * 0.14; // stable per-cell texture
+  if (c === SAND)  return lerp3(rgb['--accent2'], rgb['--panel'], t);
+  if (c === WATER) return lerp3(rgb['--accent'], rgb['--panel'], t * 0.5);
+  if (c === WALL)  return lerp3(rgb['--muted'], rgb['--ink'], t);
+  return rgb['--panel'];
+}
+function paintCells(g, W, H, x, y, mat, r) {
+  for (var j = Math.max(1, y - r | 0); j <= Math.min(H - 2, y + r | 0); j++)
+    for (var i = Math.max(1, x - r | 0); i <= Math.min(W - 2, x + r | 0); i++) {
+      var dx = i - x, dy = j - y;
+      if (dx * dx + dy * dy <= r * r) g[j * W + i] = mat;
     }
-    var bar = document.getElementById('energy-bar');
-    bar.style.width = pg.energy.toFixed(0) + '%';
-    bar.style.background = pg.energy > 25 ? css['--good'] : css['--bad'];
-    document.getElementById('food-out').textContent = 'pellets ' + pg.eaten + ' / ' + w.food.length;
+}
+
+/* ---- demo 01: sandbox ---- */
+var brushMat = SAND;
+var sandSim = new GridSim('cv-sand', 176, 110, {
+  substeps: 2,
+  reset: function (s) {
+    s.g = new Uint8Array(176 * 110);
+    var W = 176, H = 110;
+    for (var i = 0; i < W; i++) { s.g[(H - 1) * W + i] = WALL; s.g[i] = WALL; }
+    for (var j = 0; j < H; j++) { s.g[j * W] = WALL; s.g[j * W + W - 1] = WALL; }
+    // a shelf to play with
+    for (var x = 40; x < 120; x++) s.g[70 * 176 + x] = WALL;
+    s.flip = false;
   },
-  draw: function (cx, w) {
-    clear(cx, w);
-    cx.fillStyle = css['--panel2'];
-    cx.fillRect(0, w.floorY, w.w, w.h - w.floorY);
-    // food
-    for (var i = 0; i < w.food.length; i++) {
-      var f = w.food[i];
-      if (f.eaten) continue;
-      cx.fillStyle = css['--good'];
-      cx.beginPath(); cx.arc(f.x, f.y, 6, 0, 7); cx.fill();
+  step: function (s) {
+    if (s.pointer.down) paintCells(s.g, s.W, s.H, s.pointer.x, s.pointer.y, brushMat, 3.2);
+    s.flip = !s.flip;
+    sandStep(s.g, s.W, s.H, s.flip);
+    var counts = [0, 0, 0, 0];
+    for (var k = 0; k < s.g.length; k++) counts[s.g[k]]++;
+    document.getElementById('sand-out').textContent = 'sand ' + counts[SAND] + ' · water ' + counts[WATER];
+  },
+  render: function (s, data) {
+    for (var k = 0, n = s.W * s.H; k < n; k++) {
+      var c = sandColor(s.g[k], k), o = k * 4;
+      data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
     }
-    drawBonds(cx, w, function (b) { return b.kind === 'muscle' ? 4 : 2; }, function (b) {
-      if (b.kind === 'muscle') return b.rest < b.rest0 ? css['--bad'] : (b.rest > b.rest0 ? css['--good'] : css['--accent']);
-      if (b.kind === 'glue') return css['--accent2'];
-      return css['--line'];
+  }
+});
+Array.prototype.forEach.call(document.querySelectorAll('button.mat'), function (b) {
+  b.addEventListener('click', function () {
+    brushMat = +b.dataset.mat;
+    Array.prototype.forEach.call(document.querySelectorAll('button.mat'), function (x) {
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
     });
-    drawParts(cx, w);
-    // key labels beside the creature's outer nodes
-    var LBL = ['D', 'S', 'A', 'Q', 'W', 'E'];
-    cx.font = '600 10px ui-monospace, Menlo, monospace';
-    cx.textAlign = 'center';
-    cx.fillStyle = css['--muted'];
-    for (var k = 0; k < 6; k++) {
-      var op = w.parts[w.outer[k]], cp = w.parts[w.core];
-      var lx = op.x + (op.x - cp.x) * 0.5, ly = op.y + (op.y - cp.y) * 0.5;
-      cx.fillText(LBL[k], lx, ly + 3);
+  });
+});
+document.getElementById('sand-reset').addEventListener('click', function () { sandSim.reset(sandSim); });
+
+/* ---------- demo 03: LBM D2Q9 ---------- */
+var EX = [0, 1, 0, -1, 0, 1, -1, -1, 1];
+var EY = [0, 0, 1, 0, -1, 1, 1, -1, -1];
+var WT = [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36];
+var OPP = [0, 3, 4, 1, 2, 7, 8, 5, 6];
+var U0 = 0.1;
+function lbmEq(rho, ux, uy, i) {
+  var eu = EX[i] * ux + EY[i] * uy, u2 = ux * ux + uy * uy;
+  return WT[i] * rho * (1 + 3 * eu + 4.5 * eu * eu - 1.5 * u2);
+}
+var lbmSim = new GridSim('cv-lbm', 216, 81, {
+  substeps: 3,
+  reset: function (s) {
+    var W = s.W, H = s.H, n = W * H;
+    s.f = []; s.ftmp = [];
+    for (var i = 0; i < 9; i++) { s.f.push(new Float32Array(n)); s.ftmp.push(new Float32Array(n)); }
+    s.solid = new Uint8Array(n);
+    s.obx = W * 0.28; s.oby = H * 0.46; s.obr = 6.5;   // slightly off-center → symmetry breaks
+    s.curl = new Float32Array(n);
+    var j, k;
+    for (j = 0; j < H; j++) for (var x = 0; x < W; x++) {
+      k = j * W + x;
+      if (j === 0 || j === H - 1) s.solid[k] = 1;
+      var dx = x - s.obx, dy = j - s.oby;
+      if (dx * dx + dy * dy < s.obr * s.obr) s.solid[k] = 1;
+      for (var q = 0; q < 9; q++) s.f[q][k] = lbmEq(1, U0, 0, q);
     }
-  }
-});
-sims.push(pgSim);
-
-/* map keys to muscle indices by hex direction:
-   angles: i=0→30°(right-down) ... going clockwise. We want Q=upper-left, W=up-ish... simpler: sort by angle */
-var KEY_ORDER = ['KeyQ', 'KeyW', 'KeyE', 'KeyA', 'KeyS', 'KeyD'];
-/* muscle i has angle 30+60i deg (screen y down): i=0:30(dr),1:90(d),2:150(dl),3:210(ul),4:270(u),5:330(ur)
-   QWE = upper-left, up, upper-right = 3,4,5 ; ASD = lower-left, down, lower-right = 2,1,0 */
-var KEY2MUSCLE = { KeyQ: 3, KeyW: 4, KeyE: 5, KeyA: 2, KeyS: 1, KeyD: 0 };
-
-var pgCanvas = document.getElementById('cv-playground');
-var pgStatus = document.getElementById('pg-status');
-pgCanvas.addEventListener('focus', function () { pgStatus.textContent = 'controls live — Q W E A S D · G · U · R'; });
-pgCanvas.addEventListener('blur', function () {
-  pgStatus.textContent = 'click the canvas to take the controls';
-  for (var i = 0; i < 6; i++) pg.held[i] = false;
-});
-pgCanvas.addEventListener('keydown', function (e) {
-  if (e.code in KEY2MUSCLE) { pg.held[KEY2MUSCLE[e.code]] = true; e.preventDefault(); }
-  if (e.key === 'Shift') pg.extend = true;
-  if (e.code === 'KeyG') { glue(); e.preventDefault(); }
-  if (e.code === 'KeyU') { unglue(); e.preventDefault(); }
-  if (e.code === 'KeyR') { pgSim.rebuild(); e.preventDefault(); }
-});
-pgCanvas.addEventListener('keyup', function (e) {
-  if (e.code in KEY2MUSCLE) pg.held[KEY2MUSCLE[e.code]] = false;
-  if (e.key === 'Shift') pg.extend = false;
-});
-function glue() {
-  var w = pgSim.world;
-  if (pg.energy < 5) return;
-  var made = 0;
-  var agentIds = [w.core].concat(w.outer);
-  for (var i = 0; i < agentIds.length; i++) {
-    var p = w.parts[agentIds[i]];
-    for (var j = 0; j < w.debris.length; j++) {
-      var q = w.parts[w.debris[j]];
-      var dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
-      if (d2 < 30 * 30) {
-        var exists = w.bonds.some(function (b) {
-          return b.active && ((b.a === agentIds[i] && b.b === w.debris[j]) || (b.b === agentIds[i] && b.a === w.debris[j]));
-        });
-        if (!exists) {
-          var nb = w.addB(agentIds[i], w.debris[j], 0.0008);
-          nb.kind = 'glue';
-          nb.rest = Math.max(nb.rest, 14);
-          made++;
+    s.blew = false;
+  },
+  step: function (s) {
+    var W = s.W, H = s.H, n = W * H, q, k, j, x;
+    var visc = +document.getElementById('lbm-visc').value / 100;         // 0..1
+    var tau = 0.5 + 0.02 + visc * 0.55;                                   // 0.52..1.07
+    var omega = 1 / tau;
+    document.getElementById('lbm-visc-out').textContent = 'τ=' + tau.toFixed(2);
+    // collide
+    for (k = 0; k < n; k++) {
+      if (s.solid[k]) continue;
+      var rho = 0, ux = 0, uy = 0;
+      for (q = 0; q < 9; q++) { var fq = s.f[q][k]; rho += fq; ux += fq * EX[q]; uy += fq * EY[q]; }
+      ux /= rho; uy /= rho;
+      for (q = 0; q < 9; q++) s.f[q][k] += omega * (lbmEq(rho, ux, uy, q) - s.f[q][k]);
+    }
+    // stream (push) with bounce-back into solids
+    for (q = 0; q < 9; q++) s.ftmp[q].set(s.f[q]);
+    for (j = 0; j < H; j++) for (x = 0; x < W; x++) {
+      k = j * W + x;
+      if (s.solid[k]) continue;
+      for (q = 1; q < 9; q++) {
+        var xn = x + EX[q], jn = j + EY[q];
+        if (xn < 0 || xn >= W || jn < 0 || jn >= H) continue;
+        var kn = jn * W + xn;
+        if (s.solid[kn]) s.f[OPP[q]][k] = s.ftmp[q][k];
+        else s.f[q][kn] = s.ftmp[q][k];
+      }
+    }
+    // inflow left / outflow right
+    for (j = 1; j < H - 1; j++) {
+      k = j * W;
+      for (q = 0; q < 9; q++) { s.f[q][k] = lbmEq(1, U0, 0, q); s.f[q][k + W - 1] = s.f[q][k + W - 2]; }
+    }
+    // NaN watchdog → auto-reset (teaching moment: BGK has a stability floor)
+    var probe = s.f[1][(H >> 1) * W + (W >> 1)];
+    if (!isFinite(probe)) {
+      s.reset(s);
+      s.blew = true;
+      document.getElementById('lbm-status').textContent = '💥 unstable → auto-reset (τ too small)';
+      document.getElementById('lbm-status').style.color = css['--bad'];
+      return;
+    }
+    if (!s.blew) {
+      document.getElementById('lbm-status').textContent = 'stable';
+      document.getElementById('lbm-status').style.color = '';
+    }
+  },
+  render: function (s, data) {
+    var W = s.W, H = s.H, j, x, k, q;
+    // curl of macroscopic velocity
+    var ux = s.curl; // reuse buffer names cheaply: compute u into two temps
+    // compute macro u,v on the fly into local arrays (small grid, fine)
+    if (!s._u) { s._u = new Float32Array(W * H); s._v = new Float32Array(W * H); }
+    for (k = 0; k < W * H; k++) {
+      if (s.solid[k]) { s._u[k] = 0; s._v[k] = 0; continue; }
+      var rho = 0, a = 0, b = 0;
+      for (q = 0; q < 9; q++) { var fq = s.f[q][k]; rho += fq; a += fq * EX[q]; b += fq * EY[q]; }
+      s._u[k] = a / rho; s._v[k] = b / rho;
+    }
+    var bg = rgb['--panel'], pos = rgb['--accent2'], neg = rgb['--accent'], sol = rgb['--ink'];
+    for (j = 0; j < H; j++) for (x = 0; x < W; x++) {
+      k = j * W + x;
+      var o = k * 4, c;
+      if (s.solid[k]) c = sol;
+      else if (j === 0 || j === H - 1 || x === 0 || x === W - 1) c = bg;
+      else {
+        var cu = (s._v[k + 1] - s._v[k - 1]) - (s._u[k + W] - s._u[k - W]);
+        var t = Math.max(-1, Math.min(1, cu * 18));
+        c = t > 0 ? lerp3(bg, pos, t) : lerp3(bg, neg, -t);
+      }
+      data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
+    }
+  },
+  onPointer: function (p, phase) {
+    if (phase === 'down' || (phase === 'move' && lbmSim.pointer.down)) {
+      lbmSim.obx = Math.max(10, Math.min(lbmSim.W * 0.7, p.x));
+      lbmSim.oby = Math.max(10, Math.min(lbmSim.H - 10, p.y));
+      // re-stamp solids
+      var s = lbmSim, W = s.W, H = s.H;
+      for (var j = 1; j < H - 1; j++) for (var x = 1; x < W - 1; x++) {
+        var k = j * W + x, dx = x - s.obx, dy = j - s.oby;
+        var inOb = dx * dx + dy * dy < s.obr * s.obr;
+        if (inOb && !s.solid[k]) s.solid[k] = 1;
+        else if (!inOb && s.solid[k]) {
+          s.solid[k] = 0;
+          for (var q = 0; q < 9; q++) s.f[q][k] = lbmEq(1, 0, 0, q);
         }
       }
     }
   }
-  if (made > 0) pg.energy = Math.max(0, pg.energy - 4 * made);
-}
-function unglue() {
-  var w = pgSim.world;
-  for (var i = 0; i < w.bonds.length; i++) if (w.bonds[i].kind === 'glue') w.bonds[i].active = false;
-}
-document.getElementById('pg-reset').addEventListener('click', function () { pgSim.rebuild(); pgCanvas.focus(); });
-/* on-screen muscle pads */
-Array.prototype.forEach.call(document.querySelectorAll('[data-muscle]'), function (btn, idx) {
-  var mi = KEY2MUSCLE[['KeyQ', 'KeyW', 'KeyE', 'KeyA', 'KeyS', 'KeyD'][idx]];
-  function down(e) { pg.held[mi] = true; e.preventDefault(); }
-  function up() { pg.held[mi] = false; }
-  btn.addEventListener('pointerdown', down);
-  btn.addEventListener('pointerup', up);
-  btn.addEventListener('pointerleave', up);
-  btn.addEventListener('pointercancel', up);
 });
+document.getElementById('lbm-reset').addEventListener('click', function () { lbmSim.reset(lbmSim); });
+
+/* ---------- demo 04: dam game (cell-entity) ---------- */
+var DKEY = { ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0], ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1] };
+var damSim = new GridSim('cv-dam', 176, 110, {
+  substeps: 2,
+  reset: function (s) {
+    var W = s.W, H = s.H;
+    s.g = new Uint8Array(W * H);
+    var i, j;
+    for (i = 0; i < W; i++) { s.g[(H - 1) * W + i] = WALL; s.g[i] = WALL; }
+    for (j = 0; j < H; j++) { s.g[j * W] = WALL; s.g[j * W + W - 1] = WALL; }
+    // ground
+    for (j = 92; j < H - 1; j++) for (i = 1; i < W - 1; i++) s.g[j * W + i] = WALL;
+    // spring plateau, left-of-center
+    for (j = 46; j < 92; j++) for (i = 1; i < 34; i++) s.g[j * W + i] = WALL;
+    for (i = 34; i < 52; i++) for (j = 60; j < 92; j++) s.g[j * W + i] = WALL;   // step
+    // den: sunken pit on the right
+    s.den = { x0: 128, x1: 162, y0: 80, y1: 91 };
+    for (j = s.den.y0; j <= s.den.y1; j++) for (i = s.den.x0; i <= s.den.x1; i++) s.g[j * W + i] = EMPTY;
+    // drain: hole in the left wall at ground level
+    s.drainY = 90;
+    for (j = 86; j < 92; j++) s.g[j * W + 1] = EMPTY;
+    s.spring = { x: 12, y: 44 };
+    s.agent = { x: 80, y: 90, fx: 1, fy: 0 };
+    s.blocks = 60;
+    s.tick = 0;
+    s.flip = false;
+    s.denCap = (s.den.x1 - s.den.x0 + 1) * (s.den.y1 - s.den.y0 + 1);
+  },
+  step: function (s) {
+    var W = s.W, g = s.g;
+    s.tick++;
+    if (s.tick % 2 === 0 && g[s.spring.y * W + s.spring.x] === EMPTY) g[s.spring.y * W + s.spring.x] = WATER;
+    s.flip = !s.flip;
+    sandStep(g, s.W, s.H, s.flip);
+    // drain: delete water at the left hole
+    for (var j = 86; j < 92; j++) if (g[j * W + 1] === WATER) g[j * W + 1] = EMPTY;
+    // agent gravity
+    var a = s.agent, kb = (a.y + 1) * W + a.x;
+    if (g[kb] === EMPTY) a.y++;
+    // flood metric
+    var wet = 0;
+    for (var y = s.den.y0; y <= s.den.y1; y++) for (var x = s.den.x0; x <= s.den.x1; x++)
+      if (g[y * W + x] === WATER) wet++;
+    var pct = Math.round(wet / s.denCap * 100);
+    document.getElementById('dam-flood').textContent = 'den flood ' + pct + '%';
+    document.getElementById('dam-flood').style.color = pct > 20 ? css['--bad'] : '';
+    document.getElementById('dam-blocks').textContent = 'blocks ' + s.blocks;
+  },
+  render: function (s, data) {
+    for (var k = 0, n = s.W * s.H; k < n; k++) {
+      var c = sandColor(s.g[k], k), o = k * 4;
+      data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
+    }
+  },
+  overlay: function (s, cx) {
+    // den outline
+    cx.strokeStyle = css['--good']; cx.lineWidth = 1;
+    cx.strokeRect(s.den.x0 - 0.5, s.den.y0 - 0.5, s.den.x1 - s.den.x0 + 1, s.den.y1 - s.den.y0 + 1);
+    // spring marker
+    cx.fillStyle = css['--accent'];
+    cx.fillRect(s.spring.x - 1, s.spring.y - 3, 3, 2);
+    // agent + facing tick
+    var a = s.agent;
+    cx.fillStyle = css['--accent2'];
+    cx.fillRect(a.x - 1, a.y - 2, 3, 3);
+    cx.fillStyle = css['--ink'];
+    cx.fillRect(a.x + a.fx * 2, a.y - 1 + a.fy * 2, 1, 1);
+  }
+});
+function damPassable(c) { return c === EMPTY || c === WATER; }
+var damCv = document.getElementById('cv-dam');
+damCv.addEventListener('focus', function () { document.getElementById('dam-status').textContent = 'controls live — arrows/WASD · B · X · R'; });
+damCv.addEventListener('blur', function () { document.getElementById('dam-status').textContent = 'click the canvas to take the controls'; });
+damCv.addEventListener('keydown', function (e) {
+  var s = damSim, W = s.W, g = s.g, a = s.agent;
+  if (e.code in DKEY) {
+    var d = DKEY[e.code];
+    a.fx = d[0] || a.fx && d[0] === 0 && d[1] !== 0 ? d[0] : d[0]; // facing follows movement intent
+    if (d[0] !== 0) { a.fx = d[0]; a.fy = 0; } else { a.fy = d[1]; a.fx = 0; }
+    var nx = a.x + d[0], ny = a.y + d[1];
+    var target = g[ny * W + nx];
+    var below = g[(a.y + 1) * W + a.x];
+    var inWater = g[a.y * W + a.x] === WATER;
+    if (damPassable(target) && (d[1] !== -1 || below !== EMPTY || inWater)) { a.x = nx; a.y = ny; }
+    e.preventDefault();
+  } else if (e.code === 'KeyB') {
+    var bx = a.x + a.fx, by = a.y + a.fy;
+    var bk = by * W + bx;
+    if (s.blocks > 0 && damPassable(g[bk]) && !(bx === a.x && by === a.y)) { g[bk] = WALL; s.blocks--; }
+    e.preventDefault();
+  } else if (e.code === 'KeyX') {
+    var xx = a.x + a.fx, xy = a.y + a.fy;
+    var xk = xy * W + xx;
+    if (xx > 0 && xx < W - 1 && xy > 0 && xy < s.H - 1 && (g[xk] === WALL || g[xk] === SAND)) g[xk] = EMPTY;
+    e.preventDefault();
+  } else if (e.code === 'KeyR') { s.reset(s); e.preventDefault(); }
+});
+document.getElementById('dam-reset').addEventListener('click', function () { damSim.reset(damSim); damCv.focus(); });
+
+/* ---------- demo 05: field creature ---------- */
+var crSim = new GridSim('cv-creature', 144, 90, {
+  reset: function (s) {
+    var W = s.W, H = s.H, n = W * H;
+    s.rho = new Float32Array(n); s.rho0 = new Float32Array(n);
+    s.nut = new Float32Array(n); s.nsrc = new Float32Array(n);
+    s.vx = new Float32Array(n); s.vy = new Float32Array(n);
+    s.dir = [0, 0];
+    s.mass = 0; s.eatenTotal = 0;
+    var j, i, k;
+    function gauss(f, cx, cy, r, amp) {
+      for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+        var dx = i - cx, dy = j - cy;
+        f[j * W + i] += amp * Math.exp(-(dx * dx + dy * dy) / (r * r));
+      }
+    }
+    gauss(s.rho, W * 0.25, H * 0.5, 6, 1);
+    gauss(s.nsrc, W * 0.6, H * 0.28, 7, 0.010);
+    gauss(s.nsrc, W * 0.78, H * 0.68, 7, 0.010);
+    gauss(s.nsrc, W * 0.42, H * 0.75, 5, 0.008);
+    for (k = 0; k < n; k++) { s.nut[k] = s.nsrc[k] * 60; s.mass += s.rho[k]; }
+    s.mass0 = s.mass;
+  },
+  step: function (s) {
+    var W = s.W, H = s.H, n = W * H, i, j, k;
+    var coh = +document.getElementById('cr-coh').value / 100;
+    var mot = +document.getElementById('cr-mot').value / 100;
+    document.getElementById('cr-coh-out').textContent = coh.toFixed(2);
+    document.getElementById('cr-mot-out').textContent = mot.toFixed(2);
+    // center of mass
+    var cmx = 0, cmy = 0, m = 0;
+    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+      k = j * W + i; var r = s.rho[k];
+      m += r; cmx += r * i; cmy += r * j;
+    }
+    if (m > 1e-6) { cmx /= m; cmy /= m; }
+    s.cm = [cmx, cmy];
+    // velocity field: steering + cohesion toward own CoM
+    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+      k = j * W + i;
+      s.vx[k] = mot * 1.6 * s.dir[0] + coh * 0.10 * (cmx - i);
+      s.vy[k] = mot * 1.6 * s.dir[1] + coh * 0.10 * (cmy - j);
+    }
+    s.rho0.set(s.rho);
+    advect(s.rho, s.rho0, s.vx, s.vy, W, H, 1, 1);
+    // slight diffusion keeps it smooth
+    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+      k = j * W + i;
+      s.rho0[k] = s.rho[k] * 0.7 + (s.rho[k - 1] + s.rho[k + 1] + s.rho[k - W] + s.rho[k + W]) * 0.075;
+    }
+    var tmp = s.rho; s.rho = s.rho0; s.rho0 = tmp;
+    // eat + metabolize, then renormalize to conserve the (updated) mass
+    var eaten = 0;
+    for (k = 0; k < n; k++) {
+      if (s.rho[k] > 0.04 && s.nut[k] > 0) {
+        var e = Math.min(s.nut[k], s.rho[k] * 0.02);
+        s.nut[k] -= e; eaten += e;
+      }
+    }
+    s.eatenTotal += eaten;
+    s.mass = s.mass * 0.9992 + eaten * 2.0;
+    var cur = 0;
+    for (k = 0; k < n; k++) cur += s.rho[k];
+    if (cur > 1e-6) { var f = s.mass / cur; for (k = 0; k < n; k++) s.rho[k] *= f; }
+    // nutrient diffuse + regrow
+    for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) {
+      k = j * W + i;
+      s.nut[k] = Math.min(1, s.nut[k] * 0.998 + (s.nut[k - 1] + s.nut[k + 1] + s.nut[k - W] + s.nut[k + W] - 4 * s.nut[k]) * 0.06 + s.nsrc[k]);
+    }
+    var pct = Math.round(s.mass / s.mass0 * 100);
+    var mo = document.getElementById('cr-mass');
+    mo.textContent = pct <= 30 ? 'starved — press R' : 'mass ' + pct + '%';
+    mo.style.color = pct <= 45 ? css['--bad'] : '';
+  },
+  render: function (s, data) {
+    var bg = rgb['--panel'], nu = rgb['--good'], lo = rgb['--accent'], hi = rgb['--accent2'];
+    for (var k = 0, n = s.W * s.H; k < n; k++) {
+      var c = bg;
+      if (s.nut[k] > 0.015) c = lerp3(c, nu, Math.min(0.55, s.nut[k] * 0.8));
+      var r = s.rho[k];
+      if (r > 0.02) {
+        var t = Math.min(1, r * 1.4);
+        c = lerp3(c, t < 0.6 ? lerp3(lo, lo, 0) : hi, Math.min(1, t));
+        if (t < 0.6) c = lerp3(bg, lo, t / 0.6 * 0.9 + 0.1);
+        else c = lerp3(lo, hi, (t - 0.6) / 0.4);
+      }
+      var o = k * 4;
+      data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
+    }
+  },
+  overlay: function (s, cx) {
+    if (s.cm) {
+      cx.strokeStyle = css['--ink']; cx.lineWidth = 0.8;
+      cx.beginPath(); cx.arc(s.cm[0], s.cm[1], 2.2, 0, 7); cx.stroke();
+      if (s.dir[0] || s.dir[1]) {
+        cx.beginPath(); cx.moveTo(s.cm[0], s.cm[1]);
+        cx.lineTo(s.cm[0] + s.dir[0] * 6, s.cm[1] + s.dir[1] * 6); cx.stroke();
+      }
+    }
+  }
+});
+var crCv = document.getElementById('cv-creature');
+crCv.addEventListener('focus', function () { document.getElementById('cr-status').textContent = 'controls live — arrows steer, space stops'; });
+crCv.addEventListener('blur', function () { document.getElementById('cr-status').textContent = 'click the canvas to take the controls'; });
+crCv.addEventListener('keydown', function (e) {
+  var D = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (e.code in D) { crSim.dir = D[e.code]; e.preventDefault(); }
+  else if (e.code === 'Space') { crSim.dir = [0, 0]; e.preventDefault(); }
+  else if (e.code === 'KeyR') { crSim.reset(crSim); e.preventDefault(); }
+});
+document.getElementById('cr-reset').addEventListener('click', function () { crSim.reset(crSim); crCv.focus(); });
+
+/* ---------- demo 06: force-field herding ---------- */
+var hdBest = 0;
+var hdSim = new GridSim('cv-herd', 144, 90, {
+  reset: function (s) {
+    s.fl = new Fluid(144, 90); s.fl.iters = 20;
+    s.ring = { x: 108, y: 34, r: 13 };
+    hdBest = Math.max(hdBest, 0);
+  },
+  step: function (s) {
+    var fl = s.fl;
+    fl.splat(24, 82, 0, -26, 0.22, 4);
+    if (s.pointer.down) {
+      fl.splat(s.pointer.x, s.pointer.y, (s.pointer.x - s.pointer.px) * 7, (s.pointer.y - s.pointer.py) * 7, 0, 7);
+    }
+    fl.step(0.9);
+    // score: fraction of existing dye inside the ring
+    var tot = 0, inR = 0, W = fl.W, H = fl.H;
+    for (var j = 1; j < H - 1; j++) for (var i = 1; i < W - 1; i++) {
+      var d = fl.dye[j * W + i];
+      if (d < 0.01) continue;
+      tot += d;
+      var dx = i - s.ring.x, dy = j - s.ring.y;
+      if (dx * dx + dy * dy < s.ring.r * s.ring.r) inR += d;
+    }
+    var pct = tot > 0.1 ? Math.round(inR / tot * 100) : 0;
+    hdBest = Math.max(hdBest, pct);
+    document.getElementById('hd-score').textContent = 'captured ' + pct + '%';
+    document.getElementById('hd-best').textContent = 'best ' + hdBest + '%';
+  },
+  render: function (s, data) { fluidRender(s, s.fl, data, false); },
+  overlay: function (s, cx) {
+    cx.strokeStyle = css['--good']; cx.lineWidth = 1.2;
+    cx.setLineDash([3, 2]);
+    cx.beginPath(); cx.arc(s.ring.x, s.ring.y, s.ring.r, 0, 7); cx.stroke();
+    cx.setLineDash([]);
+  }
+});
+document.getElementById('hd-reset').addEventListener('click', function () { hdBest = 0; hdSim.reset(hdSim); });
 
 /* ---------- main loop ---------- */
-var last = performance.now(), frameCount = 0;
-function loop(now) {
-  var dt = Math.min(0.032, (now - last) / 1000) || 0.016;
-  last = now;
+var frameCount = 0;
+function loop() {
   if (++frameCount % 30 === 0) refreshPalette();
-  if (!document.hidden) for (var i = 0; i < sims.length; i++) sims[i].frame(dt);
+  if (!document.hidden) for (var i = 0; i < sims.length; i++) sims[i].frame();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-
-/* reduced motion: sims start paused; any pointerdown on a canvas starts it (handled in onDown) */
-if (REDUCED) {
-  sims.forEach(function (s) {
-    s.frame = (function (orig) {
-      return function (dt) {
-        if (!this.running) { // draw one static frame so the canvas isn't blank
-          if (!this._drewStatic && this.visible) {
-            var cx = this.cx;
-            cx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-            this.draw(cx, this.world);
-            this._drewStatic = true;
-          }
-          return;
-        }
-        orig.call(this, dt);
-      };
-    })(s.frame);
-  });
-}
 })();
 </script>
 

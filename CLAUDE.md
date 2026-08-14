@@ -5,7 +5,13 @@ principles; this file refines them for this project.
 
 ## What this project is about
 
-One or two sentences. Fill in when the project stops being exploratory.
+Learn RL by building a fast, vectorized 2D physics game engine: a hex/triangular
+lattice of point masses solved XPBD-style (error tolerance traded for speed),
+where embodied agents manipulate their 6 edges (push = actuate bond rest length,
+glue/unglue = create/destroy bonds) to build bodies, locomote, and compete.
+Simple element-type "chemistry" (bond-affinity matrix + energy) drives foraging
+and competition. Curriculum: engine → scripted agents → single-agent locomotion
+RL → construction → multi-agent self-play.
 
 ## Layout (see user CLAUDE.md for the full rationale)
 
@@ -46,7 +52,8 @@ down or explicitly flag the need to raise a ceiling.
 
 ## Project-specific facts
 
-- Primary language: (fill in)
+- Primary language: Python (JAX for the vectorized solver + RL loop);
+  browser demos in plain JS in `docs/`.
 - Environment: managed by `uv`; run `make env` to sync.
 - Data: tracked by DVC. Large artifacts on SN850X via `~/projects/`.
 

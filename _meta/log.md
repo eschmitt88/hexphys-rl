@@ -15,3 +15,8 @@ skills; read by `/lint`.
 2026-08-14 21:00 fetch-paper arXiv 2212.07906 (Flow-Lenia) → raw/papers/plantec2022flow.pdf
 2026-08-14 21:00 fetch-paper arXiv 2311.16080 (XLB) → raw/papers/ataei2023xlb.pdf
 2026-08-14 21:00 fetch-paper dgp.toronto.edu ns.pdf (Stable Fluids) → raw/papers/stam1999stable.pdf
+2026-08-14 21:12 ingest raw/papers/stam1999stable.pdf → literature/papers/stam1999stable.md
+2026-08-14 21:12 ingest raw/papers/frans2022powderworld.pdf → literature/papers/frans2022powderworld.md
+2026-08-14 21:12 ingest raw/papers/plantec2022flow.pdf → literature/papers/plantec2022flow.md
+2026-08-14 21:12 ingest raw/papers/ataei2023xlb.pdf → literature/papers/ataei2023xlb.md
+2026-08-14 21:12 ingest seeded 13 Eulerian-track concepts; solver MoC now cross-track and ripe

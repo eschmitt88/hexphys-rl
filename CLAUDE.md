@@ -13,6 +13,14 @@ Simple element-type "chemistry" (bond-affinity matrix + energy) drives foraging
 and competition. Curriculum: engine → scripted agents → single-agent locomotion
 RL → construction → multi-agent self-play.
 
+Sibling track — **Eulerian gym**: fixed-grid field world (falling-sand CA /
+Stable-Fluids projection / lattice-Boltzmann), agents embodied as cell-entities,
+field creatures, or force fields; discrete local actions → the DQN/value-based
+half of the curriculum, image-like observations, field-native chemistry
+(reaction-diffusion). Same meta-lessons: fixed computation graph → vmap fleets;
+deliberate under-convergence (Jacobi pressure iterations ↔ XPBD iterations) as
+the speed dial.
+
 ## Layout (see user CLAUDE.md for the full rationale)
 
 - `raw/` — immutable source material. Read only.

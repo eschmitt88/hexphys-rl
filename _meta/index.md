@@ -20,10 +20,13 @@ and `/new-experiment`.
   [[under-converged-pressure-projection]],
   [[unconditional-stability-via-dissipation]] (natural spine),
   [[bgk-collision-stability-limit]]. **Ripe for `/promote-moc` now.**
-- **MoC candidate — Eulerian gym design** (forming): [[lbm-collide-stream]],
+- **MoC candidate — Eulerian gym design** (growing; now top-down per
+  ADR 0001): [[lbm-collide-stream]],
   [[mass-conservative-ca-flow]], [[conservation-induced-localization]],
   [[density-ordered-gravity-swap]], [[sparse-pairwise-reaction-table]],
-  [[action-interface-locality]], [[local-parameter-embedding-in-field]].
+  [[action-interface-locality]], [[local-parameter-embedding-in-field]],
+  [[axial-hex-storage]], [[virtual-pipe-shallow-water]],
+  [[outflow-scaling-clamp]].
 
 ## Literature
 
@@ -47,6 +50,10 @@ Eulerian track:
   localized field creatures.
 - [[ataei2023xlb]] — XLB (rel 4, cred 4): LBM in JAX; throughput +
   stability data.
+- [[mei2007fast]] — Pipe-model erosion (rel 5, cred 4): the top-down
+  water layer's exact scheme (ADR 0001).
+- [[redblobgames-hexagons]] — hex-grid reference (rel 4): axial storage,
+  D₆ symmetry, the map module's spec.
 
 ## Active experiments
 

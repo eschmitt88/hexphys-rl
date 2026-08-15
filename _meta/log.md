@@ -23,3 +23,6 @@ skills; read by `/lint`.
 2026-08-15 02:25 fetch-paper inria-00402079 (Mei pipe-model erosion) → raw/papers/mei2007fast.pdf
 2026-08-15 02:26 fetch-paper redblobgames.com/grids/hexagons → raw/web/redblobgames-hexagons.md
 2026-08-15 02:27 ingest raw/web/redblobgames-hexagons.md → literature/posts/redblobgames-hexagons.md
+2026-08-15 02:40 ingest raw/papers/mei2007fast.pdf → literature/papers/mei2007fast.md
+2026-08-15 02:40 ingest seeded 3 concepts (axial-hex-storage, virtual-pipe-shallow-water, outflow-scaling-clamp)
+2026-08-15 02:40 ADR 0001 top-down hex arena; CLAUDE.md mission updated

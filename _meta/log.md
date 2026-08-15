@@ -20,3 +20,6 @@ skills; read by `/lint`.
 2026-08-14 21:12 ingest raw/papers/plantec2022flow.pdf → literature/papers/plantec2022flow.md
 2026-08-14 21:12 ingest raw/papers/ataei2023xlb.pdf → literature/papers/ataei2023xlb.md
 2026-08-14 21:12 ingest seeded 13 Eulerian-track concepts; solver MoC now cross-track and ripe
+2026-08-15 02:25 fetch-paper inria-00402079 (Mei pipe-model erosion) → raw/papers/mei2007fast.pdf
+2026-08-15 02:26 fetch-paper redblobgames.com/grids/hexagons → raw/web/redblobgames-hexagons.md
+2026-08-15 02:27 ingest raw/web/redblobgames-hexagons.md → literature/posts/redblobgames-hexagons.md

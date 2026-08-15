@@ -180,7 +180,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
           </div>
           <p class="note" id="rep-note" style="margin-bottom:0"></p>
         </div>
-        <p class="note" style="margin-top:1rem">Theory guarantee: one linear fluid ⇒ the exact reduced model is the symmetric, row-sum-zero G in the heatmap. Conductances are referenced to seam <em>midpoints</em> (half-edge drive) and fit from 15 two-port through-transport experiments with the other seams insulated — the literal quantity the coarse series pairing uses, immune to the rim-shortcut bias that plagued the all-seams-clamped G identification. The coarse runtime uses the star reduction; <strong>star fit %</strong> says how much survives. Seams make directional elements buildable in v2 — though a rim cell can still carry edges of two seams where they meet, so ports are exact per-<em>edge</em>, approximate per-cell.</p>
+        <p class="note" style="margin-top:1rem">Theory guarantee: one linear fluid ⇒ the exact reduced model is the symmetric, row-sum-zero G in the heatmap. The runtime conductances are <strong>chain-calibrated</strong>: for each direction, real 2-tile and 3-tile composites of the element are simulated at full resolution and the per-hop conductance extracted by length-differencing (1/g = 1/T₃ − 1/T₂), which cancels end effects exactly and bakes in the seam physics that single-tile experiments miss. The star-fit % (from two-port probes) still reports how much cross-seam structure the reduction discards. The coarse runtime uses the star reduction; <strong>star fit %</strong> says how much survives. Seams make directional elements buildable in v2 — though a rim cell can still carry edges of two seams where they meet, so ports are exact per-<em>edge</em>, approximate per-cell.</p>
       </div>
     </div>
   </div>
@@ -214,11 +214,15 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap">
     <p class="eyebrow">Station 03 · the reckoning</p>
     <h2>Twin test — surrogate vs ground truth</h2>
-    <p>The same world, run both ways in lockstep. Left: the full fine simulation — in v2 this is <strong>one genuine hex lattice</strong>: 61 flowers stamped into a single 2,257-cell grid, zero seams faked. Look at the packing: the flowers visibly spiral at 25.3° — that's the aperture-37 rotation, the price and the proof of exact hex-in-hex nesting. Right: the 61-number surrogate on the coarse axes. Error compares per-tile mean head; speed is measured wall time per step.</p>
+    <p>The same world, run both ways in lockstep. Left: the full fine simulation — <strong>one genuine hex lattice</strong> (61 flowers, 2,257 cells, zero seams faked), rotated and scaled so every flower lands exactly on its surrogate hex: the two views are point-for-point comparable, and the individual cells' 25.3° tilt inside each flower is the aperture-37 rotation made visible. Right: the 61-number surrogate. The <strong>runtime toggle</strong> switches the surrogate between the chain-calibrated star (default; best measured fidelity) and the full-G interface solver (Jacobi sweeps on seam heads — stronger for cross-seam router elements, but its uniform-seam assumption over-mixes on open ground). The sparkline tracks error over time, so a transient spike is never mistaken for steady-state bias. Error compares per-tile mean head; speed is measured wall time per step.</p>
     <div class="demo">
       <div class="bar">
         <button class="btn primary" id="tw-build" type="button">⟳ Rebuild twins from world</button>
+        <span class="note">runtime:</span>
+        <button class="btn" id="mode-star" aria-pressed="true" type="button">star</button>
+        <button class="btn" id="mode-G" aria-pressed="false" type="button">full-G</button>
         <span class="grow"></span>
+        <canvas id="cv-errspark" width="140" height="26" style="border:1px solid var(--line);border-radius:5px"></canvas>
         <output id="tw-err">error ·</output>
         <output id="tw-speed">speed ·</output>
       </div>
@@ -241,11 +245,11 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
         <h3>This has a name</h3>
         <p>Auto-characterizing a microstructure into an effective element is <strong>computational homogenization</strong> (RVE/FE² in FEA; Darcy upscaling in porous media; Thévenin reduction in circuits). With one linear fluid the reduced law is provably linear — G is exact — so the only modeling error is the star simplification at runtime. Real empiricism starts with nonlinear physics (drying, inertia, chemistry): then the sweep fits response surfaces, and tiles with storage hysteresis need internal state variables.</p>
         <h3>Known limits, by design</h3>
-        <p>① The star model drops cross-seam steering — even an open flower star-fits only partially, because diffusion favors adjacent seams over far ones; the twin test exposes the consequences. ② Characterization probes tiles in isolation; neighbors impose correlated boundary conditions the ensemble never saw (the closure problem — the fundamental error of all homogenization). ③ <s>Hexagons don't tile hexagons</s> — solved: radius-R flowers (3R²+3R+1 cells, always a Löschian number) tile the plane exactly on a rotated superlattice; v2 runs on it, and the composite build asserts zero cell collisions as a live proof. What remains: seams meet at rim cells, so a cell can carry edges of two seams — ports are exact per-edge, approximate per-cell.</p>
+        <p>① Identification is everything, and we learned it twice. Single-tile probes with clamped seams over-mix (a uniform-head seam is a perfect conductor along its own line) — first the star fit to G leaked 32% on open ground, then even the exact-G runtime leaked 18%, because G itself was measured under uniform-seam conditions the composite never provides. Chain calibration — measuring real 2- and 3-tile composites and length-differencing — cuts the open-world error to ~8% and dam worlds to ~1%. The residual is cross-seam structure and seam-head non-uniformity; the next rung is multi-node seam interfaces (mortar bases). ② Characterization probes tiles in isolation; neighbors impose correlated boundary conditions the ensemble never saw (the closure problem — the fundamental error of all homogenization). ③ <s>Hexagons don't tile hexagons</s> — solved: radius-R flowers (3R²+3R+1 cells, always a Löschian number) tile the plane exactly on a rotated superlattice; v2 runs on it, and the composite build asserts zero cell collisions as a live proof. What remains: seams meet at rim cells, so a cell can carry edges of two seams — ports are exact per-edge, approximate per-cell.</p>
       </div>
       <div>
         <h3>Where it goes</h3>
-        <p><strong>Full-G runtime:</strong> solve seam-interface heads with a few Jacobi sweeps per step — the same under-convergence dial as everything else in this project — recovering cross-seam routing at coarse scale.</p>
+        <p><strong>Multi-node seams:</strong> the full-G interface runtime is built (toggle it in the twin test) — the next fidelity rung is 2–3 head unknowns per seam (mean + tilt), characterized against tilt modes, to lift the uniform-seam assumption that limits both current modes.</p>
         <p><strong>Level 3:</strong> a 61-flower world is itself a patch of a hexagonal supergrid — characterize it with the identical procedure (aperture 37 again, another 25.3° of rotation) and measure how error compounds per level. That number decides the whole game.</p>
         <p><strong>Nonlinear castings:</strong> swap the fine fluid for the pipe model with drying and refit — the first genuinely empirical elements.</p>
         <p><strong>RL hook:</strong> "design a tile whose G approximates a target" is inverse design with a 37-bit action space and the twin error as a free reward.</p>
@@ -401,12 +405,82 @@ function seamFlux(walls, c, bc) {
   return out;
 }
 
+/* ---------- composite chain conductance: the truth-teller experiment ----------
+   Build a real 2- or 3-tile chain in the actual tiling, drive far end to far end,
+   measure through-flux. 1/g = 1/T3 - 1/T2 cancels end effects exactly, so g is the
+   true per-hop conductance INCLUDING seam non-uniformity (which uniform-head
+   single-tile experiments over-mix). */
+var chainGeomCache = {};
+function chainT(walls, d, n) {
+  var Rn = 7 * (n - 1) + 6;
+  var key = 'g' + Rn;
+  var fm = chainGeomCache[key] || (chainGeomCache[key] = makeMap(Rn, 1));
+  var used = new Uint8Array(fm.N), gw = new Uint8Array(fm.N);
+  var tiles = [];
+  for (var t = 0; t < n; t++) {
+    var P = [NV[d][0] * t, NV[d][1] * t];
+    var arr = [];
+    for (var i = 0; i < localOffsetsChain.length; i++) {
+      var g = mapIdx(fm, P[0] + localOffsetsChain[i][0], P[1] + localOffsetsChain[i][1]);
+      arr.push(g);
+      used[g] = 1;
+      var tk = mapIdx(tileGeom, localOffsetsChain[i][0], localOffsetsChain[i][1]);
+      if (walls[tk]) gw[g] = 1;
+    }
+    tiles.push(arr);
+  }
+  var ul = [];
+  for (var g2 = 0; g2 < fm.N; g2++) if (used[g2]) ul.push(g2);
+  var c = new Float32Array(fm.N);
+  // drive edges: tile0 seam (d+3) at h=1, tile n-1 seam d at h=0 (2K half-edges)
+  function driveCells(tileIdx, seam) {
+    var P = [NV[d][0] * tileIdx, NV[d][1] * tileIdx], out = [];
+    for (var i = 0; i < SEAM[seam].length; i++) {
+      var lqr = decode(tileGeom, SEAM[seam][i].k);
+      var g = mapIdx(fm, P[0] + lqr[0], P[1] + lqr[1]);
+      if (g >= 0 && !gw[g]) out.push(g);
+    }
+    return out;
+  }
+  var inCells = driveCells(0, (d + 3) % 6), outCells = driveCells(n - 1, d);
+  if (!inCells.length || !outCells.length) return 0;
+  var maxT = n === 2 ? 4000 : 8000;
+  var Tin = 0, Tout = 0;
+  for (var tick = 0; tick < maxT; tick++) {
+    var li, k2, dd, nk;
+    var dc = chainT._d && chainT._d.length === fm.N ? chainT._d : (chainT._d = new Float32Array(fm.N));
+    dc.fill(0);
+    for (li = 0; li < ul.length; li++) {
+      k2 = ul[li];
+      if (gw[k2]) continue;
+      for (dd = 0; dd < 3; dd++) {
+        nk = k2 + fm.shifts[dd];
+        if (!used[nk] || gw[nk]) continue;
+        var f = K * (c[k2] - c[nk]);
+        dc[k2] -= f; dc[nk] += f;
+      }
+    }
+    for (li = 0; li < inCells.length; li++) dc[inCells[li]] += 2 * K * (1 - c[inCells[li]]);
+    for (li = 0; li < outCells.length; li++) dc[outCells[li]] += 2 * K * (0 - c[outCells[li]]);
+    for (li = 0; li < ul.length; li++) { k2 = ul[li]; c[k2] += dc[k2]; }
+    if (tick % 500 === 499) {
+      Tin = 0; Tout = 0;
+      for (li = 0; li < inCells.length; li++) Tin += 2 * K * (1 - c[inCells[li]]);
+      for (li = 0; li < outCells.length; li++) Tout += 2 * K * c[outCells[li]];
+      if (Tin > 1e-9 && Math.abs(Tin - Tout) / Tin < 0.01) break;
+    }
+  }
+  return Math.max(0, (Tin + Tout) / 2);
+}
+var localOffsetsChain = [];
+forEachValid(tileGeom, function (k) { localOffsetsChain.push(decode(tileGeom, k)); });
+
 /* ---------- characterization ---------- */
 function characterize(walls) {
   var m = tileGeom;
   var cap = 0;
   forEachValid(m, function (k) { if (!walls[k]) cap++; });
-  if (cap === 0) return { cap: 0, k: [0, 0, 0, 0, 0, 0], G: null, starFit: 1, lin: 0, walls: walls.slice() };
+  if (cap === 0) return { cap: 0, k: [0, 0, 0, 0, 0, 0], G: null, M: null, starFit: 1, lin: 0, walls: walls.slice() };
   var G = [];
   for (var j = 0; j < 6; j++) {
     var bc = [0, 0, 0, 0, 0, 0]; bc[j] = 1;
@@ -479,6 +553,18 @@ function characterize(walls) {
     den += P[i][j] * P[i][j];
   }
   var starFit = den > 1e-12 ? Math.max(0, 1 - Math.sqrt(num / den)) : 1;
+  // runtime k comes from composite-chain calibration (per direction, d and d+3 equal
+  // by reciprocity): the closure principle — calibrate in the conditions you run in
+  for (var dch = 0; dch < 3; dch++) {
+    var T2 = chainT(walls, dch, 2), T3 = chainT(walls, dch, 3);
+    var gch;
+    if (T2 < 1e-9 || T3 < 1e-9) gch = 0;
+    else {
+      var inv = 1 / T3 - 1 / T2;
+      gch = inv > 1e-9 ? 1 / inv : T2;
+    }
+    ks[dch] = ks[dch + 3] = 2 * gch;
+  }
   var bcTest = [1, 0.2, 0.7, 0, 0.5, 0.9];
   var c2 = new Float32Array(m.N);
   for (var t2 = 0; t2 < 900; t2++) tileStep(walls, c2, bcTest);
@@ -491,7 +577,18 @@ function characterize(walls) {
     lden += meas[i] * meas[i];
   }
   var lin = lden > 1e-12 ? Math.sqrt(lnum / lden) : 0;
-  return { cap: cap, k: ks, G: Gm, starFit: starFit, lin: lin, walls: walls.slice() };
+  // M = G - S: the through-transport G carries minus what the star already carries,
+  // so the runtime model F = M·u + k(u - h_storage) is EXACT at steady state (F -> G·u)
+  var Ts = ks.reduce(function (a, b) { return a + b; }, 0);
+  var Mm = [];
+  for (i = 0; i < 6; i++) {
+    Mm.push([]);
+    for (j = 0; j < 6; j++) {
+      var Sij = Ts > 1e-12 ? (i === j ? ks[i] * (1 - ks[i] / Ts) : -ks[i] * ks[j] / Ts) : 0;
+      Mm[i].push(Gm[i][j] - Sij);
+    }
+  }
+  return { cap: cap, k: ks, G: Gm, M: Mm, starFit: starFit, lin: lin, walls: walls.slice() };
 }
 
 /* ---------- element registry ---------- */
@@ -689,50 +786,118 @@ document.getElementById('t-char').addEventListener('click', function () {
   });
 });
 
-/* ---------- STATION 2: coarse world (abstract supergrid axes) ---------- */
+/* ---------- coarse network runtime: 'G' (exact steady, interface Jacobi) | 'star' ---------- */
 var WORLD_R = 4;
 var worldGeom = makeMap(WORLD_R, 27);
-var world = {
-  elem: new Int16Array(worldGeom.N),
-  role: new Uint8Array(worldGeom.N),
-  C: new Float32Array(worldGeom.N)
-};
-function worldReset() {
-  world.elem.fill(0); world.role.fill(0); world.C.fill(0);
-  var src = mapIdx(worldGeom, -WORLD_R + 1, 0), drn = mapIdx(worldGeom, WORLD_R - 1, 0);
-  world.role[src] = 1; world.role[drn] = 2;
+var runtimeMode = 'star';   // chain-calibrated star: best measured fidelity (see notes)
+var G_SWEEPS = 6;
+
+function CoarseNet() {
+  this.elem = new Int16Array(worldGeom.N);
+  this.role = new Uint8Array(worldGeom.N);
+  this.C = new Float32Array(worldGeom.N);
+  this.rebuild();
 }
-worldReset();
-var pBrush = '0';
-function coarseFluxPairs(elemArr) {
+CoarseNet.prototype.copyConfig = function (o) {
+  this.elem.set(o.elem); this.role.set(o.role); this.C.fill(0); this.rebuild();
+};
+CoarseNet.prototype.rebuild = function () {
+  var self = this;
   var pairs = [];
   forEachValid(worldGeom, function (k) {
     for (var d = 0; d < 3; d++) {
       var nk = k + worldGeom.shifts[d];
       if (nk < 0 || nk >= worldGeom.N || !worldGeom.valid[nk]) continue;
-      var ea = elements[elemArr[k]], eb = elements[elemArr[nk]];
+      var ea = elements[self.elem[k]], eb = elements[self.elem[nk]];
       var ka = ea.k[d], kb = eb.k[(d + 3) % 6];
       if (ka < 1e-6 || kb < 1e-6 || ea.cap === 0 || eb.cap === 0) continue;
       pairs.push([k, nk, (ka * kb) / (ka + kb)]);
     }
   });
-  return pairs;
-}
-function coarseStep(st, pairs, dt) {
-  var dC = coarseStep._d || (coarseStep._d = new Float32Array(worldGeom.N));
-  dC.fill(0);
+  this.pairs = pairs;
+  // interface heads: one unknown per open (cell, seam); shared where both sides are open
+  var ifaceOf = {}, ifaces = [];
+  forEachValid(worldGeom, function (k) {
+    if (elements[self.elem[k]].cap === 0) return;
+    for (var d = 0; d < 6; d++) {
+      if (ifaceOf[k * 6 + d] != null) continue;
+      var nk = k + worldGeom.shifts[d];
+      var shared = nk >= 0 && nk < worldGeom.N && worldGeom.valid[nk] && elements[self.elem[nk]].cap > 0;
+      var id = ifaces.length;
+      if (shared) {
+        ifaces.push({ a: k, da: d, b: nk, db: (d + 3) % 6 });
+        ifaceOf[k * 6 + d] = id; ifaceOf[nk * 6 + ((d + 3) % 6)] = id;
+      } else {
+        ifaces.push({ a: k, da: d, b: -1, db: -1 });   // insulated boundary: solve F = 0
+        ifaceOf[k * 6 + d] = id;
+      }
+    }
+  });
+  this.ifaces = ifaces; this.ifaceOf = ifaceOf;
+  this.u = new Float32Array(ifaces.length);
+};
+CoarseNet.prototype.step = function (dt) {
+  if (runtimeMode === 'star') this.stepStar(dt); else this.stepG(dt);
+  var self = this;
+  forEachValid(worldGeom, function (kk) {
+    if (self.role[kk] === 1 && elements[self.elem[kk]].cap > 0) self.C[kk] += 1.2 * dt;
+    if (self.C[kk] < 0) self.C[kk] = 0;
+    if (self.role[kk] === 2) self.C[kk] = 0;
+  });
+};
+CoarseNet.prototype.stepStar = function (dt) {
+  var pairs = this.pairs;
   for (var i = 0; i < pairs.length; i++) {
     var a = pairs[i][0], b = pairs[i][1], g = pairs[i][2];
-    var ha = st.C[a] / elements[st.elem[a]].cap, hb = st.C[b] / elements[st.elem[b]].cap;
+    var ha = this.C[a] / elements[this.elem[a]].cap, hb = this.C[b] / elements[this.elem[b]].cap;
     var f = g * (ha - hb) * dt;
-    dC[a] -= f; dC[b] += f;
+    this.C[a] -= f; this.C[b] += f;
   }
-  forEachValid(worldGeom, function (kk) {
-    if (st.role[kk] === 1 && elements[st.elem[kk]].cap > 0) dC[kk] += 1.2 * dt;
-    st.C[kk] = Math.max(0, st.C[kk] + dC[kk]);
-    if (st.role[kk] === 2) st.C[kk] = 0;
+};
+CoarseNet.prototype.stepG = function (dt) {
+  var self = this, u = this.u, ifs = this.ifaces, io = this.ifaceOf;
+  // F into tile through port d, as c + a·u_d given current other-port heads
+  function coef(cell, d, out) {
+    var el = elements[self.elem[cell]];
+    var Mrow = el.M[d], kd = el.k[d];
+    var hc = self.C[cell] / el.cap;
+    var c = -kd * hc;
+    for (var j = 0; j < 6; j++) {
+      if (j === d) continue;
+      var idj = io[cell * 6 + j];
+      c += Mrow[j] * (idj != null ? u[idj] : hc);
+    }
+    out.a = Mrow[d] + kd;
+    out.c = c;
+  }
+  var oA = { a: 0, c: 0 }, oB = { a: 0, c: 0 };
+  for (var sw = 0; sw < G_SWEEPS; sw++) {
+    for (var n = 0; n < ifs.length; n++) {
+      var f = ifs[n], newU;
+      coef(f.a, f.da, oA);
+      if (f.b >= 0) {
+        coef(f.b, f.db, oB);
+        var den = oA.a + oB.a;
+        newU = Math.abs(den) > 1e-9 ? -(oA.c + oB.c) / den : u[n];
+      } else {
+        newU = Math.abs(oA.a) > 1e-9 ? -oA.c / oA.a : self.C[f.a] / elements[self.elem[f.a]].cap;
+      }
+      u[n] += 0.8 * (newU - u[n]);
+    }
+  }
+  // only the star term charges storage; M's column sums are 0, so conservation is exact
+  forEachValid(worldGeom, function (k) {
+    var el = elements[self.elem[k]];
+    if (el.cap === 0) return;
+    var hc = self.C[k] / el.cap, sum = 0;
+    for (var d = 0; d < 6; d++) {
+      var id = io[k * 6 + d];
+      if (id != null) sum += el.k[d] * (u[id] - hc);
+    }
+    self.C[k] += sum * dt;
   });
-}
+};
+
 function drawCoarse(st, ctx, geom, showGlyph) {
   forEachValid(geom, function (k) {
     var el = elements[st.elem[k]];
@@ -763,7 +928,17 @@ function drawCoarse(st, ctx, geom, showGlyph) {
     }
   });
 }
-var worldPairs = coarseFluxPairs(world.elem);
+
+/* ---------- STATION 2: coarse world ---------- */
+var worldNet = new CoarseNet();
+function worldReset() {
+  worldNet.elem.fill(0); worldNet.role.fill(0); worldNet.C.fill(0);
+  worldNet.role[mapIdx(worldGeom, -WORLD_R + 1, 0)] = 1;
+  worldNet.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
+  worldNet.rebuild();
+}
+worldReset();
+var pBrush = '0';
 var worldSim = new Sim('cv-world', worldGeom.w, worldGeom.h, {
   rate: 30,
   reset: function () {},
@@ -771,22 +946,22 @@ var worldSim = new Sim('cv-world', worldGeom.w, worldGeom.h, {
     if (s.pointer.down) {
       var k = pixelToHex(worldGeom, s.pointer.x, s.pointer.y);
       if (k >= 0) {
-        if (pBrush === 'src') { world.role[k] = world.role[k] === 1 ? 0 : 1; s.pointer.down = false; }
-        else if (pBrush === 'drn') { world.role[k] = world.role[k] === 2 ? 0 : 2; s.pointer.down = false; }
+        if (pBrush === 'src') { worldNet.role[k] = worldNet.role[k] === 1 ? 0 : 1; s.pointer.down = false; }
+        else if (pBrush === 'drn') { worldNet.role[k] = worldNet.role[k] === 2 ? 0 : 2; s.pointer.down = false; }
         else {
           var pi = +pBrush;
-          if (elements[pi] && world.elem[k] !== pi) { world.elem[k] = pi; world.C[k] = 0; worldPairs = coarseFluxPairs(world.elem); }
+          if (elements[pi] && worldNet.elem[k] !== pi) { worldNet.elem[k] = pi; worldNet.C[k] = 0; worldNet.rebuild(); }
         }
       }
     }
-    coarseStep(world, worldPairs, 1);
+    worldNet.step(1);
     var tot = 0;
-    forEachValid(worldGeom, function (kk) { tot += world.C[kk]; });
+    forEachValid(worldGeom, function (kk) { tot += worldNet.C[kk]; });
     document.getElementById('b-out').textContent = 'fluid ' + tot.toFixed(0);
   },
   draw: function (s, ctx) {
     ctx.fillStyle = css['--panel']; ctx.fillRect(0, 0, s.w, s.h);
-    drawCoarse(world, ctx, worldGeom, true);
+    drawCoarse(worldNet, ctx, worldGeom, true);
   }
 });
 Array.prototype.forEach.call(document.querySelectorAll('button.pbrush'), function (b) {
@@ -797,20 +972,20 @@ Array.prototype.forEach.call(document.querySelectorAll('button.pbrush'), functio
     });
   });
 });
-document.getElementById('b-reset').addEventListener('click', function () {
-  worldReset(); worldPairs = coarseFluxPairs(world.elem);
-});
+document.getElementById('b-reset').addEventListener('click', function () { worldReset(); });
 
-/* ---------- STATION 3: twin test on ONE true lattice ---------- */
+/* ---------- STATION 3: twin test — fine view rotated/scaled onto the surrogate frame ---------- */
 var FINE_R = 31;
-var fineGeom = makeMap(FINE_R, 4.1);
+var FINE_SZ = 27 / Math.sqrt(37);        // flower-center spacing matches the coarse cell spacing
+var fineGeom = makeMap(FINE_R, FINE_SZ);
+var FINE_ROT = -Math.atan2(1.5 * NV[0][1], SQ3 * (NV[0][0] + NV[0][1] / 2));  // ≈ -25.28°
 var tileN = tileGeom.N;
 var localOffsets = [];
 forEachValid(tileGeom, function (k) { localOffsets.push(decode(tileGeom, k)); });
 var twin = null;
 function buildTwins() {
-  var tc = { elem: world.elem.slice(), role: world.role.slice(), C: new Float32Array(worldGeom.N) };
-  var pairs = coarseFluxPairs(tc.elem);
+  var tc = new CoarseNet();
+  tc.copyConfig(worldNet);
   var cellIds = [];
   forEachValid(worldGeom, function (k) { cellIds.push(k); });
   var used = new Uint8Array(fineGeom.N);
@@ -820,7 +995,7 @@ function buildTwins() {
   cellIds.forEach(function (wk) {
     var qr = decode(worldGeom, wk);
     var P = superCenter(qr[0], qr[1]);
-    var el = elements[world.elem[wk]];
+    var el = elements[worldNet.elem[wk]];
     var arr = new Int32Array(localOffsets.length);
     for (var i = 0; i < localOffsets.length; i++) {
       var g = mapIdx(fineGeom, P[0] + localOffsets[i][0], P[1] + localOffsets[i][1]);
@@ -836,11 +1011,11 @@ function buildTwins() {
   var usedList = [];
   for (var g2 = 0; g2 < fineGeom.N; g2++) if (used[g2]) usedList.push(g2);
   twin = {
-    tc: tc, pairs: pairs, cellIds: cellIds,
+    tc: tc, cellIds: cellIds,
     used: used, gwalls: gwalls, tileCells: tileCells, usedList: usedList,
     fineC: new Float32Array(fineGeom.N),
     collisions: collisions,
-    steps: 0, msFine: 0, msCoarse: 0
+    steps: 0, msFine: 0, msCoarse: 0, errHist: []
   };
   return twin;
 }
@@ -889,7 +1064,25 @@ function twinError(tw) {
   }
   return num / den;
 }
-var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
+function drawSpark() {
+  var cv = document.getElementById('cv-errspark');
+  if (!cv || !twin) return;
+  var ctx2 = cv.getContext('2d');
+  ctx2.clearRect(0, 0, cv.width, cv.height);
+  ctx2.fillStyle = css['--panel2']; ctx2.fillRect(0, 0, cv.width, cv.height);
+  var h = twin.errHist;
+  if (h.length < 2) return;
+  var mx = Math.max(0.2, Math.max.apply(null, h));
+  ctx2.strokeStyle = css['--accent']; ctx2.lineWidth = 1.4;
+  ctx2.beginPath();
+  for (var i = 0; i < h.length; i++) {
+    var x = i / (h.length - 1) * (cv.width - 4) + 2;
+    var y = cv.height - 3 - (h[i] / mx) * (cv.height - 8);
+    if (i === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
+  }
+  ctx2.stroke();
+}
+var twinFine = new Sim('cv-fine', worldGeom.w, worldGeom.h, {
   rate: 30,
   reset: function () {},
   tick: function () {
@@ -898,16 +1091,19 @@ var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
     fineStep(twin);
     twin.msFine += performance.now() - t0;
     var t1 = performance.now();
-    coarseStep(twin.tc, twin.pairs, 1);
+    twin.tc.step(1);
     twin.msCoarse += performance.now() - t1;
     twin.steps++;
     if (twin.steps % 15 === 0) {
       var err = twinError(twin);
+      twin.errHist.push(err);
+      if (twin.errHist.length > 160) twin.errHist.shift();
       document.getElementById('tw-err').textContent = 'error ' + (err * 100).toFixed(1) + '%';
       var ratio = twin.msCoarse > 0 ? twin.msFine / twin.msCoarse : 0;
       document.getElementById('tw-speed').textContent =
         'fine ' + (twin.msFine / twin.steps).toFixed(2) + ' ms/step · coarse ' +
-        (twin.msCoarse / twin.steps).toFixed(3) + ' ms/step · ' + ratio.toFixed(0) + '× speedup';
+        (twin.msCoarse / twin.steps).toFixed(3) + ' ms/step · ' + ratio.toFixed(0) + '×';
+      drawSpark();
     }
   },
   draw: function (s, ctx) {
@@ -917,6 +1113,11 @@ var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
       ctx.fillText('press ⟳ to build the twins from the world above', s.w / 2, s.h / 2);
       return;
     }
+    // rotate/scale the fine lattice so flower centers land exactly on the surrogate's hexes
+    ctx.save();
+    ctx.translate(s.w / 2, s.h / 2);
+    ctx.rotate(FINE_ROT);
+    ctx.translate(-fineGeom.ox, -fineGeom.oy);
     var m = fineGeom, ul = twin.usedList;
     for (var li = 0; li < ul.length; li++) {
       var k = ul[li];
@@ -928,7 +1129,6 @@ var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
       hexPath(ctx, m.cx[k], m.cy[k], m.sz * 0.92);
       ctx.fill();
     }
-    // flower outlines — the rotated packing made visible
     ctx.strokeStyle = alphaColor('#4E463A', 0.4); ctx.lineWidth = 0.7;
     for (var ci = 0; ci < twin.cellIds.length; ci++) {
       var qr = decode(worldGeom, twin.cellIds[ci]);
@@ -944,6 +1144,7 @@ var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
         }
       }
     }
+    ctx.restore();
   }
 });
 var twinCoarse = new Sim('cv-coarse', worldGeom.w, worldGeom.h, {
@@ -959,6 +1160,15 @@ var twinCoarse = new Sim('cv-coarse', worldGeom.w, worldGeom.h, {
 document.getElementById('tw-build').addEventListener('click', function () {
   buildTwins();
   twinFine.running = true; twinCoarse.running = true;
+});
+['G', 'star'].forEach(function (mode) {
+  document.getElementById('mode-' + mode).addEventListener('click', function () {
+    runtimeMode = mode;
+    ['G', 'star'].forEach(function (mm) {
+      document.getElementById('mode-' + mm).setAttribute('aria-pressed', mm === mode ? 'true' : 'false');
+    });
+    if (twin) { twin.errHist = []; }
+  });
 });
 
 /* ---------- main loop ---------- */

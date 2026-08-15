@@ -31,3 +31,4 @@ skills; read by `/lint`.
 2026-08-15 04:20 concept: flower tiling (aperture 3R²+3R+1) recorded as the hex-nesting fix for Foundry v2
 2026-08-15 05:10 foundry v2: aperture-37 flower tiling + seam characterization; twin 14.7% err @ 26x; tiling exactness asserted in harness
 2026-08-15 05:50 foundry v2.1: two-port identification fix — twin error 50%→2.0% steady, channel directionality 2.3x→1783x
+2026-08-15 07:10 foundry v2.2: user-found 32% steady leak → chain-calibrated conductances (all-open 7.6%, dam 1.2%); full-G runtime + mode toggle; fine view rotation-aligned

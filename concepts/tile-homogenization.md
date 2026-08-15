@@ -91,6 +91,34 @@ transient** (was 50% / 14.7%) at 26× speedup. General principle, the
 closure problem in miniature: *identify the surrogate under the boundary
 conditions it will actually run in.*
 
+## v2.2: the user's leak, chain calibration, and the G surprise
+
+User-reported 32% error on the default all-open world was real and steady
+(fine held 7,671 fluid units vs surrogate 5,306 — the surrogate ~1.45×
+too conductive). The dam benchmark had hidden it: bottleneck-dominated
+worlds are easy; homogeneous continua are the hard case. Two findings:
+
+1. **Even exact G over-mixes on composition.** Wiring the full 6×6 G into
+   the runtime (interface heads solved by warm-started under-relaxed
+   Jacobi; model F = (G−S)u + k(u−h_storage), exact at steady state,
+   conserving because G and S have zero column sums) only improved
+   all-open to ~18%: G itself was measured with uniform-head seams, and a
+   single scalar head per seam acts as a perfect conductor along the seam
+   line — free extra conductance under oblique flow.
+2. **Chain calibration fixes it.** Per direction, simulate real 2- and
+   3-tile composites of the element at full resolution and extract the
+   per-hop conductance by length-differencing (1/g = 1/T₃ − 1/T₂ — end
+   effects cancel exactly). Star runtime with chain-calibrated k:
+   all-open 7.6%, dam 1.2% at 12k steps, 33× speedup; open-tile
+   k = 0.303 (vs 0.44 from single-tile probes — the ~1.45× bias, found).
+
+Closure principle, now learned three times: calibrate the surrogate under
+the boundary conditions it actually runs in — and composite calibration
+beats any single-tile identification. Next fidelity rung: multi-node seam
+interfaces (mean + tilt mortar bases) to lift the uniform-seam assumption
+in both runtimes. Fine/coarse twin views are now rotation-aligned
+(fine view rotated −25.3°, sz = 27/√37) for point-for-point comparison.
+
 ## Connections
 
 - Next fidelity rung: full-G coarse runtime via under-converged interface

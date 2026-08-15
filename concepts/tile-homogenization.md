@@ -66,6 +66,31 @@ directionality (vs 1.8× with v1's overlapping sides); open-flower star fit
 truth: seams meet at rim cells, so ports are exact per-edge, approximate
 per-cell.
 
+## The identification lesson (v2.1 — the big one)
+
+The user called the twin "leaky" at 14.7% error; the diagnosis found the
+surrogate ~3× too conductive, and at quasi-steady state the error was
+actually 50%. Root cause: **G answers the wrong question for an RC
+network.** The all-seams-clamped G experiments let flux take rim shortcuts
+between adjacent clamped seams (2-3 cells), inflating G's diagonals ~3×
+over genuine through-tile transport; a star fitted to G builds a coarse
+network that transports ~3× too fast. Fix: identify the star from **15
+two-port through-transport experiments** — clamp seam i high, seam j low,
+other seams *insulated* (matching runtime conditions, where neighbors are
+not clamped shorts) — the literal quantity the coarse series pairing uses.
+Plus: half-edge (2K) referencing to seam midpoints so series pairing
+reconstructs each seam edge exactly; monotone grid-search star fitting
+(naive fixed-point iteration found degenerate alternating solutions); L2
+regularization to break the 2-port harmonic degeneracy symmetrically; and
+channel mouths built from *pure* seam cells (every outward edge in one
+seam) — junction rim cells leak to adjacent seams.
+
+Results after: channel directionality **1783×** (was 2.3×) with star fit
+99.9% — true 2-ports exist now; twin error **2.0% quasi-steady / 7.3%
+transient** (was 50% / 14.7%) at 26× speedup. General principle, the
+closure problem in miniature: *identify the surrogate under the boundary
+conditions it will actually run in.*
+
 ## Connections
 
 - Next fidelity rung: full-G coarse runtime via under-converged interface

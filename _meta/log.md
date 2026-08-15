@@ -30,3 +30,4 @@ skills; read by `/lint`.
 2026-08-15 04:05 foundry: multiscale prototype (docs/foundry.html) + tile-homogenization concept
 2026-08-15 04:20 concept: flower tiling (aperture 3R²+3R+1) recorded as the hex-nesting fix for Foundry v2
 2026-08-15 05:10 foundry v2: aperture-37 flower tiling + seam characterization; twin 14.7% err @ 26x; tiling exactness asserted in harness
+2026-08-15 05:50 foundry v2.1: two-port identification fix — twin error 50%→2.0% steady, channel directionality 2.3x→1783x

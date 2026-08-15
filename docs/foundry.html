@@ -27,8 +27,6 @@
   --accent2-ink: #285E65;
   --good: #3E8E4C;
   --bad: #C4453C;
-  --kbd-bg: #ECE7DE;
-  --kbd-line: #CFC7B8;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -44,8 +42,6 @@
     --accent2-ink: #6FBAC2;
     --good: #58C06A;
     --bad: #E06055;
-    --kbd-bg: #292521;
-    --kbd-line: #453E33;
   }
 }
 :root[data-theme="dark"] {
@@ -61,8 +57,6 @@
   --accent2-ink: #6FBAC2;
   --good: #58C06A;
   --bad: #E06055;
-  --kbd-bg: #292521;
-  --kbd-line: #453E33;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -118,6 +112,8 @@ button.btn:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px s
 .gwrap { display: flex; gap: 1.6rem; align-items: flex-start; flex-wrap: wrap; margin-top: .8rem; }
 .gwrap figure { margin: 0; font-size: .78rem; color: var(--muted); text-align: center; }
 .gwrap figcaption { margin-top: .3rem; }
+.seamchips { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; font-size: .82rem; color: var(--muted); }
+.seamchips i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; }
 footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--muted); font-size: .88rem; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
@@ -139,13 +135,13 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
 
 <header class="hero" id="top">
   <div class="wrap hero-copy">
-    <p class="eyebrow">Multi-scale prototype</p>
+    <p class="eyebrow">Multi-scale prototype · v2 — flower tiling</p>
     <h1>Invent an element.<br>Zoom out. It's just a block now.</h1>
-    <p class="sub">Design a tile of walls on the fine grid and it shapes how fluid moves through it. Press <strong>characterize</strong>: the tile is probed under an ensemble of boundary conditions and reduced to an empirical element equation. Build a world out of your invented elements and the coarse simulation runs on the fitted physics — an order of magnitude fewer cells — while the <a href="#twin">twin test</a> keeps the surrogate honest against the full-resolution truth.</p>
+    <p class="sub">Design a tile of walls on the fine grid and it shapes how fluid moves through it. Press <strong>characterize</strong>: the tile is probed seam by seam and reduced to an empirical element equation. Build a world of invented elements that runs on the fitted physics — while the <a href="#twin">twin test</a> keeps it honest against the full-resolution truth. New in v2: the 37-cell tile is an <em>exact</em> tile of the plane (aperture-37 flower tiling, the big sibling of H3's aperture 7), so the fine world is one true lattice and each of the tile's six seams touches exactly one neighbor.</p>
     <div class="scale-strip">
-      <span class="chip">37-cell tile · full physics</span><span class="arr">→ characterize →</span>
-      <span class="chip">1 element · capacity + 6 conductances (+ 6×6 G)</span><span class="arr">→ build →</span>
-      <span class="chip">61-element world · surrogate physics, ~37× fewer cells</span>
+      <span class="chip">37-cell flower · full physics</span><span class="arr">→ characterize →</span>
+      <span class="chip">1 element · capacity + 6 seam conductances (+ 6×6 G)</span><span class="arr">→ build →</span>
+      <span class="chip">61-element world · surrogate physics · coarse axes rotated 25.3°</span>
     </div>
   </div>
 </header>
@@ -154,7 +150,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap">
     <p class="eyebrow">Station 01 · the crucible</p>
     <h2>Design a tile, then characterize it</h2>
-    <p>Paint walls on the radius-3 tile. The live preview drives pressure across it (west high, east low) so you can watch your design steer the flow. When it looks right, characterize: each of the 6 sides is driven to unit pressure in turn while the steady flux out of every side is measured — that ensemble is the element's fingerprint.</p>
+    <p>Paint walls on the flower. Its 42 outward edges partition into six <strong>seams</strong> — colored ticks around the rim — and each seam is the complete interface to exactly one neighboring flower in the tiling. The live preview drives pressure in through seam <span id="seam-in-chip"></span> and out through seam <span id="seam-out-chip"></span>; characterization then drives each seam to unit pressure in turn and measures the steady flux through all six.</p>
     <div class="cols">
       <div>
         <div class="demo" style="margin-top:0">
@@ -165,9 +161,10 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
             <span class="grow"></span>
             <button class="btn primary" id="t-char" type="button">⚗ Characterize</button>
           </div>
-          <div class="stage"><canvas id="cv-tile" aria-label="Tile designer: paint walls, watch fluid flow west to east"></canvas></div>
+          <div class="stage"><canvas id="cv-tile" aria-label="Tile designer: paint walls; colored rim ticks mark the six seams"></canvas></div>
           <div class="bar" style="border-top:1px solid var(--line);border-bottom:none">
-            <span class="note">cast the characterized element into a palette slot:</span>
+            <span class="seamchips" id="seam-legend"></span>
+            <span class="grow"></span>
             <button class="btn" id="cast-A" type="button" disabled>→ slot A</button>
             <button class="btn" id="cast-B" type="button" disabled>→ slot B</button>
             <button class="btn" id="cast-C" type="button" disabled>→ slot C</button>
@@ -178,12 +175,12 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
         <div class="report" id="report" style="margin-top:0">
           <div class="kv" id="rep-kv"><span class="note">no element characterized yet — press ⚗</span></div>
           <div class="gwrap">
-            <figure><canvas id="cv-spokes" width="140" height="140"></canvas><figcaption>star model: side conductances k₀…k₅</figcaption></figure>
-            <figure><canvas id="cv-gmat" width="140" height="140"></canvas><figcaption>full 6×6 conductance G (measured)</figcaption></figure>
+            <figure><canvas id="cv-spokes" width="140" height="140"></canvas><figcaption>star model: seam conductances k₀…k₅ (true directions)</figcaption></figure>
+            <figure><canvas id="cv-gmat" width="140" height="140"></canvas><figcaption>full 6×6 seam conductance G</figcaption></figure>
           </div>
           <p class="note" id="rep-note" style="margin-bottom:0"></p>
         </div>
-        <p class="note" style="margin-top:1rem">The theory guarantee: for one linear fluid, the exact reduced model <em>is</em> a 6×6 conductance matrix (symmetric, rows sum to zero — check it in the heatmap). The coarse runtime uses the simpler star reduction; the <strong>star fit %</strong> tells you how much of your design's behavior it captures. Asymmetric routers (block N→W but pass N→E) are exactly what the star can't express — design one and watch the fit drop.</p>
+        <p class="note" style="margin-top:1rem">Theory guarantee: one linear fluid ⇒ the exact reduced model is the symmetric, row-sum-zero G in the heatmap. The coarse runtime uses the star reduction; <strong>star fit %</strong> says how much survives. Seams make directional elements buildable in v2 — though a rim cell can still carry edges of two seams where they meet, so ports are exact per-<em>edge</em>, approximate per-cell.</p>
       </div>
     </div>
   </div>
@@ -193,7 +190,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap">
     <p class="eyebrow">Station 02 · the world</p>
     <h2>Build with your invented elements</h2>
-    <p>Each cell of this radius-4 world holds one element — built-in <em>open</em> and <em>solid</em>, or your castings. A source pumps fluid in, drains take it out, and the simulation running here is <em>only</em> the surrogate: one storage number per element, fluxes through series-paired side conductances. Fine-grid physics never runs on this map.</p>
+    <p>Each cell of this radius-4 coarse world holds one element. The map is drawn on the coarse grid's own axes — physically those axes sit 25.3° rotated from the fine lattice (the twin test shows the true geometry). The simulation here is <em>only</em> the surrogate: one storage number per element, fluxes through series-paired seam conductances.</p>
     <div class="demo">
       <div class="bar" id="palette-bar">
         <button class="btn pbrush" data-p="0" aria-pressed="true" type="button">open</button>
@@ -209,7 +206,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       </div>
       <div class="stage"><canvas id="cv-world" aria-label="Coarse world builder: paint elements, sources and drains"></canvas></div>
     </div>
-    <p class="note">Glyphs inside each cell show the element's wall pattern; color shows fluid head. Try: a solid dam with a one-tile gap of your channel element; or an open basin fed through a maze of castings.</p>
+    <p class="note">Try: a solid dam bridged by one channel casting; then re-run the twin test and watch where the error lives.</p>
   </div>
 </section>
 
@@ -217,7 +214,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap">
     <p class="eyebrow">Station 03 · the reckoning</p>
     <h2>Twin test — surrogate vs ground truth</h2>
-    <p>The same world, run both ways in lockstep. Left: the full fine simulation — every element expanded to its 37-cell tile, tiles stitched along their boundary cells (2,257 cells). Right: the coarse surrogate (61 numbers). The error readout compares per-tile mean head; the speed readout measures actual wall-time per step of each. This is the whole thesis on one screen: if the error stays small while the speedup stays large, the invented-element idea works.</p>
+    <p>The same world, run both ways in lockstep. Left: the full fine simulation — in v2 this is <strong>one genuine hex lattice</strong>: 61 flowers stamped into a single 2,257-cell grid, zero seams faked. Look at the packing: the flowers visibly spiral at 25.3° — that's the aperture-37 rotation, the price and the proof of exact hex-in-hex nesting. Right: the 61-number surrogate on the coarse axes. Error compares per-tile mean head; speed is measured wall time per step.</p>
     <div class="demo">
       <div class="bar">
         <button class="btn primary" id="tw-build" type="button">⟳ Rebuild twins from world</button>
@@ -227,12 +224,11 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       </div>
       <div class="stage">
         <div class="cols">
-          <figure style="margin:0;text-align:center"><canvas id="cv-fine" aria-label="Fine-resolution stitched ground-truth simulation"></canvas><figcaption class="note">fine truth · 2,257 cells</figcaption></figure>
+          <figure style="margin:0;text-align:center"><canvas id="cv-fine" aria-label="Fine-resolution single-lattice ground truth showing the rotated flower packing"></canvas><figcaption class="note">fine truth · one lattice · 2,257 cells</figcaption></figure>
           <figure style="margin:0;text-align:center"><canvas id="cv-coarse" aria-label="Coarse surrogate simulation"></canvas><figcaption class="note">surrogate · 61 elements</figcaption></figure>
         </div>
       </div>
     </div>
-    <p class="note" id="tw-note">Expect: near-zero error for open/solid/channel worlds (the star model is faithful there), growing error for asymmetric routers — the shown G matrix knows things the star forgot. That gap is measurable, visible, and the roadmap.</p>
   </div>
 </section>
 
@@ -243,23 +239,23 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <div class="cols">
       <div>
         <h3>This has a name</h3>
-        <p>Auto-characterizing a microstructure into an effective element is <strong>computational homogenization</strong> (RVE analysis / FE² in the FEA world; Darcy upscaling in porous media; Thévenin reduction in circuits). With one linear fluid the reduced law is provably linear — G is exact — so v1's only modeling error is the star simplification at runtime. Real empiricism starts when the physics gets nonlinear: drying, inertia, multiple materials, reactions. Then the characterization sweep fits response <em>surfaces</em>, not matrices, and internal state variables may be needed (a tile that stores and releases is already an RC element; a tile with hysteresis needs memory).</p>
+        <p>Auto-characterizing a microstructure into an effective element is <strong>computational homogenization</strong> (RVE/FE² in FEA; Darcy upscaling in porous media; Thévenin reduction in circuits). With one linear fluid the reduced law is provably linear — G is exact — so the only modeling error is the star simplification at runtime. Real empiricism starts with nonlinear physics (drying, inertia, chemistry): then the sweep fits response surfaces, and tiles with storage hysteresis need internal state variables.</p>
         <h3>Known limits, by design</h3>
-        <p>① The star model drops cross-side steering — the twin test exposes it. ② Characterization probes tiles in isolation; in context, neighbors impose correlated boundary conditions the ensemble never saw (the closure problem — the fundamental error of all homogenization). ③ Hexagons don't tile hexagons: the fine truth here is stitched tile graphs; a true recursive hierarchy would use 7-hex Gosper/H3 aggregation. ④ The tile's flat faces sit rotated 30° from the coarse neighbor directions (hexagons-don't-tile again), so every boundary cell's outward edges span <em>two</em> coarse directions: single-direction ports are geometrically impossible, corner cells couple three, and anisotropy must come from interior routing (we measured a vertex-to-vertex corridor coupling all six directions equally, and a wide-mouthed channel reaching ~1.8× directional bias). All four are measurable, none are fatal.</p>
+        <p>① The star model drops cross-seam steering — even an open flower star-fits only partially, because diffusion favors adjacent seams over far ones; the twin test exposes the consequences. ② Characterization probes tiles in isolation; neighbors impose correlated boundary conditions the ensemble never saw (the closure problem — the fundamental error of all homogenization). ③ <s>Hexagons don't tile hexagons</s> — solved: radius-R flowers (3R²+3R+1 cells, always a Löschian number) tile the plane exactly on a rotated superlattice; v2 runs on it, and the composite build asserts zero cell collisions as a live proof. What remains: seams meet at rim cells, so a cell can carry edges of two seams — ports are exact per-edge, approximate per-cell.</p>
       </div>
       <div>
         <h3>Where it goes</h3>
-        <p><strong>Full-G runtime:</strong> solve interface heads with a few Jacobi sweeps per step (the same under-convergence dial as everything else in this project) — recovers asymmetric routing at coarse scale.</p>
-        <p><strong>Level 3:</strong> characterize a 61-element coarse world the same way its tiles were characterized — elements of elements. Error compounding across levels becomes the central experiment.</p>
-        <p><strong>Nonlinear castings:</strong> switch the fine fluid to the pipe model with drying, refit — first genuinely empirical elements, first interesting fit failures.</p>
-        <p><strong>RL hook:</strong> element design is a compact, evaluable action space (37 bits → characterized behavior). "Design a tile whose G matrix approximates a target" is a gorgeous inverse-design task, and the twin error is a free reward signal.</p>
+        <p><strong>Full-G runtime:</strong> solve seam-interface heads with a few Jacobi sweeps per step — the same under-convergence dial as everything else in this project — recovering cross-seam routing at coarse scale.</p>
+        <p><strong>Level 3:</strong> a 61-flower world is itself a patch of a hexagonal supergrid — characterize it with the identical procedure (aperture 37 again, another 25.3° of rotation) and measure how error compounds per level. That number decides the whole game.</p>
+        <p><strong>Nonlinear castings:</strong> swap the fine fluid for the pipe model with drying and refit — the first genuinely empirical elements.</p>
+        <p><strong>RL hook:</strong> "design a tile whose G approximates a target" is inverse design with a 37-bit action space and the twin error as a free reward.</p>
       </div>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">hexphys-rl · foundry dashboard · built 2026-08-15 · tile 37 cells → element 13 numbers → world 61 elements, twinned live</div>
+  <div class="wrap">hexphys-rl · foundry v2 · built 2026-08-15 · aperture-37 flower tiling — 37 cells → 13 numbers → 61 elements, twinned on one true lattice</div>
 </footer>
 
 <script>
@@ -280,10 +276,10 @@ var COL = {
   gridline: 'rgba(46,40,30,0.22)',
   floor: '#D8CFBE',
   wall: '#4E463A',
-  fluidLo: '#4B84C2', fluidHi: '#173F6E',
-  srcC: '#3E8E4C', drnC: '#C4453C',
-  arrow: 'rgba(20,40,70,0.55)'
+  fluidHi: '#173F6E',
+  srcC: '#3E8E4C', drnC: '#C4453C'
 };
+var SEAMCOL = ['#B0641E', '#7A4FBF', '#2E7DC4', '#3E8E4C', '#C4453C', '#C29A1B'];
 function alphaColor(hex, a) {
   var n = parseInt(hex.slice(1), 16);
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
@@ -296,7 +292,7 @@ function lerpHex(h1, h2, t) {
   return 'rgb(' + (r | 0) + ',' + (g | 0) + ',' + (bl | 0) + ')';
 }
 
-/* ---------- hex core (guard-column axial storage, per ADR 0001) ---------- */
+/* ---------- hex core (guard-column axial storage) ---------- */
 var DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
 var SQ3 = Math.sqrt(3);
 function makeMap(R, sz) {
@@ -319,6 +315,7 @@ function mapIdx(m, q, r) {
   if (Math.abs(q) > m.R || Math.abs(r) > m.R || Math.abs(q + r) > m.R) return -1;
   return (r + m.R) * m.S + (q + m.R + 1);
 }
+function decode(m, k) { return [(k % m.S) - m.R - 1, Math.floor(k / m.S) - m.R]; }
 function pixelToHex(m, x, y) {
   var rf = (y - m.oy) / (1.5 * m.sz);
   var qf = (x - m.ox) / (SQ3 * m.sz) - rf / 2;
@@ -338,40 +335,40 @@ function hexPath(ctx, x, y, sz) {
   ctx.closePath();
 }
 function forEachValid(m, fn) { for (var k = 0; k < m.N; k++) if (m.valid[k]) fn(k); }
+function hexDist(q, r) { return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2; }
 
-/* ---------- fine physics on a tile: linear pressure diffusion ---------- */
-var K = 0.12;             // edge conductance, fine grid
+/* ---------- aperture-37 superlattice ---------- */
 var TILE_R = 3;
-var tileGeom = makeMap(TILE_R, 26);
-/* side cell lists: cells whose d-neighbor is off-tile, sorted along the side tangent */
-var SIDE = [];
-(function () {
-  for (var d = 0; d < 6; d++) {
-    var cells = [];
-    forEachValid(tileGeom, function (k) {
-      var nk = k + tileGeom.shifts[d];
-      if (nk < 0 || nk >= tileGeom.N || !tileGeom.valid[nk]) cells.push(k);
-    });
-    // tangent = dir rotated 90°
-    var c0 = mapIdx(tileGeom, 0, 0);
-    var n0 = c0 + tileGeom.shifts[d];
-    var dx = tileGeom.cx[n0] - tileGeom.cx[c0], dy = tileGeom.cy[n0] - tileGeom.cy[c0];
-    var tx = -dy, ty = dx;
-    cells.sort(function (a, b) {
-      return (tileGeom.cx[a] * tx + tileGeom.cy[a] * ty) - (tileGeom.cx[b] * tx + tileGeom.cy[b] * ty);
-    });
-    SIDE.push(cells);
-  }
-})();
+function ccw(v) { return [v[0] + v[1], -v[0]]; }
+var NV = [[4, 3]];
+for (var ni = 1; ni < 6; ni++) NV.push(ccw(NV[ni - 1]));
+/* NV = fine-lattice offsets of the six neighbor flowers; |NV| = √37, rotation ≈ 25.3° */
+function superCenter(I, J) { return [I * NV[0][0] + J * NV[5][0], I * NV[0][1] + J * NV[5][1]]; }
 
-/* one fine-diffusion step on a tile; bc = array of 6 side heads or null */
+var tileGeom = makeMap(TILE_R, 26);
+/* SEAM[s] = outward edges {k,d} of the flower whose neighbor cell lies in flower NV[s].
+   The 42 outward edges partition exactly into 6 seams of 7 — guaranteed by the tiling. */
+var SEAM = [[], [], [], [], [], []];
+forEachValid(tileGeom, function (k) {
+  var qr = decode(tileGeom, k);
+  for (var d = 0; d < 6; d++) {
+    var nq = qr[0] + DIRS[d][0], nr = qr[1] + DIRS[d][1];
+    if (hexDist(nq, nr) <= TILE_R) continue;
+    for (var s = 0; s < 6; s++) {
+      if (hexDist(nq - NV[s][0], nr - NV[s][1]) <= TILE_R) { SEAM[s].push({ k: k, d: d }); break; }
+    }
+  }
+});
+
+/* ---------- fine physics: linear pressure diffusion ---------- */
+var K = 0.12;
 function tileStep(walls, c, bc) {
   var m = tileGeom, k, d, nk;
   var dc = tileStep._dc || (tileStep._dc = new Float32Array(m.N));
   dc.fill(0);
   for (k = 0; k < m.N; k++) {
     if (!m.valid[k] || walls[k]) continue;
-    for (d = 0; d < 3; d++) {               // dirs 0,1,2 cover each internal edge once
+    for (d = 0; d < 3; d++) {
       nk = k + m.shifts[d];
       if (nk < 0 || nk >= m.N || !m.valid[nk] || walls[nk]) continue;
       var f = K * (c[k] - c[nk]);
@@ -379,52 +376,45 @@ function tileStep(walls, c, bc) {
     }
   }
   if (bc) {
-    for (d = 0; d < 6; d++) {
-      var cells = SIDE[d];
-      for (var i = 0; i < cells.length; i++) {
-        k = cells[i];
+    for (var s = 0; s < 6; s++) {
+      var edges = SEAM[s];
+      for (var i = 0; i < edges.length; i++) {
+        k = edges[i].k;
         if (walls[k]) continue;
-        dc[k] += K * (bc[d] - c[k]);
+        dc[k] += K * (bc[s] - c[k]);       // one virtual edge per seam edge
       }
     }
   }
   for (k = 0; k < m.N; k++) if (m.valid[k] && !walls[k]) c[k] += dc[k];
 }
-function sideFlux(walls, c, bc) {
+function seamFlux(walls, c, bc) {
   var out = [0, 0, 0, 0, 0, 0];
-  for (var d = 0; d < 6; d++) {
-    var cells = SIDE[d];
-    for (var i = 0; i < cells.length; i++) {
-      var k = cells[i];
+  for (var s = 0; s < 6; s++) {
+    var edges = SEAM[s];
+    for (var i = 0; i < edges.length; i++) {
+      var k = edges[i].k;
       if (walls[k]) continue;
-      out[d] += K * (bc[d] - c[k]);          // flux INTO the tile through side d
+      out[s] += K * (bc[s] - c[k]);
     }
   }
   return out;
 }
 
-/* ---------- characterization: measure G, fit star, test linearity ---------- */
+/* ---------- characterization ---------- */
 function characterize(walls) {
   var m = tileGeom;
   var cap = 0;
   forEachValid(m, function (k) { if (!walls[k]) cap++; });
-  if (cap === 0) {
-    return { cap: 0, k: [0, 0, 0, 0, 0, 0], G: null, starFit: 1, lin: 0, walls: walls.slice() };
-  }
+  if (cap === 0) return { cap: 0, k: [0, 0, 0, 0, 0, 0], G: null, starFit: 1, lin: 0, walls: walls.slice() };
   var G = [];
   for (var j = 0; j < 6; j++) {
     var bc = [0, 0, 0, 0, 0, 0]; bc[j] = 1;
     var c = new Float32Array(m.N);
     for (var t = 0; t < 900; t++) tileStep(walls, c, bc);
-    G.push(sideFlux(walls, c, bc));          // G[j][i] = flux into side i when side j driven
+    G.push(seamFlux(walls, c, bc));
   }
-  // symmetrize (theory says symmetric; averaging kills residual transient noise)
   var Gm = [];
-  for (var i = 0; i < 6; i++) {
-    Gm.push([]);
-    for (j = 0; j < 6; j++) Gm[i].push((G[j][i] + G[i][j]) / 2);
-  }
-  // star fit: minimize ||G - Gstar(k)|| by multiplicative updates on diagonal
+  for (var i = 0; i < 6; i++) { Gm.push([]); for (j = 0; j < 6; j++) Gm[i].push((G[j][i] + G[i][j]) / 2); }
   var ks = [];
   for (i = 0; i < 6; i++) ks.push(Math.max(0, Gm[i][i]));
   for (var it = 0; it < 200; it++) {
@@ -436,7 +426,6 @@ function characterize(walls) {
       else ks[i] = want;
     }
   }
-  // residual of star vs full G
   var T2 = ks.reduce(function (a, b) { return a + b; }, 0) || 1e-9;
   var num = 0, den = 0;
   for (i = 0; i < 6; i++) for (j = 0; j < 6; j++) {
@@ -445,11 +434,10 @@ function characterize(walls) {
     den += Gm[i][j] * Gm[i][j];
   }
   var starFit = den > 1e-12 ? Math.max(0, 1 - Math.sqrt(num / den)) : 1;
-  // linearity check: random combo BC vs superposition prediction
   var bcTest = [1, 0.2, 0.7, 0, 0.5, 0.9];
   var c2 = new Float32Array(m.N);
   for (var t2 = 0; t2 < 900; t2++) tileStep(walls, c2, bcTest);
-  var meas = sideFlux(walls, c2, bcTest);
+  var meas = seamFlux(walls, c2, bcTest);
   var lnum = 0, lden = 0;
   for (i = 0; i < 6; i++) {
     var pred2 = 0;
@@ -462,7 +450,7 @@ function characterize(walls) {
 }
 
 /* ---------- element registry ---------- */
-var elements = [];              // 0 open, 1 solid, 2..4 slots A..C
+var elements = [];
 var emptyWalls = new Uint8Array(tileGeom.N);
 var solidWalls = new Uint8Array(tileGeom.N);
 forEachValid(tileGeom, function (k) { solidWalls[k] = 1; });
@@ -470,7 +458,7 @@ elements[0] = characterize(emptyWalls); elements[0].name = 'open';
 elements[1] = characterize(solidWalls); elements[1].name = 'solid';
 var lastChar = null;
 
-/* ---------- generic sim plumbing ---------- */
+/* ---------- sim plumbing ---------- */
 var sims = [];
 function Sim(id, w, h, hooks) {
   var self = this;
@@ -520,32 +508,44 @@ Sim.prototype.frame = function (dt) {
   this._drew = true;
 };
 
-/* ---------- STATION 1: tile designer ---------- */
+/* ---------- edge segment helper (seam ticks / flower outlines) ---------- */
+function edgeSegment(m, k, d, inset) {
+  var c0 = mapIdx(m, 0, 0), n0 = c0 + m.shifts[d];
+  var ux = m.cx[n0] - m.cx[c0], uy = m.cy[n0] - m.cy[c0];
+  var n = Math.hypot(ux, uy); ux /= n; uy /= n;
+  var mx = m.cx[k] + ux * (SQ3 / 2) * m.sz * (inset || 1);
+  var my = m.cy[k] + uy * (SQ3 / 2) * m.sz * (inset || 1);
+  var px = -uy, py = ux;
+  return [mx - px * m.sz * 0.5, my - py * m.sz * 0.5, mx + px * m.sz * 0.5, my + py * m.sz * 0.5];
+}
+
+/* ---------- STATION 1: designer ---------- */
 var tBrush = 'wall';
 var design = new Uint8Array(tileGeom.N);
-var designSim = new Sim('cv-tile', tileGeom.w, tileGeom.h, {
+var PAD_X = 20, PAD_Y = 13;
+var designSim = new Sim('cv-tile', tileGeom.w + 2 * PAD_X, tileGeom.h + 2 * PAD_Y, {
   rate: 30,
   reset: function (s) { s.c = new Float32Array(tileGeom.N); },
   tick: function (s) {
     if (s.pointer.down) {
-      var k = pixelToHex(tileGeom, s.pointer.x, s.pointer.y);
+      var k = pixelToHex(tileGeom, s.pointer.x - PAD_X, s.pointer.y - PAD_Y);
       if (k >= 0) {
         var v = tBrush === 'wall' ? 1 : 0;
         if (design[k] !== v) { design[k] = v; s.c[k] = 0; }
       }
     }
-    // live preview: internal diffusion, then drive west side (3) high / east side (0) low
     tileStep(design, s.c, null);
-    [[3, 1], [0, 0]].forEach(function (pair) {
-      var cells = SIDE[pair[0]];
-      for (var i = 0; i < cells.length; i++) {
-        var kk = cells[i];
+    [[0, 1], [3, 0]].forEach(function (pair) {         // drive seam 0 in, seam 3 out
+      var edges = SEAM[pair[0]];
+      for (var i = 0; i < edges.length; i++) {
+        var kk = edges[i].k;
         if (!design[kk]) s.c[kk] += K * (pair[1] - s.c[kk]);
       }
     });
   },
   draw: function (s, ctx) {
     ctx.fillStyle = css['--panel']; ctx.fillRect(0, 0, s.w, s.h);
+    ctx.save(); ctx.translate(PAD_X, PAD_Y);
     var m = tileGeom;
     forEachValid(m, function (k) {
       hexPath(ctx, m.cx[k], m.cy[k], m.sz);
@@ -557,14 +557,21 @@ var designSim = new Sim('cv-tile', tileGeom.w, tileGeom.h, {
       ctx.fill();
       ctx.strokeStyle = COL.gridline; ctx.lineWidth = 1; ctx.stroke();
     });
-    // side labels + drive markers
-    ctx.font = '600 11px ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = css['--good'];
-    ctx.fillText('IN (h=1)', 34, s.h / 2 - 6);
-    ctx.fillStyle = css['--bad'];
-    ctx.fillText('OUT (h=0)', s.w - 38, s.h / 2 - 6);
+    for (var sm = 0; sm < 6; sm++) {
+      ctx.strokeStyle = SEAMCOL[sm]; ctx.lineWidth = 3.5;
+      for (var i = 0; i < SEAM[sm].length; i++) {
+        var e = SEAM[sm][i];
+        var seg = edgeSegment(m, e.k, e.d, 1.06);
+        ctx.beginPath(); ctx.moveTo(seg[0], seg[1]); ctx.lineTo(seg[2], seg[3]); ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 });
+document.getElementById('seam-legend').innerHTML =
+  SEAMCOL.map(function (c, i) { return '<span><i style="background:' + c + '"></i>&nbsp;' + i + '</span>'; }).join(' ');
+document.getElementById('seam-in-chip').innerHTML = '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + SEAMCOL[0] + '"></i>&nbsp;0';
+document.getElementById('seam-out-chip').innerHTML = '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + SEAMCOL[3] + '"></i>&nbsp;3';
 Array.prototype.forEach.call(document.querySelectorAll('button.tbrush'), function (b) {
   b.addEventListener('click', function () {
     tBrush = b.dataset.b;
@@ -578,31 +585,28 @@ document.getElementById('t-clear').addEventListener('click', function () {
   designSim.hooks.reset(designSim);
 });
 
-/* characterization UI */
 function renderReport(el) {
   var kv = document.getElementById('rep-kv');
   kv.innerHTML = '<span><b>capacity</b> ' + el.cap + ' cells</span>' +
     '<span><b>star fit</b> ' + (el.starFit * 100).toFixed(1) + '%</span>' +
     '<span><b>nonlinearity</b> ' + (el.lin * 100).toFixed(2) + '%</span>' +
     '<span><b>k</b> [' + el.k.map(function (v) { return v.toFixed(2); }).join(', ') + ']</span>';
-  // spokes
   var sc = document.getElementById('cv-spokes').getContext('2d');
   sc.clearRect(0, 0, 140, 140);
   sc.fillStyle = css['--panel2']; sc.fillRect(0, 0, 140, 140);
   var maxK = Math.max.apply(null, el.k.concat([0.01]));
-  var c0 = mapIdx(tileGeom, 0, 0);
   for (var d = 0; d < 6; d++) {
-    var nk = c0 + tileGeom.shifts[d];
-    var dx = tileGeom.cx[nk] - tileGeom.cx[c0], dy = tileGeom.cy[nk] - tileGeom.cy[c0];
-    var n = Math.hypot(dx, dy); dx /= n; dy /= n;
+    var vx = SQ3 * (NV[d][0] + NV[d][1] / 2), vy = 1.5 * NV[d][1];  // true (rotated) seam directions
+    var n = Math.hypot(vx, vy); vx /= n; vy /= n;
     var L = 12 + 50 * (el.k[d] / maxK);
-    sc.strokeStyle = el.k[d] / maxK > 0.05 ? css['--accent'] : css['--line'];
+    sc.strokeStyle = SEAMCOL[d];
     sc.lineWidth = 4;
-    sc.beginPath(); sc.moveTo(70, 70); sc.lineTo(70 + dx * L, 70 + dy * L); sc.stroke();
+    sc.globalAlpha = el.k[d] / maxK > 0.05 ? 1 : 0.25;
+    sc.beginPath(); sc.moveTo(70, 70); sc.lineTo(70 + vx * L, 70 + vy * L); sc.stroke();
   }
+  sc.globalAlpha = 1;
   sc.fillStyle = css['--ink'];
   sc.beginPath(); sc.arc(70, 70, 6, 0, 7); sc.fill();
-  // G heatmap
   var gc = document.getElementById('cv-gmat').getContext('2d');
   gc.clearRect(0, 0, 140, 140);
   gc.fillStyle = css['--panel2']; gc.fillRect(0, 0, 140, 140);
@@ -619,8 +623,8 @@ function renderReport(el) {
   var note = document.getElementById('rep-note');
   note.textContent = el.cap === 0 ? 'Solid block: no transport at all — the trivial element.' :
     el.starFit > 0.97 ? 'The star model captures this design almost perfectly — coarse sim will be faithful.' :
-    el.starFit > 0.85 ? 'Some cross-side structure lost to the star reduction — expect visible twin error where this element does the routing.' :
-    'Strongly asymmetric routing: the star model is a poor fit. The full-G runtime (roadmap) would be needed to honor this design at coarse scale.';
+    el.starFit > 0.85 ? 'Some cross-seam structure lost to the star reduction — expect visible twin error where this element does the routing.' :
+    'Strong cross-seam routing: the star model is a poor fit here. The full-G runtime (roadmap) would honor this design at coarse scale.';
 }
 document.getElementById('t-char').addEventListener('click', function () {
   lastChar = characterize(design);
@@ -640,13 +644,13 @@ document.getElementById('t-char').addEventListener('click', function () {
   });
 });
 
-/* ---------- STATION 2: coarse world ---------- */
+/* ---------- STATION 2: coarse world (abstract supergrid axes) ---------- */
 var WORLD_R = 4;
 var worldGeom = makeMap(WORLD_R, 27);
 var world = {
-  elem: new Int16Array(worldGeom.N),     // element index per coarse cell
-  role: new Uint8Array(worldGeom.N),     // 0 none, 1 source, 2 drain
-  C: new Float32Array(worldGeom.N)       // stored fluid volume
+  elem: new Int16Array(worldGeom.N),
+  role: new Uint8Array(worldGeom.N),
+  C: new Float32Array(worldGeom.N)
 };
 function worldReset() {
   world.elem.fill(0); world.role.fill(0); world.C.fill(0);
@@ -656,10 +660,9 @@ function worldReset() {
 worldReset();
 var pBrush = '0';
 function coarseFluxPairs(elemArr) {
-  // per adjacent pair: series conductance through the two facing sides
   var pairs = [];
   forEachValid(worldGeom, function (k) {
-    for (var d = 0; d < 3; d++) {           // each pair once
+    for (var d = 0; d < 3; d++) {
       var nk = k + worldGeom.shifts[d];
       if (nk < 0 || nk >= worldGeom.N || !worldGeom.valid[nk]) continue;
       var ea = elements[elemArr[k]], eb = elements[elemArr[nk]];
@@ -671,11 +674,9 @@ function coarseFluxPairs(elemArr) {
   return pairs;
 }
 function coarseStep(st, pairs, dt) {
-  var i, k;
   var dC = coarseStep._d || (coarseStep._d = new Float32Array(worldGeom.N));
-  if (dC.length !== worldGeom.N) dC = new Float32Array(worldGeom.N);
   dC.fill(0);
-  for (i = 0; i < pairs.length; i++) {
+  for (var i = 0; i < pairs.length; i++) {
     var a = pairs[i][0], b = pairs[i][1], g = pairs[i][2];
     var ha = st.C[a] / elements[st.elem[a]].cap, hb = st.C[b] / elements[st.elem[b]].cap;
     var f = g * (ha - hb) * dt;
@@ -700,7 +701,6 @@ function drawCoarse(st, ctx, geom, showGlyph) {
     ctx.fill();
     ctx.strokeStyle = COL.gridline; ctx.lineWidth = 1; ctx.stroke();
     if (showGlyph && el.cap > 0 && st.elem[k] >= 2) {
-      // wall-pattern glyph
       ctx.fillStyle = alphaColor('#4E463A', 0.85);
       var sc = geom.sz / (tileGeom.w / 2);
       forEachValid(tileGeom, function (tk) {
@@ -756,94 +756,95 @@ document.getElementById('b-reset').addEventListener('click', function () {
   worldReset(); worldPairs = coarseFluxPairs(world.elem);
 });
 
-/* ---------- STATION 3: twin test ---------- */
+/* ---------- STATION 3: twin test on ONE true lattice ---------- */
+var FINE_R = 31;
+var fineGeom = makeMap(FINE_R, 4.1);
 var tileN = tileGeom.N;
+var localOffsets = [];
+forEachValid(tileGeom, function (k) { localOffsets.push(decode(tileGeom, k)); });
 var twin = null;
 function buildTwins() {
-  // coarse twin: copy of world
   var tc = { elem: world.elem.slice(), role: world.role.slice(), C: new Float32Array(worldGeom.N) };
   var pairs = coarseFluxPairs(tc.elem);
-  // fine twin: per coarse cell, a tile instance
   var cellIds = [];
   forEachValid(worldGeom, function (k) { cellIds.push(k); });
-  var fineC = new Float32Array(cellIds.length * tileN);
-  var wallsOf = cellIds.map(function (k) { return elements[world.elem[k]].walls; });
-  var coarseIndexOf = {};
-  cellIds.forEach(function (k, i) { coarseIndexOf[k] = i; });
-  // stitch edges between adjacent tiles
-  var stitches = [];
-  cellIds.forEach(function (k, ci) {
-    for (var d = 0; d < 3; d++) {
-      var nk = k + worldGeom.shifts[d];
-      if (!(nk in coarseIndexOf)) continue;
-      var cj = coarseIndexOf[nk];
-      var sa = SIDE[d], sb = SIDE[(d + 3) % 6];
-      for (var i = 0; i < sa.length; i++) {
-        stitches.push([ci * tileN + sa[i], cj * tileN + sb[i]]);
-      }
+  var used = new Uint8Array(fineGeom.N);
+  var gwalls = new Uint8Array(fineGeom.N);
+  var tileCells = [];
+  var collisions = 0;
+  cellIds.forEach(function (wk) {
+    var qr = decode(worldGeom, wk);
+    var P = superCenter(qr[0], qr[1]);
+    var el = elements[world.elem[wk]];
+    var arr = new Int32Array(localOffsets.length);
+    for (var i = 0; i < localOffsets.length; i++) {
+      var g = mapIdx(fineGeom, P[0] + localOffsets[i][0], P[1] + localOffsets[i][1]);
+      arr[i] = g;
+      if (g < 0) { collisions++; continue; }
+      if (used[g]) collisions++;
+      used[g] = 1;
+      var tk = mapIdx(tileGeom, localOffsets[i][0], localOffsets[i][1]);
+      if (el.walls[tk]) gwalls[g] = 1;
     }
+    tileCells.push(arr);
   });
+  var usedList = [];
+  for (var g2 = 0; g2 < fineGeom.N; g2++) if (used[g2]) usedList.push(g2);
   twin = {
-    tc: tc, pairs: pairs, cellIds: cellIds, fineC: fineC, wallsOf: wallsOf,
-    stitches: stitches, coarseIndexOf: coarseIndexOf,
+    tc: tc, pairs: pairs, cellIds: cellIds,
+    used: used, gwalls: gwalls, tileCells: tileCells, usedList: usedList,
+    fineC: new Float32Array(fineGeom.N),
+    collisions: collisions,
     steps: 0, msFine: 0, msCoarse: 0
   };
+  return twin;
 }
 function fineStep(tw) {
-  var dc = fineStep._d || (fineStep._d = new Float32Array(tw.fineC.length));
-  if (dc.length !== tw.fineC.length) { fineStep._d = dc = new Float32Array(tw.fineC.length); }
+  var dc = fineStep._d || (fineStep._d = new Float32Array(fineGeom.N));
   dc.fill(0);
-  var m = tileGeom, nc = tw.cellIds.length;
-  for (var ci = 0; ci < nc; ci++) {
-    var base = ci * tileN, walls = tw.wallsOf[ci];
-    for (var k = 0; k < m.N; k++) {
-      if (!m.valid[k] || walls[k]) continue;
-      for (var d = 0; d < 3; d++) {
-        var nk = k + m.shifts[d];
-        if (nk < 0 || nk >= m.N || !m.valid[nk] || walls[nk]) continue;
-        var f = K * (tw.fineC[base + k] - tw.fineC[base + nk]);
-        dc[base + k] -= f; dc[base + nk] += f;
-      }
+  var ul = tw.usedList, m = fineGeom;
+  for (var li = 0; li < ul.length; li++) {
+    var k = ul[li];
+    if (tw.gwalls[k]) continue;
+    for (var d = 0; d < 3; d++) {
+      var nk = k + m.shifts[d];
+      if (!tw.used[nk] || tw.gwalls[nk]) continue;
+      var f = K * (tw.fineC[k] - tw.fineC[nk]);
+      dc[k] -= f; dc[nk] += f;
     }
   }
-  for (var si = 0; si < tw.stitches.length; si++) {
-    var a = tw.stitches[si][0], b = tw.stitches[si][1];
-    var wa = tw.wallsOf[(a / tileN) | 0][a % tileN], wb = tw.wallsOf[(b / tileN) | 0][b % tileN];
-    if (wa || wb) continue;
-    var f2 = K * (tw.fineC[a] - tw.fineC[b]);
-    dc[a] -= f2; dc[b] += f2;
-  }
-  // sources/drains: same volumes as coarse (source spread over open cells)
-  for (ci = 0; ci < nc; ci++) {
+  for (var ci = 0; ci < tw.cellIds.length; ci++) {
     var wk = tw.cellIds[ci];
     var el = elements[tw.tc.elem[wk]];
     if (tw.tc.role[wk] === 1 && el.cap > 0) {
-      var add = 1.2 / el.cap;
-      var base2 = ci * tileN, walls2 = tw.wallsOf[ci];
-      for (var kk = 0; kk < m.N; kk++) if (m.valid[kk] && !walls2[kk]) dc[base2 + kk] += add;
+      var add = 1.2 / el.cap, arr = tw.tileCells[ci];
+      for (var i = 0; i < arr.length; i++) if (arr[i] >= 0 && !tw.gwalls[arr[i]]) dc[arr[i]] += add;
     }
   }
-  for (var x = 0; x < tw.fineC.length; x++) tw.fineC[x] = Math.max(0, tw.fineC[x] + dc[x]);
-  for (ci = 0; ci < nc; ci++) {
-    if (tw.tc.role[tw.cellIds[ci]] === 2) {
-      var b3 = ci * tileN;
-      for (var k3 = 0; k3 < tileN; k3++) tw.fineC[b3 + k3] = 0;
+  for (var li2 = 0; li2 < ul.length; li2++) {
+    var k2 = ul[li2];
+    tw.fineC[k2] = Math.max(0, tw.fineC[k2] + dc[k2]);
+  }
+  for (var ci2 = 0; ci2 < tw.cellIds.length; ci2++) {
+    if (tw.tc.role[tw.cellIds[ci2]] === 2) {
+      var arr2 = tw.tileCells[ci2];
+      for (var j = 0; j < arr2.length; j++) if (arr2[j] >= 0) tw.fineC[arr2[j]] = 0;
     }
   }
 }
 function twinError(tw) {
-  var num = 0, den = 0, nc = tw.cellIds.length;
-  for (var ci = 0; ci < nc; ci++) {
+  var num = 0, den = 0;
+  for (var ci = 0; ci < tw.cellIds.length; ci++) {
     var wk = tw.cellIds[ci], el = elements[tw.tc.elem[wk]];
     if (el.cap === 0) continue;
-    var sum = 0, base = ci * tileN;
-    for (var k = 0; k < tileN; k++) sum += tw.fineC[base + k];
+    var sum = 0, arr = tw.tileCells[ci];
+    for (var i = 0; i < arr.length; i++) if (arr[i] >= 0) sum += tw.fineC[arr[i]];
     var hf = sum / el.cap, hc = tw.tc.C[wk] / el.cap;
     num += Math.abs(hf - hc); den += Math.abs(hf) + 1e-9;
   }
   return num / den;
 }
-var twinFine = new Sim('cv-fine', worldGeom.w, worldGeom.h, {
+var twinFine = new Sim('cv-fine', fineGeom.w, fineGeom.h, {
   rate: 30,
   reset: function () {},
   tick: function () {
@@ -871,25 +872,32 @@ var twinFine = new Sim('cv-fine', worldGeom.w, worldGeom.h, {
       ctx.fillText('press ⟳ to build the twins from the world above', s.w / 2, s.h / 2);
       return;
     }
-    var m = tileGeom, nc = twin.cellIds.length;
-    for (var ci = 0; ci < nc; ci++) {
-      var wk = twin.cellIds[ci];
-      var ox = worldGeom.cx[wk], oy = worldGeom.cy[wk];
-      var sc = worldGeom.sz / (tileGeom.w / 2) * 0.98;
-      var base = ci * tileN, walls = twin.wallsOf[ci];
-      for (var k = 0; k < m.N; k++) {
-        if (!m.valid[k]) continue;
-        var lx = ox + (m.cx[k] - m.ox) * sc, ly = oy + (m.cy[k] - m.oy) * sc;
-        var rr = m.sz * sc * 0.62;
-        if (walls[k]) ctx.fillStyle = COL.wall;
-        else {
-          var t = Math.max(0, Math.min(1, twin.fineC[base + k] * 1.4));
-          ctx.fillStyle = t < 0.02 ? COL.floor : lerpHex(COL.floor, COL.fluidHi, 0.12 + 0.88 * t);
-        }
-        ctx.fillRect(lx - rr, ly - rr, rr * 2, rr * 2);
+    var m = fineGeom, ul = twin.usedList;
+    for (var li = 0; li < ul.length; li++) {
+      var k = ul[li];
+      if (twin.gwalls[k]) ctx.fillStyle = COL.wall;
+      else {
+        var t = Math.max(0, Math.min(1, twin.fineC[k] * 1.4));
+        ctx.fillStyle = t < 0.02 ? COL.floor : lerpHex(COL.floor, COL.fluidHi, 0.12 + 0.88 * t);
       }
-      ctx.strokeStyle = COL.gridline; ctx.lineWidth = 1;
-      hexPath(ctx, ox, oy, worldGeom.sz); ctx.stroke();
+      hexPath(ctx, m.cx[k], m.cy[k], m.sz * 0.92);
+      ctx.fill();
+    }
+    // flower outlines — the rotated packing made visible
+    ctx.strokeStyle = alphaColor('#4E463A', 0.4); ctx.lineWidth = 0.7;
+    for (var ci = 0; ci < twin.cellIds.length; ci++) {
+      var qr = decode(worldGeom, twin.cellIds[ci]);
+      var P = superCenter(qr[0], qr[1]);
+      for (var sm = 0; sm < 6; sm++) {
+        for (var i = 0; i < SEAM[sm].length; i++) {
+          var e = SEAM[sm][i];
+          var lqr = decode(tileGeom, e.k);
+          var g = mapIdx(m, P[0] + lqr[0], P[1] + lqr[1]);
+          if (g < 0) continue;
+          var seg = edgeSegment(m, g, e.d, 1);
+          ctx.beginPath(); ctx.moveTo(seg[0], seg[1]); ctx.lineTo(seg[2], seg[3]); ctx.stroke();
+        }
+      }
     }
   }
 });

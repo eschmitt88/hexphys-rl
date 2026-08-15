@@ -54,6 +54,18 @@ dissolves and directional ports become buildable; recursion is exact at
 every level. Cost: the grid rotates ~25° per zoom level (compounding);
 render each level in its own frame and mind element orientation.
 
+## v2 measurements (flower tiling, seam characterization)
+
+Foundry v2 implements the aperture-37 fix. Harness results: the 42 outward
+edges partition into 6 disjoint seams of 7 (verified); 61 flowers stamp
+into ONE fine lattice with zero collisions — the tiling theorem checked
+computationally every twin build. Seam-based channel reaches 2.3×
+directionality (vs 1.8× with v1's overlapping sides); open-flower star fit
+68% (seam adjacency structure differs from v1's 75%); twin error 14.7% at
+26× measured speedup; sealed dams watertight at both scales. Residual
+truth: seams meet at rim cells, so ports are exact per-edge, approximate
+per-cell.
+
 ## Connections
 
 - Next fidelity rung: full-G coarse runtime via under-converged interface

@@ -27,3 +27,4 @@ skills; read by `/lint`.
 2026-08-15 02:40 ingest seeded 3 concepts (axial-hex-storage, virtual-pipe-shallow-water, outflow-scaling-clamp)
 2026-08-15 02:40 ADR 0001 top-down hex arena; CLAUDE.md mission updated
 2026-08-15 03:05 fix: arena row-wraparound (guard columns); pitfall recorded in concepts/axial-hex-storage.md
+2026-08-15 04:05 foundry: multiscale prototype (docs/foundry.html) + tile-homogenization concept

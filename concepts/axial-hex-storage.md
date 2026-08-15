@@ -29,6 +29,17 @@ permutations, so the D₆ symmetry group provides free observation
 augmentation and canonicalization. Distance = cube max-norm; pixel↔hex via
 the cube-round rule.
 
+## Pitfall: row wraparound (bitten once, 2026-08-15)
+
+Middle rows of the hexagon span the full array width, so a ±1 index shift
+on an edge cell wraps to the *adjacent row's opposite end* — a valid cell,
+so a mask check alone does not catch it. Fire leaked between the left and
+right map edges in the Arena demos. Fixes: one guard column per side
+(S = 2R+3) in flat-index code; in JAX, `jnp.roll` wraps *by design*, so
+either keep the guard columns or mask the wrapped column after every roll.
+Regression test worth porting: for every valid cell and all six shifts,
+the destination must decode to exactly (q+dq, r+dr).
+
 ## Connections
 
 - Extends [[dynamically-specified-scenes]] to the hex map.

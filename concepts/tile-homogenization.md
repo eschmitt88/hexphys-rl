@@ -39,10 +39,26 @@ Measured facts from the prototype (docs/foundry.html, harness4):
   honest validator — measured 11.7% head error at 49× speedup on a
   dam-with-channel-gap world; sealed dams stay sealed at both scales.
 
+## The nesting fix: flower tiling (aperture 3R²+3R+1)
+
+Radius-R hex flowers (3R²+3R+1 cells — always Löschian: a=R, b=R+1) tile
+the plane exactly on a √(3R²+3R+1)-scaled hex superlattice rotated by a
+fixed angle per level (~19.1° for R=1 — H3's aperture 7; ~25.3° for our
+R=3, aperture 37). Proof sketch: nearest supercenters sit at hex distance
+2R+1 ⇒ flowers disjoint; density counting ⇒ no gaps. Consequences for
+Foundry v2: the composite fine world is a *true* lattice (no stitched
+graphs); each of the tile's 6·(2R+1) outward edges pairs with exactly one
+neighbor flower, so the six 7-edge seams are honest single-neighbor
+interfaces — the "every side spans two coarse directions" problem
+dissolves and directional ports become buildable; recursion is exact at
+every level. Cost: the grid rotates ~25° per zoom level (compounding);
+render each level in its own frame and mind element orientation.
+
 ## Connections
 
 - Next fidelity rung: full-G coarse runtime via under-converged interface
   Jacobi sweeps — the project's standard dial, again.
+- Foundry v2: seam-based characterization on the flower tiling (above).
 - Level-3 recursion (characterize a coarse world as an element) is where
   error compounding becomes the experiment.
 - Inverse design ("build a tile matching a target G") is a natural RL

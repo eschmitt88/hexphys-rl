@@ -36,3 +36,4 @@ skills; read by `/lint`.
 2026-08-18 foundry v3: adaptive runtime shipped — ISAT trust regions + audits + fine patches; 6x compute cut at 15.5% error; transient-dominance prediction falsified
 2026-08-18 a-priori flux diagnosis: model form (not calibration) dominates; per-seam (donor,receiver) features 29.6%->9.5%; scale-separation criterion named
 2026-08-18 foundry v3.1: per-seam keyed records + grid-convergence study; closure IS convergent (order ~1.6); a-priori 4x gain does NOT transfer a-posteriori
+2026-08-18 diagnosis: residual is star-form error — per-seam k is ill-posed in a 6-port environment (negative conductances measured); Jensen/clamps/transient-dwell all falsified; ratio-estimator replaced with regression

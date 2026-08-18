@@ -1366,7 +1366,8 @@ function AdaptWorld() {
   this.mode = new Uint8Array(N);
   this.dwell = new Int16Array(N);
   this.kEst = new Float32Array(N * 6);
-  this.acc = new Float32Array(N * 6);
+  this.acc = new Float32Array(N * 6);    // sum of F*dh   (regression numerator)
+  this.acc2 = new Float32Array(N * 6);   // sum of dh*dh  (regression denominator)
   this.accN = new Int16Array(N * 6);
   this.usingRec = new Array(N);
   this.op = new Float32Array(N * 2);
@@ -1376,7 +1377,7 @@ AdaptWorld.prototype.reset = function () {
   var self = this, N = worldGeom.N, i;
   this.elem.fill(0); this.role.fill(0); this.C.fill(0);
   this.mode.fill(1); this.dwell.fill(0);
-  this.acc.fill(0); this.accN.fill(0); this.op.fill(0);
+  this.acc.fill(0); this.acc2.fill(0); this.accN.fill(0); this.op.fill(0);
   for (i = 0; i < N; i++) this.usingRec[i] = null;
   this.role[mapIdx(worldGeom, -WORLD_R + 1, 0)] = 1;
   this.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
@@ -1414,6 +1415,7 @@ AdaptWorld.prototype.reset = function () {
   this.fc = new Float32Array(fineGeom.N);
   this.truthC = new Float32Array(fineGeom.N);
   this.t = 0; this.steps = 0; this.fallbacks = 0; this.audits = 0;
+  this.clampAdapt = 0; this.clampTruth = 0;   // mass destroyed by non-negativity clamps
   this.fineCellSteps = 0; this.fineTiles = 0;
   this.winFall = 0; this.winSteps = 0; this.hist = [];
 };
@@ -1486,7 +1488,7 @@ AdaptWorld.prototype.step = function () {
         self.mode[k] = 1; self.dwell[k] = ADAPT_DWELL;
         self.fallbacks++; self.winFall++;
         if (due) self.audits++;
-        for (dd = 0; dd < 6; dd++) { self.acc[k * 6 + dd] = 0; self.accN[k * 6 + dd] = 0; }
+        for (dd = 0; dd < 6; dd++) { self.acc[k * 6 + dd] = 0; self.acc2[k * 6 + dd] = 0; self.accN[k * 6 + dd] = 0; }
       }
     }
     if (self.mode[k] === 1) {
@@ -1564,7 +1566,9 @@ AdaptWorld.prototype.step = function () {
     if (comp.gwalls[kk]) continue;
     var ow2 = this.owner[kk];
     if (ow2 < 0 || this.mode[comp.cellIds[ow2]] !== 1) continue;
-    fc[kk] = Math.max(0, fc[kk] + dc[kk]);
+    var vNew = fc[kk] + dc[kk];
+    if (vNew < 0) this.clampAdapt -= vNew;
+    fc[kk] = Math.max(0, vNew);
   }
   /* sources and drains act on whichever representation the tile is using */
   forEachValid(worldGeom, function (k) {
@@ -1581,7 +1585,9 @@ AdaptWorld.prototype.step = function () {
       for (var q4 = 0; q4 < arr2.length; q4++) if (arr2[q4] >= 0 && !comp.gwalls[arr2[q4]]) sm2 += fc[arr2[q4]];
       self.C[k] = sm2;
     } else {
-      self.C[k] = Math.max(0, self.C[k] + dC[k]);
+      var cNew = self.C[k] + dC[k];
+      if (cNew < 0) self.clampAdapt -= cNew;
+      self.C[k] = Math.max(0, cNew);
       if (self.role[k] === 1 && srcOn) self.C[k] += 1.2;
       if (self.role[k] === 2) self.C[k] = 0;
     }
@@ -1609,23 +1615,25 @@ AdaptWorld.prototype.step = function () {
         F = Fs; uEff = hsum / cnt;
       } else { F = seamF[k * 6 + dd] || 0; uEff = u[iid3]; }
       var dh6 = uEff - hn;
-      if (self.dwell[k] <= ADAPT_MEASURE && Math.abs(dh6) > 0.008) {
-        var kd = F / dh6;
-        if (kd > 0 && kd < 40) { self.acc[k * 6 + dd] += kd; self.accN[k * 6 + dd]++; }
+      if (self.dwell[k] <= ADAPT_MEASURE && Math.abs(dh6) > 0.002) {
+        self.acc[k * 6 + dd] += F * dh6;      // regression through the origin: k = S(F*dh)/S(dh^2)
+        self.acc2[k * 6 + dd] += dh6 * dh6;   // weights by dh^2, so noisy small-dh samples cannot
+        self.accN[k * 6 + dd]++;              // dominate the way averaging F/dh does
       }
     }
     self.dwell[k]--;
     if (self.dwell[k] <= 0) {
       var seenAny = false;
       for (dd = 0; dd < 6; dd++) {
-        var cntS = self.accN[k * 6 + dd];
-        if (cntS === 0) continue;
+        var cntS = self.accN[k * 6 + dd], den4 = self.acc2[k * 6 + dd];
+        if (cntS === 0 || den4 < 1e-7) continue;
         var iid4 = io[k * 6 + dd];
         if (iid4 == null || ifs[iid4].b < 0) continue;
         var nb2 = ifs[iid4].a === k ? ifs[iid4].b : ifs[iid4].a;
         var eN2 = elements[self.elem[nb2]];
         var hN2 = eN2.cap > 0 ? self.C[nb2] / eN2.cap : 0;
-        var kMeas = self.acc[k * 6 + dd] / cntS;
+        var kMeas = self.acc[k * 6 + dd] / den4;
+        if (!(kMeas > 0) || kMeas > 40) continue;
         var prev = findRecord(el, dd, [hn, hN2], false);
         if (prev) {                                     // AUDIT verdict for this seam
           var den3 = Math.abs(kMeas) + Math.abs(prev.k);
@@ -1672,7 +1680,12 @@ AdaptWorld.prototype.truthStep = function (srcOn) {
       for (var i = 0; i < arr.length; i++) if (arr[i] >= 0 && !tr.gwalls[arr[i]]) dc[arr[i]] += add;
     }
   }
-  for (li = 0; li < ul.length; li++) { k = ul[li]; C[k] = Math.max(0, C[k] + dc[k]); }
+  for (li = 0; li < ul.length; li++) {
+    k = ul[li];
+    var tNew = C[k] + dc[k];
+    if (tNew < 0) this.clampTruth -= tNew;
+    C[k] = Math.max(0, tNew);
+  }
   for (var ci2 = 0; ci2 < tr.cellIds.length; ci2++) {
     if (this.role[tr.cellIds[ci2]] === 2) {
       var arr2 = tr.tileCells[ci2];

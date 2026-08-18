@@ -198,6 +198,51 @@ Next lead (measure, don't guess): the residual bias is systematic — the
 surrogate world holds ~18% less fluid than truth in every configuration
 tested. That is a storage/boundary-coupling signature, not a flux-law one.
 
+## Diagnosis of the residual bias (2026-08-18, diag10-12) — root cause found
+
+The systematic ~15% error / ~12-18% fluid deficit was chased through four
+hypotheses. Three died; the fourth is proven.
+
+1. **Jensen gap** (surrogate evaluates sat(<h>), truth transports <sat(h)>;
+   sat is concave so the surrogate should over-conduct): sign is right in 95%
+   of interfaces but magnitude is only **0.4%** — most cells sit far above the
+   saturation threshold, so the nonlinearity rarely bites. Swapping <sat(h)>
+   for sat(<h>) in the flux model changed error 25.2% -> 25.2%. DEAD.
+2. **Non-negativity clamps destroying mass**: instrumented both worlds —
+   **exactly 0.0** mass destroyed over 3000 ticks. DEAD.
+3. **Transient calibration** (dwell 22 ticks vs internal diffusion time ~204):
+   clean-room test shows k converges fast under seam drive — 0.314 at 22 ticks
+   vs 0.305 settled, only **3%** high. Not the cause, though the estimator was
+   independently wrong (see below). DEAD as the dominant term.
+4. **The star model cannot define a per-seam conductance at all in a live
+   multi-port environment.** PROVEN. Measuring the *same tile* settled under
+   different port conditions:
+
+   | port condition | measured per-seam k |
+   |---|---|
+   | 2-port (others insulated) | 0.305, 0.305 |
+   | 6-port, mild spread | 0.486, 0.149, 0.486, 0.149 |
+   | 6-port, wide spread | 0.513, **-1.906**, **-0.533**, 0.454, 0.291, 0.154 |
+
+   **Negative conductance is physically impossible** — it appears because flux
+   entering one seam largely *leaves by another* rather than charging storage,
+   and the star form books all of it as storage exchange. The quantity being
+   calibrated is not a well-posed property of the tile. This is the same
+   deficiency the open element's 65% star fit reported back in v2; in-situ
+   calibration in a 6-port world converts it into a 17-23% conductance
+   inflation, hence the drainage bias.
+
+Also fixed en route (correct regardless): conductance was estimated by
+**averaging the ratio F/dh**, whose right tail dominates when dh is small —
+replaced with regression through the origin, k = S(F*dh)/S(dh^2). Statistically
+correct; it did not move the runtime error, because the cause is model form.
+
+**Next build, now well-posed**: records must hold the full port matrix (the
+6x6 M = G - S used by the v2.2 full-G interface solver, which is already built,
+conservative, and exact at steady state) instead of 6 scalars, looked up by
+operating point. Cross-seam through-flux is then represented rather than
+misattributed. This is the one remaining rung with direct evidence behind it.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

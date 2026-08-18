@@ -160,6 +160,44 @@ Biot number for lumped-capacitance validity in heat transfer.
    order; we have never run one, and a lumped closure would fail it by
    construction.
 
+## Built: rungs 1 and 2 (2026-08-18, harness6/harness7)
+
+**Rung 2 — grid-convergence verification (the CFD discipline we lacked).**
+Flowers of radius 1/2/3 all tile the plane, so the same problem re-tiles at
+three coarse resolutions. A-priori flux error vs exact fluxes:
+
+| tile radius | cells/tile | tiles | single-g | per-seam (donor,receiver) |
+|---|---|---|---|---|
+| 1 | 7 | 301 | 7.4% | 3.0% |
+| 2 | 19 | 91 | 13.2% | 3.3% |
+| 3 | 37 | 61 | 27.2% | 6.7% |
+
+Observed order ~1.6 (single-g) and ~1.0 (per-seam). **Prediction falsified
+again**: the lumped closure is NOT an O(1) correlation — it is a convergent
+discretization. Error is controllable by two independent dials (tile size,
+feature richness), which legitimises the whole multiscale scheme.
+
+**Rung 1 — per-seam keying, and the a-priori/a-posteriori disconnect.**
+Records are now per-element, per-seam tables keyed on (own head, neighbour
+head); the donor/receiver asymmetry that directional k's tried to capture is
+subsumed by the key, and both sides of an interface look up the same pair, so
+conservation is structural. In-place refinement (blend on repeat visits to the
+same operating point) keeps the store bounded — 749 records total, largest
+seam table 154.
+
+Result: a priori flux error improves 4x (27.2% -> 6.7%). **A posteriori error
+does not move**: 15.5% before, 15.8% after; compute 6x, learning curve 98x
+decay, all other properties preserved. This is a documented hazard in LES
+subgrid modelling — better a-priori scores routinely fail to translate,
+because in a live run the coarse state drifts and flux errors interact
+instead of accumulating independently. Lesson for this project: **a-priori
+tests rank model FORMS but cannot predict runtime accuracy; only the twin
+can.**
+
+Next lead (measure, don't guess): the residual bias is systematic — the
+surrogate world holds ~18% less fluid than truth in every configuration
+tested. That is a storage/boundary-coupling signature, not a flux-law one.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

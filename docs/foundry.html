@@ -266,7 +266,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
         <div class="cols" style="margin-top:1rem">
           <figure style="margin:0;text-align:center">
             <canvas id="cv-adapt-know" width="300" height="200" aria-label="Knowledge map: calibration records and their trust regions in operating space"></canvas>
-            <figcaption class="note">knowledge map · open element — circles are trust regions, dots are live tiles</figcaption>
+            <figcaption class="note">knowledge map · open element, seam 0 — circles are trust regions, dots are live tiles</figcaption>
           </figure>
           <figure style="margin:0;text-align:center">
             <canvas id="cv-adapt-spark" width="300" height="80" aria-label="Fallback rate over time"></canvas>
@@ -277,6 +277,8 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     </div>
     <p class="note">What to watch: at reset every tile is red — nothing is known, so everything runs in full detail and the twin is doing double work. Records accumulate, tiles flip to surrogate, and the fallback trace decays. Then the source cuts out, the world starts drying, operating points march left into unexplored territory, and the map flushes red again — briefly, because each excursion is also a lesson. Compute is the honest metric: fine cells stepped per tick against the 2,257 the truth pays every tick, forever.</p>
     <p class="note">Measured, so you don't have to take it on faith: novelty fallbacks decay <strong>0.31 → 0.00 per tick</strong> (a 68× drop) while the audit traffic holds flat at 0.37 — that floor is deliberate and permanent, the price of continuing to check. Steady state runs <strong>83% of tiles on surrogate at 378 of 2,257 cells per tick — 6× less physics — for 15.5% error</strong> against the truth running beside it. Slam every tile bone dry, a corner of operating space it has never seen, and the trust check fires 45 fresh fallbacks within a hundred ticks.</p>
+    <p class="note"><strong>Verification, the thing CFD does that we hadn't.</strong> Flowers of radius 1, 2 and 3 all tile the plane, so the same physical problem can be re-tiled at three coarse resolutions and the closure's flux error measured against exact fluxes at each. Result: <strong>27.2% → 13.2% → 7.4%</strong> as tiles shrink from 37 to 19 to 7 cells — an observed order of ~1.6. The lumped closure is a <em>convergent discretization</em>, not an O(1) correlation, which is the opposite of what I predicted. Error here is controllable by two independent dials: tile size and feature richness.</p>
+    <p class="note"><strong>And a caution the turbulence people would recognise.</strong> Keying each seam on (own head, neighbour head) instead of a tile-global operating point cuts the <em>a priori</em> flux error four-fold — 27.2% to 6.7% at this tile size, measured by handing the model exact coarse states. It barely moves the <em>a posteriori</em> error of the running simulation: 15.5% before, 15.8% after. That disconnect is a documented hazard of subgrid modelling — a model that scores better against exact fields need not run better, because in a live simulation the coarse state itself drifts and flux errors interact rather than accumulate independently. The remaining bias is systematic (the surrogate world holds ~18% less fluid than truth), which points at storage and boundary coupling rather than the flux law, and that is the next thing to measure rather than guess.</p>
     <p class="note">One prediction died here. Falling back reconstructs a tile's 37 cells by spreading its single stored number uniformly, so everything the interior knew about its own shape is lost — which should have made the error transient-dominated. It isn't: <strong>19.5% near a pulse edge versus 20.1% deep in steady flow</strong>, a ratio of 0.97. The residual is model-form, not internal-state compression, so retained internal modes are <em>not</em> the next rung — richer seam interfaces are. Three of this project's four biggest corrections have come from a measurement contradicting a confident guess.</p>
   </div>
 </section>
@@ -1292,46 +1294,64 @@ function stampComposite(elemArr) {
   return { cellIds: cellIds, used: used, gwalls: gwalls, tileCells: tileCells, usedList: usedList, collisions: collisions };
 }
 
-/* ---- operating space + record store (ISAT-style retrieve / grow / add) ---- */
-var OP_SH = 0.16, OP_SDR = 0.15;       // scales: saturation, drive
-var ADAPT_DWELL = 22, ADAPT_MEASURE = 8, ADAPT_MAXREC = 600, ADAPT_GROW_TOL = 0.30, ADAPT_HYST = 1.6;
-var AUDIT_PERIOD = 160, AUDIT_TOL = 0.22;   // never stop checking: the compute floor
+/* ---- per-seam record store, keyed on (own head, neighbour head) ----
+   Measured a priori: a tile-global key gives 19-27% flux error; keying each seam on
+   (donor, receiver) heads gives 6.7-9.5%. The donor/receiver asymmetry the old
+   directional k's tried to capture is subsumed by the key itself. */
+var OP_SH = 0.17, OP_SO = 0.17;
+var ADAPT_DWELL = 22, ADAPT_MEASURE = 8, ADAPT_MAXREC = 500, ADAPT_GROW_TOL = 0.22, ADAPT_HYST = 1.6;
+var AUDIT_PERIOD = 160, AUDIT_TOL = 0.22;
 function opDist(a, b) {
-  var dx = (a[0] - b[0]) / OP_SH, dy = (a[1] - b[1]) / OP_SDR;
+  var dx = (a[0] - b[0]) / OP_SH, dy = (a[1] - b[1]) / OP_SO;
   return Math.sqrt(dx * dx + dy * dy);
 }
-function findRecord(el, op, hyst) {
-  var recs = el.records || (el.records = []);
-  var best = null, bd = 1e9, mul = hyst ? ADAPT_HYST : 1;
+function tabOf(el, d) {
+  if (!el.tab) { el.tab = []; for (var i = 0; i < 6; i++) el.tab.push([]); }
+  return el.tab[d];
+}
+function findRecord(el, d, op, hyst) {
+  var recs = tabOf(el, d), best = null, bd = 1e9, mul = hyst ? ADAPT_HYST : 1;
   for (var i = 0; i < recs.length; i++) {
-    var d = opDist(op, recs[i].op);
-    if (d <= recs[i].r * mul && d < bd) { bd = d; best = recs[i]; }
+    var dd = opDist(op, recs[i].op);
+    if (dd <= recs[i].r * mul && dd < bd) { bd = dd; best = recs[i]; }
   }
   return best;
 }
-function commitRecord(el, op, kv) {
-  var recs = el.records || (el.records = []);
-  var best = null, bd = 1e9, i;
+function commitRecord(el, d, op, kval) {
+  var recs = tabOf(el, d), best = null, bd = 1e9, i;
   for (i = 0; i < recs.length; i++) {
-    var d = opDist(op, recs[i].op);
-    if (d < bd) { bd = d; best = recs[i]; }
+    var dd = opDist(op, recs[i].op);
+    if (dd < bd) { bd = dd; best = recs[i]; }
   }
-  if (best && bd < 3.2) {                       // GROW: the neighbour already predicts this
-    var num = 0, den = 0;
-    for (i = 0; i < 12; i++) { num += Math.abs(kv[i] - best.k[i]); den += Math.abs(kv[i]); }
-    if (den > 1e-9 && num / den < ADAPT_GROW_TOL) {
+  if (best && bd < 3.2) {
+    var den = Math.abs(kval) + Math.abs(best.k);
+    if (den > 1e-9 && 2 * Math.abs(kval - best.k) / den < ADAPT_GROW_TOL) {
       best.r = Math.min(3.2, Math.max(best.r, bd * 1.2));
       best.hits = (best.hits || 1) + 1;
       return best;
     }
   }
-  if (recs.length >= ADAPT_MAXREC) return null; // ADD (bounded memory)
-  var rec = { op: [op[0], op[1]], k: kv.slice(), r: 1.1, hits: 1 };
+  if (best && bd < 0.35) {         // same operating point, different answer: refine in place,
+    best.k += 0.30 * (kval - best.k);  // don't accumulate near-duplicates
+    best.hits = (best.hits || 1) + 1;
+    best.r = Math.max(0.6, best.r * 0.92);
+    return best;
+  }
+  if (recs.length >= ADAPT_MAXREC) return null;
+  var rec = { op: [op[0], op[1]], k: kval, r: 1.1, hits: 1 };
   recs.push(rec);
   return rec;
 }
 function resetKnowledge() {
-  for (var i = 0; i < elements.length; i++) if (elements[i]) elements[i].records = [];
+  for (var i = 0; i < elements.length; i++) if (elements[i]) elements[i].tab = null;
+}
+function totalRecords() {
+  var n = 0;
+  for (var i = 0; i < elements.length; i++) {
+    if (!elements[i] || !elements[i].tab) continue;
+    for (var d = 0; d < 6; d++) n += elements[i].tab[d].length;
+  }
+  return n;
 }
 
 /* ---- the adaptive world: fine patches on the real lattice, surrogates elsewhere ---- */
@@ -1345,14 +1365,13 @@ function AdaptWorld() {
   this.C = new Float32Array(N);
   this.mode = new Uint8Array(N);
   this.dwell = new Int16Array(N);
-  this.kEst = new Float32Array(N * 12);      // directional: [0..5] inflow, [6..11] outflow
-  this.acc = new Float32Array(N * 12);
-  this.accN = new Int16Array(N * 12);
+  this.kEst = new Float32Array(N * 6);
+  this.acc = new Float32Array(N * 6);
+  this.accN = new Int16Array(N * 6);
   this.usingRec = new Array(N);
   this.op = new Float32Array(N * 2);
   this.reset();
 }
-AdaptWorld.prototype.dirK = function (k, d, out) { return this.kEst[k * 12 + (out ? 6 + d : d)]; };
 AdaptWorld.prototype.reset = function () {
   var self = this, N = worldGeom.N, i;
   this.elem.fill(0); this.role.fill(0); this.C.fill(0);
@@ -1363,7 +1382,7 @@ AdaptWorld.prototype.reset = function () {
   this.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
   var k0 = elements[0].k;
   forEachValid(worldGeom, function (k) {
-    for (var d = 0; d < 12; d++) self.kEst[k * 12 + d] = k0[d % 6];
+    for (var d = 0; d < 6; d++) self.kEst[k * 6 + d] = k0[d];
   });
   var ifaceOf = {}, ifaces = [];
   forEachValid(worldGeom, function (k) {
@@ -1421,8 +1440,7 @@ AdaptWorld.prototype.step = function () {
     if (f.b >= 0) {
       var eb = elements[this.elem[f.b]];
       var hb = eb.cap > 0 ? this.C[f.b] / eb.cap : 0;
-      var ka = this.dirK(f.a, f.da, ha > hb ? 1 : 0);
-      var kb = this.dirK(f.b, f.db, ha > hb ? 0 : 1);
+      var ka = this.kEst[f.a * 6 + f.da], kb = this.kEst[f.b * 6 + f.db];
       var sum = ka + kb;
       u[n] = sum > 1e-9 ? (ka * ha + kb * hb) / sum : (ha + hb) / 2;
       gP[n] = sum > 1e-9 ? ka * kb / sum : 0;
@@ -1434,26 +1452,41 @@ AdaptWorld.prototype.step = function () {
   forEachValid(worldGeom, function (k) {
     var el = elements[self.elem[k]];
     if (el.cap === 0) return;
-    var hh = self.C[k] / el.cap, dd, iid, drive = 0;
+    var hh = self.C[k] / el.cap, dd, iid, nbSum = 0, nbN = 0;
     for (dd = 0; dd < 6; dd++) {
       iid = io[k * 6 + dd];
-      if (iid != null && ifs[iid].b >= 0) drive = Math.max(drive, Math.abs(u[iid] - hh));
+      if (iid == null || ifs[iid].b < 0) continue;
+      var nbk = ifs[iid].a === k ? ifs[iid].b : ifs[iid].a;
+      var eNb = elements[self.elem[nbk]];
+      nbSum += eNb.cap > 0 ? self.C[nbk] / eNb.cap : 0; nbN++;
     }
-    self.op[k * 2] = hh; self.op[k * 2 + 1] = drive;
+    self.op[k * 2] = hh; self.op[k * 2 + 1] = nbN ? nbSum / nbN : hh;
     var imposed = self.role[k] !== 0;
     var wasFine = self.mode[k] === 1;
     if (imposed) { self.mode[k] = 1; self.dwell[k] = 1; }
     else if (self.dwell[k] <= 0) {
       var due = ((self.t + k * 37) % AUDIT_PERIOD) === 0;
-      var rec = due ? null : findRecord(el, [hh, drive], self.mode[k] === 0);
-      if (rec) {
-        self.mode[k] = 0; self.usingRec[k] = rec;
-        for (dd = 0; dd < 12; dd++) self.kEst[k * 12 + dd] = rec.k[dd];
+      var covered = !due, kTmp = [0, 0, 0, 0, 0, 0];
+      if (covered) {
+        for (dd = 0; dd < 6; dd++) {
+          iid = io[k * 6 + dd];
+          if (iid == null || ifs[iid].b < 0) continue;
+          var nb = ifs[iid].a === k ? ifs[iid].b : ifs[iid].a;
+          var eN = elements[self.elem[nb]];
+          var hN = eN.cap > 0 ? self.C[nb] / eN.cap : 0;
+          var rc = findRecord(el, dd, [hh, hN], self.mode[k] === 0);
+          if (!rc) { covered = false; break; }         // every live seam must be known
+          kTmp[dd] = rc.k;
+        }
+      }
+      if (covered) {
+        self.mode[k] = 0;
+        for (dd = 0; dd < 6; dd++) self.kEst[k * 6 + dd] = kTmp[dd];
       } else {
         self.mode[k] = 1; self.dwell[k] = ADAPT_DWELL;
         self.fallbacks++; self.winFall++;
         if (due) self.audits++;
-        for (dd = 0; dd < 12; dd++) { self.acc[k * 12 + dd] = 0; self.accN[k * 12 + dd] = 0; }
+        for (dd = 0; dd < 6; dd++) { self.acc[k * 6 + dd] = 0; self.accN[k * 6 + dd] = 0; }
       }
     }
     if (self.mode[k] === 1) {
@@ -1578,31 +1611,31 @@ AdaptWorld.prototype.step = function () {
       var dh6 = uEff - hn;
       if (self.dwell[k] <= ADAPT_MEASURE && Math.abs(dh6) > 0.008) {
         var kd = F / dh6;
-        if (kd > 0 && kd < 40) {
-          var slot = k * 12 + (dh6 > 0 ? dd : 6 + dd);
-          self.acc[slot] += kd; self.accN[slot]++;
-        }
+        if (kd > 0 && kd < 40) { self.acc[k * 6 + dd] += kd; self.accN[k * 6 + dd]++; }
       }
     }
     self.dwell[k]--;
     if (self.dwell[k] <= 0) {
-      var kv = [], seenAny = false;
-      for (dd = 0; dd < 12; dd++) {
-        var cntS = self.accN[k * 12 + dd];
-        if (cntS > 0) { kv.push(self.acc[k * 12 + dd] / cntS); seenAny = true; }
-        else kv.push(el.k[dd % 6]);
-      }
-      if (seenAny) {
-        var prev = self.usingRec[k];
-        if (prev) {
-          var num2 = 0, den2 = 0;
-          for (dd = 0; dd < 12; dd++) { num2 += Math.abs(kv[dd] - prev.k[dd]); den2 += Math.abs(kv[dd]); }
-          if (den2 > 1e-9 && num2 / den2 > AUDIT_TOL) prev.r = Math.max(0.3, prev.r * 0.55);
+      var seenAny = false;
+      for (dd = 0; dd < 6; dd++) {
+        var cntS = self.accN[k * 6 + dd];
+        if (cntS === 0) continue;
+        var iid4 = io[k * 6 + dd];
+        if (iid4 == null || ifs[iid4].b < 0) continue;
+        var nb2 = ifs[iid4].a === k ? ifs[iid4].b : ifs[iid4].a;
+        var eN2 = elements[self.elem[nb2]];
+        var hN2 = eN2.cap > 0 ? self.C[nb2] / eN2.cap : 0;
+        var kMeas = self.acc[k * 6 + dd] / cntS;
+        var prev = findRecord(el, dd, [hn, hN2], false);
+        if (prev) {                                     // AUDIT verdict for this seam
+          var den3 = Math.abs(kMeas) + Math.abs(prev.k);
+          if (den3 > 1e-9 && 2 * Math.abs(kMeas - prev.k) / den3 > AUDIT_TOL) prev.r = Math.max(0.3, prev.r * 0.55);
         }
-        commitRecord(el, [self.C[k] / el.cap, self.op[k * 2 + 1]], kv);
-        for (dd = 0; dd < 12; dd++) self.kEst[k * 12 + dd] = kv[dd];
-        self.usingRec[k] = null;
-      } else self.dwell[k] = 2;
+        commitRecord(el, dd, [hn, hN2], kMeas);
+        self.kEst[k * 6 + dd] = kMeas;
+        seenAny = true;
+      }
+      if (!seenAny) self.dwell[k] = 2;
     }
   });
 
@@ -1667,11 +1700,6 @@ AdaptWorld.prototype.surrogateFraction = function () {
   });
   return tot ? sur / tot : 0;
 };
-function totalRecords() {
-  var n = 0;
-  for (var i = 0; i < elements.length; i++) if (elements[i] && elements[i].records) n += elements[i].records.length;
-  return n;
-}
 
 var adaptWorld = new AdaptWorld();
 var adaptSim = new Sim('cv-adapt', worldGeom.w, worldGeom.h, {
@@ -1742,23 +1770,23 @@ function drawKnowledge() {
   if (!cv) return;
   var ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
   ctx.fillStyle = css['--panel2']; ctx.fillRect(0, 0, W, H);
-  var XMAX = 1.3, YMAX = 0.42;
+  var XMAX = 2.2, YMAX = 2.2;
   function px(h) { return 26 + (h / XMAX) * (W - 36); }
   function py(dr) { return H - 22 - (dr / YMAX) * (H - 34); }
   ctx.strokeStyle = alphaColor('#746C60', 0.35); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(26, 8); ctx.lineTo(26, H - 22); ctx.lineTo(W - 8, H - 22); ctx.stroke();
   ctx.fillStyle = css['--muted']; ctx.font = '9px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
-  ctx.fillText('saturation →', W / 2, H - 8);
-  ctx.save(); ctx.translate(9, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('drive →', 0, 0); ctx.restore();
+  ctx.fillText('own head →', W / 2, H - 8);
+  ctx.save(); ctx.translate(9, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('neighbour head →', 0, 0); ctx.restore();
   // dry threshold
   ctx.strokeStyle = alphaColor('#C4453C', 0.5); ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(px(DRY_H0), 8); ctx.lineTo(px(DRY_H0), H - 22); ctx.stroke();
   ctx.setLineDash([]);
-  var recs = (elements[0] && elements[0].records) || [];
+  var recs = (elements[0] && elements[0].tab) ? elements[0].tab[0] : [];
   for (var i = 0; i < recs.length; i++) {
     var r = recs[i];
     ctx.beginPath();
-    ctx.ellipse(px(r.op[0]), py(r.op[1]), Math.max(2, r.r * OP_SH / XMAX * (W - 36)), Math.max(2, r.r * OP_SDR / YMAX * (H - 34)), 0, 0, 7);
+    ctx.ellipse(px(r.op[0]), py(r.op[1]), Math.max(2, r.r * OP_SH / XMAX * (W - 36)), Math.max(2, r.r * OP_SO / YMAX * (H - 34)), 0, 0, 7);
     ctx.fillStyle = alphaColor('#34767E', 0.13); ctx.fill();
     ctx.strokeStyle = alphaColor('#34767E', 0.5); ctx.lineWidth = 0.8; ctx.stroke();
   }

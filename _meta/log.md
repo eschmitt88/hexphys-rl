@@ -38,3 +38,4 @@ skills; read by `/lint`.
 2026-08-18 foundry v3.1: per-seam keyed records + grid-convergence study; closure IS convergent (order ~1.6); a-priori 4x gain does NOT transfer a-posteriori
 2026-08-18 diagnosis: residual is star-form error — per-seam k is ill-posed in a 6-port environment (negative conductances measured); Jensen/clamps/transient-dwell all falsified; ratio-estimator replaced with regression
 2026-08-18 foundry v3.2: full port matrix (offline shape + online amplitude) — records 749->50, learning 260x, accuracy flat; spatial map localises error to steep-gradient region near the source
+2026-08-18 foundry v3.3: MUSCL face reconstruction + exact fine-side port response — adaptive error 15.5% -> 7.7% at unchanged 6x compute

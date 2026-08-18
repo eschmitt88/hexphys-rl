@@ -279,6 +279,40 @@ but that test was botched: the face position was anchored to a seam cell's
 centre rather than the seam centroid. Gradient reconstruction has therefore
 never been fairly evaluated, and it is the rung the spatial evidence points at.
 
+## RESOLVED: 15.5% -> 7.7% (2026-08-18, v3.3)
+
+Two fixes, both indicated by the spatial error map (29.5% at the source tile
+decaying monotonically to 4.6% at the far edge = a steady spatial-gradient
+failure):
+
+1. **MUSCL reconstruction (15.5% -> 13.4%).** The flux law drove transport with
+   the centre-to-centre head difference between tiles. Near the source, means run
+   3.00 / 2.24 / 1.48 while the true head where two tiles meet is close to the
+   average of their adjacent edges — so the surrogate over-drove flux exactly
+   where gradients are steep, drained too fast, and held too little fluid (the
+   long-standing ~15% deficit, explained). Fix: reconstruct each tile's head AT
+   the seam from a limited least-squares gradient over its neighbours
+   (Barth-Jespersen limiter). Gradients are reconstructed per tick, never stored
+   — standard second-order finite volume.
+2. **Exact fine-side port response (13.4% -> 7.7%).** Interface heads adjacent to
+   a tile running in detailed mode were still computed from that tile's COARSE
+   stand-in. For the always-fine source tile (head 3.0, strongly non-uniform
+   inside) that is a poor proxy. A fine tile's port response is known exactly and
+   cheaply from its own cells — F = sum over seam edges of 2K*sat*(u - h_cell),
+   linear in u. General principle: **never model what you are already
+   simulating.**
+
+Final state: 83% of tiles on surrogate, 375/2257 cells per tick (6x), **7.7%
+error**, ~80 records, novelty-fallback decay 288x, conservation exact, novelty
+detection still fires (45 fallbacks on a bone-dry excursion). Spatial map is now
+nearly flat: mid-field 1.9-4.6%, peaks ~8-10% at the source and drain rings.
+
+**Retraction.** The transient-vs-steady test (0.96 ratio) was read as "sub-tile
+structure is not the issue". Wrong inference from a correct measurement: it ruled
+out transience *in time*, not steady spatial structure inside a tile — which was
+the actual cause. Tally for the whole investigation: 6 hypotheses, 5 falsified,
+2 structural fixes that stuck.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

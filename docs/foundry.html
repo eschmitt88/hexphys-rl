@@ -276,13 +276,11 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       </div>
     </div>
     <p class="note">What to watch: at reset every tile is red — nothing is known, so everything runs in full detail and the twin is doing double work. Records accumulate, tiles flip to surrogate, and the fallback trace decays. Then the source cuts out, the world starts drying, operating points march left into unexplored territory, and the map flushes red again — briefly, because each excursion is also a lesson. Compute is the honest metric: fine cells stepped per tick against the 2,257 the truth pays every tick, forever.</p>
-    <p class="note">Measured, so you don't have to take it on faith: novelty fallbacks decay <strong>0.31 → 0.00 per tick</strong> (a 68× drop) while the audit traffic holds flat at 0.37 — that floor is deliberate and permanent, the price of continuing to check. Steady state runs <strong>83% of tiles on surrogate at 378 of 2,257 cells per tick — 6× less physics — for 15.5% error</strong> against the truth running beside it. Slam every tile bone dry, a corner of operating space it has never seen, and the trust check fires 45 fresh fallbacks within a hundred ticks.</p>
-    <p class="note"><strong>Verification, the thing CFD does that we hadn't.</strong> Flowers of radius 1, 2 and 3 all tile the plane, so the same physical problem can be re-tiled at three coarse resolutions and the closure's flux error measured against exact fluxes at each. Result: <strong>27.2% → 13.2% → 7.4%</strong> as tiles shrink from 37 to 19 to 7 cells — an observed order of ~1.6. The lumped closure is a <em>convergent discretization</em>, not an O(1) correlation, which is the opposite of what I predicted. Error here is controllable by two independent dials: tile size and feature richness.</p>
-    <p class="note"><strong>And a caution the turbulence people would recognise.</strong> Keying each seam on (own head, neighbour head) instead of a tile-global operating point cuts the <em>a priori</em> flux error four-fold — 27.2% to 6.7% at this tile size, measured by handing the model exact coarse states. It barely moves the <em>a posteriori</em> error of the running simulation: 15.5% before, 15.8% after. That disconnect is a documented hazard of subgrid modelling — a model that scores better against exact fields need not run better, because in a live simulation the coarse state itself drifts and flux errors interact rather than accumulate independently. The remaining bias is systematic (the surrogate world holds ~18% less fluid than truth), which points at storage and boundary coupling rather than the flux law, and that is the next thing to measure rather than guess.</p>
-    <p class="note"><strong>Where the error actually lives.</strong> Mapping per-tile error against distance from the source settles it: <strong>29.5% at the source tile, 22.5% one ring out, decaying monotonically to 4.6% at the far edge</strong>. The error is not spread evenly and it is not a timing artefact — it concentrates exactly where the head gradients are steepest. A tile beside the source is genuinely high on one side and low on the other, and a single stored number cannot hold that shape, so it passes the wrong flux onward. The runtime now carries the element's full characterised port matrix with an in-situ amplitude, which cut the record store from 749 entries to 50 and sharpened the learning curve to a 260× decay — but it did not touch this, because a port matrix describes how a tile routes between its seams, not how steeply the field tilts inside it.</p>
-    <p class="note">One prediction died here. Falling back reconstructs a tile's 37 cells by spreading its single stored number uniformly, so everything the interior knew about its own shape is lost — which should have made the error transient-dominated. It isn't: <strong>19.5% near a pulse edge versus 20.1% deep in steady flow</strong>, a ratio of 0.97. The residual is model-form, not internal-state compression, so retained internal modes are <em>not</em> the next rung — richer seam interfaces are. Three of this project's four biggest corrections have come from a measurement contradicting a confident guess.</p>
-  </div>
-</section>
+    <p class="note"><strong>Measured, not asserted.</strong> Novelty fallbacks decay <strong>0.36 → 0.00 per tick</strong> (a 288× drop) while audit traffic holds flat at 0.37 — that floor is deliberate and permanent, the price of continuing to check. Steady state runs <strong>83% of tiles on surrogate at 375 of 2,257 cells per tick — 6× less physics — for 7.7% error</strong> against the truth running beside it. Slam every tile bone dry, a corner of operating space it has never seen, and the trust check fires 45 fresh fallbacks within a hundred ticks. The record store holds ~80 entries: one amplitude on each element's characterised port matrix, not a conductance per seam.</p>
+    <p class="note"><strong>Verification, the thing CFD does that we hadn't.</strong> Flowers of radius 1, 2 and 3 all tile the plane, so the same problem re-tiles at three coarse resolutions and the closure's flux error can be measured against exact fluxes at each: <strong>27.2% → 13.2% → 7.4%</strong> as tiles shrink from 37 to 19 to 7 cells, an observed order of ~1.6. The closure is a <em>convergent discretisation</em>, not a fitted correlation — error is controllable by two independent dials, tile size and model richness.</p>
+    <p class="note"><strong>How the error got from 15.5% to 7.7%, and what it cost to find.</strong> Six hypotheses were tested and five died. Jensen's inequality on the concave drying law (right sign, but only a 0.4% gap — most cells sit far above the threshold). Mass destroyed by clamps (exactly zero). Calibrating during the settling transient (3%, not dominant — though it exposed a genuine statistics bug: conductance was being estimated by averaging F/Δh, whose right tail dominates, now a regression through the origin). Richer per-seam feature keys (cut <em>a priori</em> flux error four-fold and moved runtime accuracy by nothing — the classic a-priori/a-posteriori disconnect that LES modellers know well). What finally worked came from mapping error against distance from the source: <strong>29.5% at the source tile decaying monotonically to 4.6% at the far edge</strong> — a steep-gradient failure, in space, at steady state. Two fixes followed. <strong>MUSCL reconstruction</strong>: stop driving flux with the centre-to-centre head difference and reconstruct each tile's head <em>at the seam</em> from a limited least-squares gradient over its neighbours (15.5% → 13.4%). Then <strong>exact fine-side port response</strong>: when a tile is being simulated in detail, its interface condition should come from its 37 real cells, not from its own coarse stand-in (13.4% → 7.7%). The remaining error is now nearly uniform across the map — mid-field tiles sit at 2–5%.</p>
+    <p class="note">One inference had to be retracted along the way. An early test comparing error near a pulse edge against error in steady flow came back at a 0.96 ratio, and I read that as "sub-tile structure isn't the problem." The measurement was fine; the conclusion wasn't. It showed the error isn't transient <em>in time</em>, which says nothing about steady spatial structure inside a tile — and steady internal tilt turned out to be exactly the problem. Six predictions, five falsified: the twin running alongside is the only reason any of this was findable.</p>
+  </section>
 
 <section id="physics">
   <div class="wrap">
@@ -1365,6 +1363,8 @@ function AdaptWorld() {
   this.mode = new Uint8Array(N);
   this.dwell = new Int16Array(N);
   this.lam = new Float32Array(N);        // amplitude on the element's offline port matrix
+  this.gx = new Float32Array(N);         // reconstructed head gradient (MUSCL, not stored state)
+  this.gy = new Float32Array(N);
   this.acc = new Float32Array(N);        // sum of F*P  (regression numerator)
   this.acc2 = new Float32Array(N);       // sum of P*P  (regression denominator)
   this.accN = new Int16Array(N);
@@ -1382,6 +1382,7 @@ AdaptWorld.prototype.reset = function () {
   this.role[mapIdx(worldGeom, -WORLD_R + 1, 0)] = 1;
   this.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
   for (var q = 0; q < N; q++) this.lam[q] = 1;
+  this.gx.fill(0); this.gy.fill(0);
   var ifaceOf = {}, ifaces = [];
   forEachValid(worldGeom, function (k) {
     if (elements[self.elem[k]].cap === 0) return;
@@ -1411,7 +1412,7 @@ AdaptWorld.prototype.reset = function () {
   }
   this.fc = new Float32Array(fineGeom.N);
   this.truthC = new Float32Array(fineGeom.N);
-  this.t = 0; this.steps = 0; this.fallbacks = 0; this.audits = 0;
+  this.t = 0; this.steps = 0; this.fallbacks = 0; this.audits = 0; this.fineReady = false;
   this.clampAdapt = 0; this.clampTruth = 0;   // mass destroyed by non-negativity clamps
   this.fineCellSteps = 0; this.fineTiles = 0;
   this.winFall = 0; this.winSteps = 0; this.hist = [];
@@ -1431,6 +1432,50 @@ AdaptWorld.prototype.step = function () {
   var comp = this.comp, m = fineGeom, fc = this.fc;
   var n, d, id, ci, i, sm, h;
 
+  /* 0. MUSCL gradient reconstruction: least-squares fit of dh/dx, dh/dy from the
+        neighbouring tile heads, Barth-Jespersen limited so no face head overshoots the
+        local min/max. Gradients are RECONSTRUCTED each tick, never stored — this is the
+        standard second-order finite-volume move, and the error map says the residual is
+        a steep-gradient failure. */
+  var headMean = function (c) { var e = elements[self.elem[c]]; return e.cap > 0 ? self.C[c] / e.cap : 0; };
+  forEachValid(worldGeom, function (k) {
+    var e0 = elements[self.elem[k]];
+    if (e0.cap === 0) { self.gx[k] = 0; self.gy[k] = 0; return; }
+    var h0 = headMean(k), sxx = 0, sxy = 0, syy = 0, sxv = 0, syv = 0, lo = h0, hi = h0, d;
+    for (d = 0; d < 6; d++) {
+      var nk = k + worldGeom.shifts[d];
+      if (nk < 0 || nk >= worldGeom.N || !worldGeom.valid[nk]) continue;
+      if (elements[self.elem[nk]].cap === 0) continue;
+      var dx = worldGeom.cx[nk] - worldGeom.cx[k], dy = worldGeom.cy[nk] - worldGeom.cy[k];
+      var dv = headMean(nk) - h0;
+      sxx += dx * dx; sxy += dx * dy; syy += dy * dy; sxv += dx * dv; syv += dy * dv;
+      if (headMean(nk) < lo) lo = headMean(nk);
+      if (headMean(nk) > hi) hi = headMean(nk);
+    }
+    var det = sxx * syy - sxy * sxy;
+    var gx = det > 1e-9 ? (syy * sxv - sxy * syv) / det : 0;
+    var gy = det > 1e-9 ? (-sxy * sxv + sxx * syv) / det : 0;
+    /* Barth-Jespersen limiter: scale the gradient until every face value sits in [lo,hi] */
+    var phi = 1;
+    for (d = 0; d < 6; d++) {
+      var nk2 = k + worldGeom.shifts[d];
+      if (nk2 < 0 || nk2 >= worldGeom.N || !worldGeom.valid[nk2]) continue;
+      var fx = 0.5 * (worldGeom.cx[nk2] - worldGeom.cx[k]), fy = 0.5 * (worldGeom.cy[nk2] - worldGeom.cy[k]);
+      var dd2 = gx * fx + gy * fy;
+      if (dd2 > 1e-9) phi = Math.min(phi, (hi - h0) / dd2);
+      else if (dd2 < -1e-9) phi = Math.min(phi, (lo - h0) / dd2);
+    }
+    phi = Math.max(0, Math.min(1, phi));
+    self.gx[k] = gx * phi; self.gy[k] = gy * phi;
+  });
+  /* head reconstructed at the seam facing direction d (the midpoint between centres) */
+  var faceHead = function (c, d) {
+    var nk = c + worldGeom.shifts[d];
+    if (nk < 0 || nk >= worldGeom.N || !worldGeom.valid[nk]) return headMean(c);
+    var fx = 0.5 * (worldGeom.cx[nk] - worldGeom.cx[c]), fy = 0.5 * (worldGeom.cy[nk] - worldGeom.cy[c]);
+    return headMean(c) + self.gx[c] * fx + self.gy[c] * fy;
+  };
+
   /* 1. interface heads: Jacobi sweeps enforcing port-flux continuity with the FULL
         port matrix, so cross-seam through-flux is represented instead of misbooked */
   var headOf = function (c) { var e = elements[self.elem[c]]; return e.cap > 0 ? self.C[c] / e.cap : 0; };
@@ -1438,19 +1483,34 @@ AdaptWorld.prototype.step = function () {
   var portCoef = function (c, d, out) {          // F_into_c_at_d = a*u_d + b
     var e = elements[self.elem[c]], L = self.lam[c];
     var Mr = (e.M && e.M[d]) || null, kd = e.k[d];
-    var b = -L * kd * headOf(c);
+    var b = -L * kd * faceHead(c, d);           // MUSCL: drive from the head AT the seam
     if (Mr) for (var j = 0; j < 6; j++) { if (j === d) continue; b += L * Mr[j] * uAt(c, j); }
     out.a = L * ((Mr ? Mr[d] : 0) + kd);
     out.b = b;
+  };
+  /* a FINE tile's port response is known exactly from its own cells — use that instead of
+     its coarse stand-in. F = sum over seam edges of 2K*sat*(u - fc[g]), linear in u. */
+  var portCoefFine = function (c, d, out) {
+    var sc = self.seamCells(self.ciOf[c], d), a = 0, b = 0;
+    for (var i2 = 0; i2 < sc.length; i2++) {
+      var g2 = sc[i2].g, hg = fc[g2];
+      var uGuess = uAt(c, d);
+      var sat2 = uGuess > hg ? satH(uGuess) : satH(hg);
+      a += 2 * K * sat2; b -= 2 * K * sat2 * hg;
+    }
+    out.a = a; out.b = b;
+  };
+  var coefFor = function (c, d, out) {
+    if (self.mode[c] === 1 && self.fineReady) portCoefFine(c, d, out); else portCoef(c, d, out);
   };
   var oA = { a: 0, b: 0 }, oB = { a: 0, b: 0 };
   for (n = 0; n < ifs.length; n++) if (ifs[n].b < 0) u[n] = headOf(ifs[n].a);
   for (var sw = 0; sw < U_SWEEPS; sw++) {
     for (n = 0; n < ifs.length; n++) {
       var fI = ifs[n], nu;
-      portCoef(fI.a, fI.da, oA);
+      coefFor(fI.a, fI.da, oA);
       if (fI.b >= 0) {
-        portCoef(fI.b, fI.db, oB);
+        coefFor(fI.b, fI.db, oB);
         var den0 = oA.a + oB.a;
         nu = Math.abs(den0) > 1e-9 ? -(oA.b + oB.b) / den0 : u[n];
       } else nu = Math.abs(oA.a) > 1e-9 ? -oA.b / oA.a : headOf(fI.a);
@@ -1496,6 +1556,7 @@ AdaptWorld.prototype.step = function () {
     }
   });
   this._needInit = false;
+  this.fineReady = true;
 
   /* 3. fine patches: direct cell coupling inside and between fine tiles (exactly like truth) */
   var dc = AdaptWorld._fd && AdaptWorld._fd.length === m.N ? AdaptWorld._fd : (AdaptWorld._fd = new Float32Array(m.N));
@@ -1614,7 +1675,7 @@ AdaptWorld.prototype.step = function () {
           F = Fs; uEff = hsum / cnt;
         } else { F = seamF[k * 6 + dd] || 0; uEff = u[iid3]; }
         // offline model's unit-amplitude prediction for this port
-        var Mr = (el.M && el.M[dd]) || null, P = el.k[dd] * (uEff - hn);
+        var Mr = (el.M && el.M[dd]) || null, P = el.k[dd] * (uEff - faceHead(k, dd));
         if (Mr) for (var j2 = 0; j2 < 6; j2++) {
           var ij = io[k * 6 + j2];
           P += Mr[j2] * (ij != null ? u[ij] : hn);

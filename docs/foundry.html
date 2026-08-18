@@ -236,6 +236,51 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   </div>
 </section>
 
+<section id="adaptive">
+  <div class="wrap">
+    <p class="eyebrow">Station 04 · the adaptive runtime</p>
+    <h2>Simulate in detail until you can't tell the difference</h2>
+    <p>Everything above assumed one fixed surrogate per element. Here the runtime decides <em>per tile, per tick</em>. The physics now has a real nonlinearity — <strong>drying</strong>: below a saturation threshold a cell's conductance collapses (donor-side, so wet can still wet dry), so a tile's behavior depends on how wet it is and how hard it's driven. One fitted conductance can't cover that, and nothing pretends otherwise.</p>
+    <p>So each tile carries a small table of calibration records, each a local fit plus a <strong>trust region</strong> in operating space. Every tick a tile checks where it is: inside a record's region → run the cheap surrogate; outside → <strong>fall back to full 37-cell simulation</strong>, watch the real fluxes for a settling period, and commit what it learned as a new record (or widen an existing one that already predicted it). This is ISAT — in-situ adaptive tabulation, the combustion-chemistry algorithm — wearing a hex costume. The source pulses on and off, so the world keeps wandering into regimes it hasn't seen yet.</p>
+    <div class="demo">
+      <div class="bar">
+        <output id="a-pulse">source ●</output>
+        <output id="a-surr">on surrogate ·</output>
+        <output id="a-rec">records ·</output>
+        <output id="a-err">error ·</output>
+        <output id="a-cost">compute ·</output>
+        <span class="grow"></span>
+        <button class="btn" id="a-reset" type="button">Reset knowledge</button>
+      </div>
+      <div class="stage">
+        <div class="cols">
+          <figure style="margin:0;text-align:center">
+            <canvas id="cv-adapt" aria-label="Understanding map: tiles outlined hot where they are being simulated in detail"></canvas>
+            <figcaption class="note">runtime · <span style="color:#C4453C">■</span> detailed sim &nbsp; <span style="color:#34767E">■</span> surrogate</figcaption>
+          </figure>
+          <figure style="margin:0;text-align:center">
+            <canvas id="cv-adapt-truth" aria-label="Full-resolution ground truth running alongside"></canvas>
+            <figcaption class="note">ground truth · all 2,257 cells, always</figcaption>
+          </figure>
+        </div>
+        <div class="cols" style="margin-top:1rem">
+          <figure style="margin:0;text-align:center">
+            <canvas id="cv-adapt-know" width="300" height="200" aria-label="Knowledge map: calibration records and their trust regions in operating space"></canvas>
+            <figcaption class="note">knowledge map · open element — circles are trust regions, dots are live tiles</figcaption>
+          </figure>
+          <figure style="margin:0;text-align:center">
+            <canvas id="cv-adapt-spark" width="300" height="80" aria-label="Fallback rate over time"></canvas>
+            <figcaption class="note">fallback rate — the learning curve</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+    <p class="note">What to watch: at reset every tile is red — nothing is known, so everything runs in full detail and the twin is doing double work. Records accumulate, tiles flip to surrogate, and the fallback trace decays. Then the source cuts out, the world starts drying, operating points march left into unexplored territory, and the map flushes red again — briefly, because each excursion is also a lesson. Compute is the honest metric: fine cells stepped per tick against the 2,257 the truth pays every tick, forever.</p>
+    <p class="note">Measured, so you don't have to take it on faith: novelty fallbacks decay <strong>0.31 → 0.00 per tick</strong> (a 68× drop) while the audit traffic holds flat at 0.37 — that floor is deliberate and permanent, the price of continuing to check. Steady state runs <strong>83% of tiles on surrogate at 378 of 2,257 cells per tick — 6× less physics — for 15.5% error</strong> against the truth running beside it. Slam every tile bone dry, a corner of operating space it has never seen, and the trust check fires 45 fresh fallbacks within a hundred ticks.</p>
+    <p class="note">One prediction died here. Falling back reconstructs a tile's 37 cells by spreading its single stored number uniformly, so everything the interior knew about its own shape is lost — which should have made the error transient-dominated. It isn't: <strong>19.5% near a pulse edge versus 20.1% deep in steady flow</strong>, a ratio of 0.97. The residual is model-form, not internal-state compression, so retained internal modes are <em>not</em> the next rung — richer seam interfaces are. Three of this project's four biggest corrections have come from a measurement contradicting a confident guess.</p>
+  </div>
+</section>
+
 <section id="physics">
   <div class="wrap">
     <p class="eyebrow">What this is, formally</p>
@@ -1169,6 +1214,582 @@ document.getElementById('tw-build').addEventListener('click', function () {
     });
     if (twin) { twin.errHist = []; }
   });
+});
+
+
+/* ================= STATION 4: adaptive multiscale runtime ================= */
+var DRY_H0 = 0.30;
+function satH(h) { return h <= 0 ? 0 : (h >= DRY_H0 ? 1 : h / DRY_H0); }
+
+/* drying-aware tile stepping (donor-side saturation: wet can wet dry) */
+function tileStepDry(walls, c, bc) {
+  var m = tileGeom, k, d, nk;
+  var dc = tileStepDry._dc || (tileStepDry._dc = new Float32Array(m.N));
+  dc.fill(0);
+  for (k = 0; k < m.N; k++) {
+    if (!m.valid[k] || walls[k]) continue;
+    for (d = 0; d < 3; d++) {
+      nk = k + m.shifts[d];
+      if (nk < 0 || nk >= m.N || !m.valid[nk] || walls[nk]) continue;
+      var dh = c[k] - c[nk];
+      var f = K * (dh > 0 ? satH(c[k]) : satH(c[nk])) * dh;
+      dc[k] -= f; dc[nk] += f;
+    }
+  }
+  if (bc) {
+    for (var sm = 0; sm < 6; sm++) {
+      if (bc[sm] == null) continue;
+      var edges = SEAM[sm];
+      for (var i = 0; i < edges.length; i++) {
+        k = edges[i].k;
+        if (walls[k]) continue;
+        var dh2 = bc[sm] - c[k];
+        dc[k] += 2 * K * (dh2 > 0 ? satH(bc[sm]) : satH(c[k])) * dh2;
+      }
+    }
+  }
+  for (k = 0; k < m.N; k++) if (m.valid[k] && !walls[k]) c[k] += dc[k];
+}
+function seamFluxDry(walls, c, bc) {
+  var out = [0, 0, 0, 0, 0, 0];
+  for (var sm = 0; sm < 6; sm++) {
+    if (bc[sm] == null) continue;
+    var edges = SEAM[sm];
+    for (var i = 0; i < edges.length; i++) {
+      var k = edges[i].k;
+      if (walls[k]) continue;
+      var dh = bc[sm] - c[k];
+      out[sm] += 2 * K * (dh > 0 ? satH(bc[sm]) : satH(c[k])) * dh;
+    }
+  }
+  return out;
+}
+
+/* composite stamping shared by the adaptive ground truth */
+function stampComposite(elemArr) {
+  var cellIds = [];
+  forEachValid(worldGeom, function (k) { cellIds.push(k); });
+  var used = new Uint8Array(fineGeom.N), gwalls = new Uint8Array(fineGeom.N);
+  var tileCells = [], collisions = 0;
+  cellIds.forEach(function (wk) {
+    var qr = decode(worldGeom, wk);
+    var P = superCenter(qr[0], qr[1]);
+    var el = elements[elemArr[wk]];
+    var arr = new Int32Array(localOffsets.length);
+    for (var i = 0; i < localOffsets.length; i++) {
+      var g = mapIdx(fineGeom, P[0] + localOffsets[i][0], P[1] + localOffsets[i][1]);
+      arr[i] = g;
+      if (g < 0) { collisions++; continue; }
+      if (used[g]) collisions++;
+      used[g] = 1;
+      var tk = mapIdx(tileGeom, localOffsets[i][0], localOffsets[i][1]);
+      if (el.walls[tk]) gwalls[g] = 1;
+    }
+    tileCells.push(arr);
+  });
+  var usedList = [];
+  for (var g2 = 0; g2 < fineGeom.N; g2++) if (used[g2]) usedList.push(g2);
+  return { cellIds: cellIds, used: used, gwalls: gwalls, tileCells: tileCells, usedList: usedList, collisions: collisions };
+}
+
+/* ---- operating space + record store (ISAT-style retrieve / grow / add) ---- */
+var OP_SH = 0.16, OP_SDR = 0.15;       // scales: saturation, drive
+var ADAPT_DWELL = 22, ADAPT_MEASURE = 8, ADAPT_MAXREC = 600, ADAPT_GROW_TOL = 0.30, ADAPT_HYST = 1.6;
+var AUDIT_PERIOD = 160, AUDIT_TOL = 0.22;   // never stop checking: the compute floor
+function opDist(a, b) {
+  var dx = (a[0] - b[0]) / OP_SH, dy = (a[1] - b[1]) / OP_SDR;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function findRecord(el, op, hyst) {
+  var recs = el.records || (el.records = []);
+  var best = null, bd = 1e9, mul = hyst ? ADAPT_HYST : 1;
+  for (var i = 0; i < recs.length; i++) {
+    var d = opDist(op, recs[i].op);
+    if (d <= recs[i].r * mul && d < bd) { bd = d; best = recs[i]; }
+  }
+  return best;
+}
+function commitRecord(el, op, kv) {
+  var recs = el.records || (el.records = []);
+  var best = null, bd = 1e9, i;
+  for (i = 0; i < recs.length; i++) {
+    var d = opDist(op, recs[i].op);
+    if (d < bd) { bd = d; best = recs[i]; }
+  }
+  if (best && bd < 3.2) {                       // GROW: the neighbour already predicts this
+    var num = 0, den = 0;
+    for (i = 0; i < 12; i++) { num += Math.abs(kv[i] - best.k[i]); den += Math.abs(kv[i]); }
+    if (den > 1e-9 && num / den < ADAPT_GROW_TOL) {
+      best.r = Math.min(3.2, Math.max(best.r, bd * 1.2));
+      best.hits = (best.hits || 1) + 1;
+      return best;
+    }
+  }
+  if (recs.length >= ADAPT_MAXREC) return null; // ADD (bounded memory)
+  var rec = { op: [op[0], op[1]], k: kv.slice(), r: 1.1, hits: 1 };
+  recs.push(rec);
+  return rec;
+}
+function resetKnowledge() {
+  for (var i = 0; i < elements.length; i++) if (elements[i]) elements[i].records = [];
+}
+
+/* ---- the adaptive world: fine patches on the real lattice, surrogates elsewhere ---- */
+var localSlot = new Int32Array(tileGeom.N).fill(-1);
+(function () { var n = 0; forEachValid(tileGeom, function (k) { localSlot[k] = n++; }); })();
+
+function AdaptWorld() {
+  var N = worldGeom.N;
+  this.elem = new Int16Array(N);
+  this.role = new Uint8Array(N);
+  this.C = new Float32Array(N);
+  this.mode = new Uint8Array(N);
+  this.dwell = new Int16Array(N);
+  this.kEst = new Float32Array(N * 12);      // directional: [0..5] inflow, [6..11] outflow
+  this.acc = new Float32Array(N * 12);
+  this.accN = new Int16Array(N * 12);
+  this.usingRec = new Array(N);
+  this.op = new Float32Array(N * 2);
+  this.reset();
+}
+AdaptWorld.prototype.dirK = function (k, d, out) { return this.kEst[k * 12 + (out ? 6 + d : d)]; };
+AdaptWorld.prototype.reset = function () {
+  var self = this, N = worldGeom.N, i;
+  this.elem.fill(0); this.role.fill(0); this.C.fill(0);
+  this.mode.fill(1); this.dwell.fill(0);
+  this.acc.fill(0); this.accN.fill(0); this.op.fill(0);
+  for (i = 0; i < N; i++) this.usingRec[i] = null;
+  this.role[mapIdx(worldGeom, -WORLD_R + 1, 0)] = 1;
+  this.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
+  var k0 = elements[0].k;
+  forEachValid(worldGeom, function (k) {
+    for (var d = 0; d < 12; d++) self.kEst[k * 12 + d] = k0[d % 6];
+  });
+  var ifaceOf = {}, ifaces = [];
+  forEachValid(worldGeom, function (k) {
+    if (elements[self.elem[k]].cap === 0) return;
+    for (var d = 0; d < 6; d++) {
+      if (ifaceOf[k * 6 + d] != null) continue;
+      var nk = k + worldGeom.shifts[d];
+      var shared = nk >= 0 && nk < worldGeom.N && worldGeom.valid[nk] && elements[self.elem[nk]].cap > 0;
+      var id = ifaces.length;
+      if (shared) {
+        ifaces.push({ a: k, da: d, b: nk, db: (d + 3) % 6 });
+        ifaceOf[k * 6 + d] = id; ifaceOf[nk * 6 + ((d + 3) % 6)] = id;
+      } else { ifaces.push({ a: k, da: d, b: -1, db: -1 }); ifaceOf[k * 6 + d] = id; }
+    }
+  });
+  this.ifaces = ifaces; this.ifaceOf = ifaceOf;
+  this.u = new Float32Array(ifaces.length);
+  this.gPair = new Float32Array(ifaces.length);
+  /* one composite lattice, shared by the adaptive fine patches and the ground truth */
+  this.comp = stampComposite(this.elem);
+  this.truth = this.comp;
+  this.owner = new Int32Array(fineGeom.N); this.owner.fill(-1);
+  this.ciOf = {};
+  for (var ci = 0; ci < this.comp.cellIds.length; ci++) {
+    this.ciOf[this.comp.cellIds[ci]] = ci;
+    var arr = this.comp.tileCells[ci];
+    for (var j = 0; j < arr.length; j++) if (arr[j] >= 0) this.owner[arr[j]] = ci;
+  }
+  this.fc = new Float32Array(fineGeom.N);
+  this.truthC = new Float32Array(fineGeom.N);
+  this.t = 0; this.steps = 0; this.fallbacks = 0; this.audits = 0;
+  this.fineCellSteps = 0; this.fineTiles = 0;
+  this.winFall = 0; this.winSteps = 0; this.hist = [];
+};
+AdaptWorld.prototype.sourceOn = function () { return (this.t % 800) < 430; };
+AdaptWorld.prototype.seamCells = function (ci, sm) {
+  var arr = this.comp.tileCells[ci], out = [];
+  for (var i = 0; i < SEAM[sm].length; i++) {
+    var e = SEAM[sm][i], g = arr[localSlot[e.k]];
+    if (g >= 0 && !this.comp.gwalls[g]) out.push({ g: g, d: e.d });
+  }
+  return out;
+};
+AdaptWorld.prototype.step = function () {
+  var self = this, srcOn = this.sourceOn();
+  var ifs = this.ifaces, io = this.ifaceOf, u = this.u, gP = this.gPair;
+  var comp = this.comp, m = fineGeom, fc = this.fc;
+  var n, d, id, ci, i, sm, h;
+
+  /* 1. interface heads + pair conductances, from head-ordered directional k (conservative) */
+  for (n = 0; n < ifs.length; n++) {
+    var f = ifs[n];
+    var ea = elements[this.elem[f.a]];
+    var ha = ea.cap > 0 ? this.C[f.a] / ea.cap : 0;
+    if (f.b >= 0) {
+      var eb = elements[this.elem[f.b]];
+      var hb = eb.cap > 0 ? this.C[f.b] / eb.cap : 0;
+      var ka = this.dirK(f.a, f.da, ha > hb ? 1 : 0);
+      var kb = this.dirK(f.b, f.db, ha > hb ? 0 : 1);
+      var sum = ka + kb;
+      u[n] = sum > 1e-9 ? (ka * ha + kb * hb) / sum : (ha + hb) / 2;
+      gP[n] = sum > 1e-9 ? ka * kb / sum : 0;
+    } else { u[n] = ha; gP[n] = 0; }
+  }
+
+  /* 2. mode decision per tile (trust region, hysteresis, deterministic audits) */
+  var fineTiles = 0;
+  forEachValid(worldGeom, function (k) {
+    var el = elements[self.elem[k]];
+    if (el.cap === 0) return;
+    var hh = self.C[k] / el.cap, dd, iid, drive = 0;
+    for (dd = 0; dd < 6; dd++) {
+      iid = io[k * 6 + dd];
+      if (iid != null && ifs[iid].b >= 0) drive = Math.max(drive, Math.abs(u[iid] - hh));
+    }
+    self.op[k * 2] = hh; self.op[k * 2 + 1] = drive;
+    var imposed = self.role[k] !== 0;
+    var wasFine = self.mode[k] === 1;
+    if (imposed) { self.mode[k] = 1; self.dwell[k] = 1; }
+    else if (self.dwell[k] <= 0) {
+      var due = ((self.t + k * 37) % AUDIT_PERIOD) === 0;
+      var rec = due ? null : findRecord(el, [hh, drive], self.mode[k] === 0);
+      if (rec) {
+        self.mode[k] = 0; self.usingRec[k] = rec;
+        for (dd = 0; dd < 12; dd++) self.kEst[k * 12 + dd] = rec.k[dd];
+      } else {
+        self.mode[k] = 1; self.dwell[k] = ADAPT_DWELL;
+        self.fallbacks++; self.winFall++;
+        if (due) self.audits++;
+        for (dd = 0; dd < 12; dd++) { self.acc[k * 12 + dd] = 0; self.accN[k * 12 + dd] = 0; }
+      }
+    }
+    if (self.mode[k] === 1) {
+      fineTiles++;
+      if (!wasFine || self._needInit) {           // reconstruct 37 cells from one number
+        var arr = comp.tileCells[self.ciOf[k]];
+        for (var q = 0; q < arr.length; q++) if (arr[q] >= 0 && !comp.gwalls[arr[q]]) fc[arr[q]] = hh;
+      }
+    }
+  });
+  this._needInit = false;
+
+  /* 3. fine patches: direct cell coupling inside and between fine tiles (exactly like truth) */
+  var dc = AdaptWorld._fd && AdaptWorld._fd.length === m.N ? AdaptWorld._fd : (AdaptWorld._fd = new Float32Array(m.N));
+  dc.fill(0);
+  var seamF = {};
+  for (ci = 0; ci < comp.cellIds.length; ci++) {
+    var wk = comp.cellIds[ci];
+    if (this.mode[wk] !== 1) continue;
+    var cells = comp.tileCells[ci];
+    for (i = 0; i < cells.length; i++) {
+      var g = cells[i];
+      if (g < 0 || comp.gwalls[g]) continue;
+      for (d = 0; d < 3; d++) {
+        var ng = g + m.shifts[d];
+        if (!comp.used[ng] || comp.gwalls[ng]) continue;
+        var ow = this.owner[ng];
+        if (ow < 0) continue;
+        if (this.mode[comp.cellIds[ow]] !== 1) continue;   // surrogate side: handled per seam
+        var dh = fc[g] - fc[ng];
+        var fl = K * (dh > 0 ? satH(fc[g]) : satH(fc[ng])) * dh;
+        dc[g] -= fl; dc[ng] += fl;
+      }
+    }
+    /* seams facing a surrogate tile: Dirichlet from the interface head, flux measured */
+    for (sm = 0; sm < 6; sm++) {
+      var iid2 = io[wk * 6 + sm];
+      if (iid2 == null) continue;
+      var fi = ifs[iid2];
+      if (fi.b < 0) continue;                              // insulated boundary
+      var other = fi.a === wk ? fi.b : fi.a;
+      if (this.mode[other] === 1) continue;                // fine-fine: already direct
+      var sc = this.seamCells(ci, sm), uu = u[iid2], F = 0;
+      for (i = 0; i < sc.length; i++) {
+        var gg = sc[i].g, dh2 = uu - fc[gg];
+        var fl2 = 2 * K * (dh2 > 0 ? satH(uu) : satH(fc[gg])) * dh2;
+        dc[gg] += fl2; F += fl2;
+      }
+      seamF[wk * 6 + sm] = F;
+    }
+  }
+
+  /* 4. apply: fine cells, then coarse storage (surrogate pairs + measured fine fluxes) */
+  var dC = AdaptWorld._cd && AdaptWorld._cd.length === worldGeom.N ? AdaptWorld._cd : (AdaptWorld._cd = new Float32Array(worldGeom.N));
+  dC.fill(0);
+  for (n = 0; n < ifs.length; n++) {
+    var ff = ifs[n];
+    if (ff.b < 0) continue;
+    var aFine = this.mode[ff.a] === 1, bFine = this.mode[ff.b] === 1;
+    if (aFine && bFine) continue;                          // handled cell-to-cell
+    if (!aFine && !bFine) {
+      var eaa = elements[this.elem[ff.a]], ebb = elements[this.elem[ff.b]];
+      var hA = this.C[ff.a] / eaa.cap, hB = this.C[ff.b] / ebb.cap;
+      var Fp = gP[n] * (hA - hB);
+      dC[ff.a] -= Fp; dC[ff.b] += Fp;                      // symmetric ⇒ conservative
+    } else {
+      var fineSide = aFine ? ff.a : ff.b, surSide = aFine ? ff.b : ff.a;
+      var sD = aFine ? ff.da : ff.db;
+      var Fm = seamF[fineSide * 6 + sD] || 0;
+      dC[surSide] -= Fm;                                   // equal and opposite to the fine side
+    }
+  }
+  for (var li = 0; li < comp.usedList.length; li++) {
+    var kk = comp.usedList[li];
+    if (comp.gwalls[kk]) continue;
+    var ow2 = this.owner[kk];
+    if (ow2 < 0 || this.mode[comp.cellIds[ow2]] !== 1) continue;
+    fc[kk] = Math.max(0, fc[kk] + dc[kk]);
+  }
+  /* sources and drains act on whichever representation the tile is using */
+  forEachValid(worldGeom, function (k) {
+    var el = elements[self.elem[k]];
+    if (el.cap === 0) return;
+    if (self.mode[k] === 1) {
+      var arr2 = comp.tileCells[self.ciOf[k]];
+      if (self.role[k] === 1 && srcOn) {
+        var add = 1.2 / el.cap;
+        for (var q2 = 0; q2 < arr2.length; q2++) if (arr2[q2] >= 0 && !comp.gwalls[arr2[q2]]) fc[arr2[q2]] += add;
+      }
+      if (self.role[k] === 2) for (var q3 = 0; q3 < arr2.length; q3++) if (arr2[q3] >= 0) fc[arr2[q3]] = 0;
+      var sm2 = 0;
+      for (var q4 = 0; q4 < arr2.length; q4++) if (arr2[q4] >= 0 && !comp.gwalls[arr2[q4]]) sm2 += fc[arr2[q4]];
+      self.C[k] = sm2;
+    } else {
+      self.C[k] = Math.max(0, self.C[k] + dC[k]);
+      if (self.role[k] === 1 && srcOn) self.C[k] += 1.2;
+      if (self.role[k] === 2) self.C[k] = 0;
+    }
+  });
+
+  /* 5. in-situ calibration from the fine patches, then commit / audit-correct */
+  forEachValid(worldGeom, function (k) {
+    if (self.mode[k] !== 1 || self.role[k] !== 0) return;
+    var el = elements[self.elem[k]], hn = self.C[k] / el.cap, ci2 = self.ciOf[k], dd;
+    for (dd = 0; dd < 6; dd++) {
+      var iid3 = io[k * 6 + dd];
+      if (iid3 == null || ifs[iid3].b < 0) continue;
+      var F, uEff;
+      if (self.mode[ifs[iid3].a === k ? ifs[iid3].b : ifs[iid3].a] === 1) {
+        var sc2 = self.seamCells(ci2, dd), Fs = 0, hsum = 0, cnt = 0;
+        for (var q5 = 0; q5 < sc2.length; q5++) {
+          var g5 = sc2[q5].g, ng5 = g5 + m.shifts[sc2[q5].d];
+          if (!comp.used[ng5] || comp.gwalls[ng5]) continue;
+          var dh5 = fc[ng5] - fc[g5];
+          Fs += K * (dh5 > 0 ? satH(fc[ng5]) : satH(fc[g5])) * dh5;
+          hsum += 0.5 * (fc[ng5] + fc[g5]);   // head AT the seam midpoint, not the neighbour centre
+          cnt++;
+        }
+        if (!cnt) continue;
+        F = Fs; uEff = hsum / cnt;
+      } else { F = seamF[k * 6 + dd] || 0; uEff = u[iid3]; }
+      var dh6 = uEff - hn;
+      if (self.dwell[k] <= ADAPT_MEASURE && Math.abs(dh6) > 0.008) {
+        var kd = F / dh6;
+        if (kd > 0 && kd < 40) {
+          var slot = k * 12 + (dh6 > 0 ? dd : 6 + dd);
+          self.acc[slot] += kd; self.accN[slot]++;
+        }
+      }
+    }
+    self.dwell[k]--;
+    if (self.dwell[k] <= 0) {
+      var kv = [], seenAny = false;
+      for (dd = 0; dd < 12; dd++) {
+        var cntS = self.accN[k * 12 + dd];
+        if (cntS > 0) { kv.push(self.acc[k * 12 + dd] / cntS); seenAny = true; }
+        else kv.push(el.k[dd % 6]);
+      }
+      if (seenAny) {
+        var prev = self.usingRec[k];
+        if (prev) {
+          var num2 = 0, den2 = 0;
+          for (dd = 0; dd < 12; dd++) { num2 += Math.abs(kv[dd] - prev.k[dd]); den2 += Math.abs(kv[dd]); }
+          if (den2 > 1e-9 && num2 / den2 > AUDIT_TOL) prev.r = Math.max(0.3, prev.r * 0.55);
+        }
+        commitRecord(el, [self.C[k] / el.cap, self.op[k * 2 + 1]], kv);
+        for (dd = 0; dd < 12; dd++) self.kEst[k * 12 + dd] = kv[dd];
+        self.usingRec[k] = null;
+      } else self.dwell[k] = 2;
+    }
+  });
+
+  this.fineCellSteps += fineTiles * 37;
+  this.fineTiles = fineTiles;
+  this.truthStep(srcOn);
+  this.t++; this.steps++; this.winSteps++;
+  if (this.winSteps >= 30) {
+    this.hist.push(this.winFall / this.winSteps);
+    if (this.hist.length > 200) this.hist.shift();
+    this.winFall = 0; this.winSteps = 0;
+  }
+};
+AdaptWorld.prototype.truthStep = function (srcOn) {
+  var tr = this.truth, m = fineGeom, C = this.truthC;
+  var dc = AdaptWorld._td && AdaptWorld._td.length === m.N ? AdaptWorld._td : (AdaptWorld._td = new Float32Array(m.N));
+  dc.fill(0);
+  var ul = tr.usedList, li, k, d, nk;
+  for (li = 0; li < ul.length; li++) {
+    k = ul[li];
+    if (tr.gwalls[k]) continue;
+    for (d = 0; d < 3; d++) {
+      nk = k + m.shifts[d];
+      if (!tr.used[nk] || tr.gwalls[nk]) continue;
+      var dh = C[k] - C[nk];
+      var f = K * (dh > 0 ? satH(C[k]) : satH(C[nk])) * dh;
+      dc[k] -= f; dc[nk] += f;
+    }
+  }
+  for (var ci = 0; ci < tr.cellIds.length; ci++) {
+    var wk = tr.cellIds[ci], el = elements[this.elem[wk]];
+    if (this.role[wk] === 1 && srcOn && el.cap > 0) {
+      var add = 1.2 / el.cap, arr = tr.tileCells[ci];
+      for (var i = 0; i < arr.length; i++) if (arr[i] >= 0 && !tr.gwalls[arr[i]]) dc[arr[i]] += add;
+    }
+  }
+  for (li = 0; li < ul.length; li++) { k = ul[li]; C[k] = Math.max(0, C[k] + dc[k]); }
+  for (var ci2 = 0; ci2 < tr.cellIds.length; ci2++) {
+    if (this.role[tr.cellIds[ci2]] === 2) {
+      var arr2 = tr.tileCells[ci2];
+      for (var j = 0; j < arr2.length; j++) if (arr2[j] >= 0) C[arr2[j]] = 0;
+    }
+  }
+};
+AdaptWorld.prototype.error = function () {
+  var tr = this.truth, num = 0, den = 0;
+  for (var ci = 0; ci < tr.cellIds.length; ci++) {
+    var wk = tr.cellIds[ci], el = elements[this.elem[wk]];
+    if (el.cap === 0) continue;
+    var sum = 0, arr = tr.tileCells[ci];
+    for (var i = 0; i < arr.length; i++) if (arr[i] >= 0) sum += this.truthC[arr[i]];
+    var hf = sum / el.cap, hc = this.C[wk] / el.cap;
+    num += Math.abs(hf - hc); den += Math.abs(hf) + 1e-9;
+  }
+  return num / den;
+};
+AdaptWorld.prototype.surrogateFraction = function () {
+  var self = this, tot = 0, sur = 0;
+  forEachValid(worldGeom, function (k) {
+    if (elements[self.elem[k]].cap === 0) return;
+    tot++; if (self.mode[k] === 0) sur++;
+  });
+  return tot ? sur / tot : 0;
+};
+function totalRecords() {
+  var n = 0;
+  for (var i = 0; i < elements.length; i++) if (elements[i] && elements[i].records) n += elements[i].records.length;
+  return n;
+}
+
+var adaptWorld = new AdaptWorld();
+var adaptSim = new Sim('cv-adapt', worldGeom.w, worldGeom.h, {
+  rate: 30,
+  reset: function () {},
+  tick: function () {
+    adaptWorld.step();
+    if (adaptWorld.steps % 10 === 0) {
+      document.getElementById('a-pulse').textContent = adaptWorld.sourceOn() ? 'source ● on' : 'source ○ off (drying)';
+      document.getElementById('a-surr').textContent = 'on surrogate ' + (adaptWorld.surrogateFraction() * 100).toFixed(0) + '%';
+      document.getElementById('a-rec').textContent = 'records ' + totalRecords();
+      document.getElementById('a-err').textContent = 'error ' + (adaptWorld.error() * 100).toFixed(1) + '%';
+      var perTick = adaptWorld.fineTiles * 37;
+      document.getElementById('a-cost').textContent = 'compute ' + perTick + ' / 2257 cells (' + (2257 / Math.max(1, perTick)).toFixed(1) + '×)';
+      drawKnowledge(); drawFallbackSpark();
+    }
+  },
+  draw: function (s, ctx) {
+    ctx.fillStyle = css['--panel']; ctx.fillRect(0, 0, s.w, s.h);
+    forEachValid(worldGeom, function (k) {
+      var el = elements[adaptWorld.elem[k]];
+      hexPath(ctx, worldGeom.cx[k], worldGeom.cy[k], worldGeom.sz);
+      if (el.cap === 0) ctx.fillStyle = COL.wall;
+      else {
+        var t = Math.max(0, Math.min(1, adaptWorld.C[k] / el.cap * 1.4));
+        ctx.fillStyle = t < 0.02 ? COL.floor : lerpHex(COL.floor, COL.fluidHi, 0.12 + 0.88 * t);
+      }
+      ctx.fill();
+      ctx.lineWidth = adaptWorld.mode[k] === 1 ? 2.4 : 1;
+      ctx.strokeStyle = adaptWorld.mode[k] === 1 ? '#C4453C' : alphaColor('#34767E', 0.55);
+      ctx.stroke();
+      if (adaptWorld.role[k] === 1) {
+        ctx.strokeStyle = COL.srcC; ctx.lineWidth = 2;
+        hexPath(ctx, worldGeom.cx[k], worldGeom.cy[k], worldGeom.sz * 0.55); ctx.stroke();
+      } else if (adaptWorld.role[k] === 2) {
+        ctx.strokeStyle = COL.drnC; ctx.lineWidth = 2;
+        hexPath(ctx, worldGeom.cx[k], worldGeom.cy[k], worldGeom.sz * 0.55); ctx.stroke();
+      }
+    });
+  }
+});
+var adaptTruthSim = new Sim('cv-adapt-truth', worldGeom.w, worldGeom.h, {
+  rate: 30,
+  reset: function () {},
+  tick: function () {},
+  draw: function (s, ctx) {
+    ctx.fillStyle = css['--panel']; ctx.fillRect(0, 0, s.w, s.h);
+    ctx.save();
+    ctx.translate(s.w / 2, s.h / 2);
+    ctx.rotate(FINE_ROT);
+    ctx.translate(-fineGeom.ox, -fineGeom.oy);
+    var tr = adaptWorld.truth, m = fineGeom, ul = tr.usedList;
+    for (var li = 0; li < ul.length; li++) {
+      var k = ul[li];
+      if (tr.gwalls[k]) ctx.fillStyle = COL.wall;
+      else {
+        var t = Math.max(0, Math.min(1, adaptWorld.truthC[k] * 1.4));
+        ctx.fillStyle = t < 0.02 ? COL.floor : lerpHex(COL.floor, COL.fluidHi, 0.12 + 0.88 * t);
+      }
+      hexPath(ctx, m.cx[k], m.cy[k], m.sz * 0.92);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+});
+function drawKnowledge() {
+  var cv = document.getElementById('cv-adapt-know');
+  if (!cv) return;
+  var ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.fillStyle = css['--panel2']; ctx.fillRect(0, 0, W, H);
+  var XMAX = 1.3, YMAX = 0.42;
+  function px(h) { return 26 + (h / XMAX) * (W - 36); }
+  function py(dr) { return H - 22 - (dr / YMAX) * (H - 34); }
+  ctx.strokeStyle = alphaColor('#746C60', 0.35); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(26, 8); ctx.lineTo(26, H - 22); ctx.lineTo(W - 8, H - 22); ctx.stroke();
+  ctx.fillStyle = css['--muted']; ctx.font = '9px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  ctx.fillText('saturation →', W / 2, H - 8);
+  ctx.save(); ctx.translate(9, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('drive →', 0, 0); ctx.restore();
+  // dry threshold
+  ctx.strokeStyle = alphaColor('#C4453C', 0.5); ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(px(DRY_H0), 8); ctx.lineTo(px(DRY_H0), H - 22); ctx.stroke();
+  ctx.setLineDash([]);
+  var recs = (elements[0] && elements[0].records) || [];
+  for (var i = 0; i < recs.length; i++) {
+    var r = recs[i];
+    ctx.beginPath();
+    ctx.ellipse(px(r.op[0]), py(r.op[1]), Math.max(2, r.r * OP_SH / XMAX * (W - 36)), Math.max(2, r.r * OP_SDR / YMAX * (H - 34)), 0, 0, 7);
+    ctx.fillStyle = alphaColor('#34767E', 0.13); ctx.fill();
+    ctx.strokeStyle = alphaColor('#34767E', 0.5); ctx.lineWidth = 0.8; ctx.stroke();
+  }
+  forEachValid(worldGeom, function (k) {
+    if (elements[adaptWorld.elem[k]].cap === 0 || adaptWorld.elem[k] !== 0) return;
+    var h = adaptWorld.op[k * 2], dr = adaptWorld.op[k * 2 + 1];
+    ctx.fillStyle = adaptWorld.mode[k] === 1 ? '#C4453C' : alphaColor('#2A2620', 0.55);
+    ctx.beginPath(); ctx.arc(px(Math.min(h, XMAX)), py(Math.min(dr, YMAX)), 1.8, 0, 7); ctx.fill();
+  });
+}
+function drawFallbackSpark() {
+  var cv = document.getElementById('cv-adapt-spark');
+  if (!cv) return;
+  var ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.fillStyle = css['--panel2']; ctx.fillRect(0, 0, W, H);
+  var h = adaptWorld.hist;
+  if (h.length < 2) return;
+  var mx = Math.max(0.05, Math.max.apply(null, h));
+  ctx.strokeStyle = css['--accent']; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (var i = 0; i < h.length; i++) {
+    var x = i / (h.length - 1) * (W - 6) + 3;
+    var y = H - 5 - (h[i] / mx) * (H - 12);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = css['--muted']; ctx.font = '9px ui-monospace, Menlo, monospace'; ctx.textAlign = 'left';
+  ctx.fillText('peak ' + (mx).toFixed(2) + ' fallbacks/tile/tick', 4, 10);
+}
+document.getElementById('a-reset').addEventListener('click', function () {
+  resetKnowledge(); adaptWorld.reset();
 });
 
 /* ---------- main loop ---------- */

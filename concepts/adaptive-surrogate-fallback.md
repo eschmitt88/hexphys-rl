@@ -73,6 +73,42 @@ both visualization and strategy layer. First-build cost has a diegetic
 home: **commissioning** — a new machine's shakedown run *is* the fine
 simulation, amortized in background ticks.
 
+## Built and measured (v3, docs/foundry.html Station 04, harness6)
+
+Nonlinearity: donor-side drying (conductance collapses below saturation
+0.30) gives a 1.7x swing in tile conductance wet-vs-dry — one fitted k
+provably cannot cover it. Runtime: trust-region lookup in 2-D operating
+space (saturation, drive), ISAT grow/add, deterministic audits, fine
+patches coupled cell-to-cell on the real composite lattice.
+
+**Results**: novelty fallbacks 0.31 -> 0.00 per tick (68x decay); audit
+traffic flat at 0.37/tick (permanent floor, by design); 83% of tiles on
+surrogate; 378 of 2257 cells/tick (6x less physics) at 15.5% error vs the
+truth running alongside; 600 records (capped), saturation coverage
+0.00-2.07; forcing every tile bone-dry fires 45 fresh fallbacks.
+
+**Four bugs the build surfaced, each a general lesson**:
+1. *Imposed tiles poison calibration.* Source/drain fluxes are boundary
+   conditions, not material response — a drain forced to zero implies
+   infinite conductance. Never calibrate a sample while injecting into it.
+2. *Novelty detection cannot see integration drift.* With input-space
+   trust regions alone, error grew to 71% while the runtime stayed 97%
+   confident: the surrogate's own trajectory keeps it in familiar input
+   space while diverging from truth. Periodic audits (deterministic, so
+   lockstep-safe) are not optional — they are the error-control mechanism.
+3. *Per-tile flux computation is not conservative.* Each side of an
+   interface using its own conductance loses mass at every seam (world
+   held 1/4 of truth's fluid). Fix: fine-fine neighbours share the
+   composite lattice directly, surrogate-surrogate exchange one symmetric
+   harmonic flux, fine-surrogate uses the fine side's measured flux.
+4. *Measure after the settling transient.* A freshly-flattened tile
+   accepts fluid too eagerly; averaging the whole dwell window inflates k.
+
+**Prediction falsified**: the residual is NOT transient-dominated (19.5%
+near a pulse edge vs 20.1% in steady flow, 0.97x). Internal-state
+compression is not the binding constraint; model form is. Next rung is
+richer seam interfaces (mean+tilt), not retained internal modes.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

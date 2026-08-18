@@ -266,7 +266,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
         <div class="cols" style="margin-top:1rem">
           <figure style="margin:0;text-align:center">
             <canvas id="cv-adapt-know" width="300" height="200" aria-label="Knowledge map: calibration records and their trust regions in operating space"></canvas>
-            <figcaption class="note">knowledge map · open element, seam 0 — circles are trust regions, dots are live tiles</figcaption>
+            <figcaption class="note">knowledge map · open element — circles are trust regions on the amplitude table</figcaption>
           </figure>
           <figure style="margin:0;text-align:center">
             <canvas id="cv-adapt-spark" width="300" height="80" aria-label="Fallback rate over time"></canvas>
@@ -279,6 +279,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <p class="note">Measured, so you don't have to take it on faith: novelty fallbacks decay <strong>0.31 → 0.00 per tick</strong> (a 68× drop) while the audit traffic holds flat at 0.37 — that floor is deliberate and permanent, the price of continuing to check. Steady state runs <strong>83% of tiles on surrogate at 378 of 2,257 cells per tick — 6× less physics — for 15.5% error</strong> against the truth running beside it. Slam every tile bone dry, a corner of operating space it has never seen, and the trust check fires 45 fresh fallbacks within a hundred ticks.</p>
     <p class="note"><strong>Verification, the thing CFD does that we hadn't.</strong> Flowers of radius 1, 2 and 3 all tile the plane, so the same physical problem can be re-tiled at three coarse resolutions and the closure's flux error measured against exact fluxes at each. Result: <strong>27.2% → 13.2% → 7.4%</strong> as tiles shrink from 37 to 19 to 7 cells — an observed order of ~1.6. The lumped closure is a <em>convergent discretization</em>, not an O(1) correlation, which is the opposite of what I predicted. Error here is controllable by two independent dials: tile size and feature richness.</p>
     <p class="note"><strong>And a caution the turbulence people would recognise.</strong> Keying each seam on (own head, neighbour head) instead of a tile-global operating point cuts the <em>a priori</em> flux error four-fold — 27.2% to 6.7% at this tile size, measured by handing the model exact coarse states. It barely moves the <em>a posteriori</em> error of the running simulation: 15.5% before, 15.8% after. That disconnect is a documented hazard of subgrid modelling — a model that scores better against exact fields need not run better, because in a live simulation the coarse state itself drifts and flux errors interact rather than accumulate independently. The remaining bias is systematic (the surrogate world holds ~18% less fluid than truth), which points at storage and boundary coupling rather than the flux law, and that is the next thing to measure rather than guess.</p>
+    <p class="note"><strong>Where the error actually lives.</strong> Mapping per-tile error against distance from the source settles it: <strong>29.5% at the source tile, 22.5% one ring out, decaying monotonically to 4.6% at the far edge</strong>. The error is not spread evenly and it is not a timing artefact — it concentrates exactly where the head gradients are steepest. A tile beside the source is genuinely high on one side and low on the other, and a single stored number cannot hold that shape, so it passes the wrong flux onward. The runtime now carries the element's full characterised port matrix with an in-situ amplitude, which cut the record store from 749 entries to 50 and sharpened the learning curve to a 260× decay — but it did not touch this, because a port matrix describes how a tile routes between its seams, not how steeply the field tilts inside it.</p>
     <p class="note">One prediction died here. Falling back reconstructs a tile's 37 cells by spreading its single stored number uniformly, so everything the interior knew about its own shape is lost — which should have made the error transient-dominated. It isn't: <strong>19.5% near a pulse edge versus 20.1% deep in steady flow</strong>, a ratio of 0.97. The residual is model-form, not internal-state compression, so retained internal modes are <em>not</em> the next rung — richer seam interfaces are. Three of this project's four biggest corrections have come from a measurement contradicting a confident guess.</p>
   </div>
 </section>
@@ -1294,63 +1295,61 @@ function stampComposite(elemArr) {
   return { cellIds: cellIds, used: used, gwalls: gwalls, tileCells: tileCells, usedList: usedList, collisions: collisions };
 }
 
-/* ---- per-seam record store, keyed on (own head, neighbour head) ----
-   Measured a priori: a tile-global key gives 19-27% flux error; keying each seam on
-   (donor, receiver) heads gives 6.7-9.5%. The donor/receiver asymmetry the old
-   directional k's tried to capture is subsumed by the key itself. */
+/* ---- record store: amplitude on the offline port matrix ----
+   Measured: a per-seam scalar conductance is ILL-POSED in a live 6-port tile
+   (same tile settled gives 0.305 two-port vs 0.486 / -1.906 six-port — negative
+   conductance is through-flux misbooked as storage exchange). So the record no
+   longer stores per-seam k. It stores ONE amplitude lambda applied to the
+   element's offline-characterised port matrix M (shape) and star vector k.
+   Shape offline where every mode can be excited; amplitude online where only one
+   parameter is identifiable from passive observation. */
 var OP_SH = 0.17, OP_SO = 0.17;
-var ADAPT_DWELL = 22, ADAPT_MEASURE = 8, ADAPT_MAXREC = 500, ADAPT_GROW_TOL = 0.22, ADAPT_HYST = 1.6;
-var AUDIT_PERIOD = 160, AUDIT_TOL = 0.22;
+var ADAPT_DWELL = 22, ADAPT_MEASURE = 8, ADAPT_MAXREC = 500, ADAPT_GROW_TOL = 0.12, ADAPT_HYST = 1.6;
+var AUDIT_PERIOD = 160, AUDIT_TOL = 0.15, U_SWEEPS = 4;
 function opDist(a, b) {
   var dx = (a[0] - b[0]) / OP_SH, dy = (a[1] - b[1]) / OP_SO;
   return Math.sqrt(dx * dx + dy * dy);
 }
-function tabOf(el, d) {
-  if (!el.tab) { el.tab = []; for (var i = 0; i < 6; i++) el.tab.push([]); }
-  return el.tab[d];
-}
-function findRecord(el, d, op, hyst) {
-  var recs = tabOf(el, d), best = null, bd = 1e9, mul = hyst ? ADAPT_HYST : 1;
+function tabOf(el) { return el.rec || (el.rec = []); }
+function findRecord(el, op, hyst) {
+  var recs = tabOf(el), best = null, bd = 1e9, mul = hyst ? ADAPT_HYST : 1;
   for (var i = 0; i < recs.length; i++) {
-    var dd = opDist(op, recs[i].op);
-    if (dd <= recs[i].r * mul && dd < bd) { bd = dd; best = recs[i]; }
+    var d = opDist(op, recs[i].op);
+    if (d <= recs[i].r * mul && d < bd) { bd = d; best = recs[i]; }
   }
   return best;
 }
-function commitRecord(el, d, op, kval) {
-  var recs = tabOf(el, d), best = null, bd = 1e9, i;
+function commitRecord(el, op, lam) {
+  var recs = tabOf(el), best = null, bd = 1e9, i;
   for (i = 0; i < recs.length; i++) {
-    var dd = opDist(op, recs[i].op);
-    if (dd < bd) { bd = dd; best = recs[i]; }
+    var d = opDist(op, recs[i].op);
+    if (d < bd) { bd = d; best = recs[i]; }
   }
   if (best && bd < 3.2) {
-    var den = Math.abs(kval) + Math.abs(best.k);
-    if (den > 1e-9 && 2 * Math.abs(kval - best.k) / den < ADAPT_GROW_TOL) {
+    var den = Math.abs(lam) + Math.abs(best.lam);
+    if (den > 1e-9 && 2 * Math.abs(lam - best.lam) / den < ADAPT_GROW_TOL) {
       best.r = Math.min(3.2, Math.max(best.r, bd * 1.2));
       best.hits = (best.hits || 1) + 1;
       return best;
     }
   }
-  if (best && bd < 0.35) {         // same operating point, different answer: refine in place,
-    best.k += 0.30 * (kval - best.k);  // don't accumulate near-duplicates
+  if (best && bd < 0.35) {
+    best.lam += 0.30 * (lam - best.lam);
     best.hits = (best.hits || 1) + 1;
     best.r = Math.max(0.6, best.r * 0.92);
     return best;
   }
   if (recs.length >= ADAPT_MAXREC) return null;
-  var rec = { op: [op[0], op[1]], k: kval, r: 1.1, hits: 1 };
+  var rec = { op: [op[0], op[1]], lam: lam, r: 1.1, hits: 1 };
   recs.push(rec);
   return rec;
 }
 function resetKnowledge() {
-  for (var i = 0; i < elements.length; i++) if (elements[i]) elements[i].tab = null;
+  for (var i = 0; i < elements.length; i++) if (elements[i]) elements[i].rec = null;
 }
 function totalRecords() {
   var n = 0;
-  for (var i = 0; i < elements.length; i++) {
-    if (!elements[i] || !elements[i].tab) continue;
-    for (var d = 0; d < 6; d++) n += elements[i].tab[d].length;
-  }
+  for (var i = 0; i < elements.length; i++) if (elements[i] && elements[i].rec) n += elements[i].rec.length;
   return n;
 }
 
@@ -1365,10 +1364,10 @@ function AdaptWorld() {
   this.C = new Float32Array(N);
   this.mode = new Uint8Array(N);
   this.dwell = new Int16Array(N);
-  this.kEst = new Float32Array(N * 6);
-  this.acc = new Float32Array(N * 6);    // sum of F*dh   (regression numerator)
-  this.acc2 = new Float32Array(N * 6);   // sum of dh*dh  (regression denominator)
-  this.accN = new Int16Array(N * 6);
+  this.lam = new Float32Array(N);        // amplitude on the element's offline port matrix
+  this.acc = new Float32Array(N);        // sum of F*P  (regression numerator)
+  this.acc2 = new Float32Array(N);       // sum of P*P  (regression denominator)
+  this.accN = new Int16Array(N);
   this.usingRec = new Array(N);
   this.op = new Float32Array(N * 2);
   this.reset();
@@ -1378,13 +1377,11 @@ AdaptWorld.prototype.reset = function () {
   this.elem.fill(0); this.role.fill(0); this.C.fill(0);
   this.mode.fill(1); this.dwell.fill(0);
   this.acc.fill(0); this.acc2.fill(0); this.accN.fill(0); this.op.fill(0);
+  this.lam.fill(1);
   for (i = 0; i < N; i++) this.usingRec[i] = null;
   this.role[mapIdx(worldGeom, -WORLD_R + 1, 0)] = 1;
   this.role[mapIdx(worldGeom, WORLD_R - 1, 0)] = 2;
-  var k0 = elements[0].k;
-  forEachValid(worldGeom, function (k) {
-    for (var d = 0; d < 6; d++) self.kEst[k * 6 + d] = k0[d];
-  });
+  for (var q = 0; q < N; q++) this.lam[q] = 1;
   var ifaceOf = {}, ifaces = [];
   forEachValid(worldGeom, function (k) {
     if (elements[self.elem[k]].cap === 0) return;
@@ -1434,19 +1431,31 @@ AdaptWorld.prototype.step = function () {
   var comp = this.comp, m = fineGeom, fc = this.fc;
   var n, d, id, ci, i, sm, h;
 
-  /* 1. interface heads + pair conductances, from head-ordered directional k (conservative) */
-  for (n = 0; n < ifs.length; n++) {
-    var f = ifs[n];
-    var ea = elements[this.elem[f.a]];
-    var ha = ea.cap > 0 ? this.C[f.a] / ea.cap : 0;
-    if (f.b >= 0) {
-      var eb = elements[this.elem[f.b]];
-      var hb = eb.cap > 0 ? this.C[f.b] / eb.cap : 0;
-      var ka = this.kEst[f.a * 6 + f.da], kb = this.kEst[f.b * 6 + f.db];
-      var sum = ka + kb;
-      u[n] = sum > 1e-9 ? (ka * ha + kb * hb) / sum : (ha + hb) / 2;
-      gP[n] = sum > 1e-9 ? ka * kb / sum : 0;
-    } else { u[n] = ha; gP[n] = 0; }
+  /* 1. interface heads: Jacobi sweeps enforcing port-flux continuity with the FULL
+        port matrix, so cross-seam through-flux is represented instead of misbooked */
+  var headOf = function (c) { var e = elements[self.elem[c]]; return e.cap > 0 ? self.C[c] / e.cap : 0; };
+  var uAt = function (c, d) { var i2 = io[c * 6 + d]; return i2 != null ? u[i2] : headOf(c); };
+  var portCoef = function (c, d, out) {          // F_into_c_at_d = a*u_d + b
+    var e = elements[self.elem[c]], L = self.lam[c];
+    var Mr = (e.M && e.M[d]) || null, kd = e.k[d];
+    var b = -L * kd * headOf(c);
+    if (Mr) for (var j = 0; j < 6; j++) { if (j === d) continue; b += L * Mr[j] * uAt(c, j); }
+    out.a = L * ((Mr ? Mr[d] : 0) + kd);
+    out.b = b;
+  };
+  var oA = { a: 0, b: 0 }, oB = { a: 0, b: 0 };
+  for (n = 0; n < ifs.length; n++) if (ifs[n].b < 0) u[n] = headOf(ifs[n].a);
+  for (var sw = 0; sw < U_SWEEPS; sw++) {
+    for (n = 0; n < ifs.length; n++) {
+      var fI = ifs[n], nu;
+      portCoef(fI.a, fI.da, oA);
+      if (fI.b >= 0) {
+        portCoef(fI.b, fI.db, oB);
+        var den0 = oA.a + oB.a;
+        nu = Math.abs(den0) > 1e-9 ? -(oA.b + oB.b) / den0 : u[n];
+      } else nu = Math.abs(oA.a) > 1e-9 ? -oA.b / oA.a : headOf(fI.a);
+      if (isFinite(nu)) u[n] += 0.85 * (nu - u[n]);
+    }
   }
 
   /* 2. mode decision per tile (trust region, hysteresis, deterministic audits) */
@@ -1468,27 +1477,14 @@ AdaptWorld.prototype.step = function () {
     if (imposed) { self.mode[k] = 1; self.dwell[k] = 1; }
     else if (self.dwell[k] <= 0) {
       var due = ((self.t + k * 37) % AUDIT_PERIOD) === 0;
-      var covered = !due, kTmp = [0, 0, 0, 0, 0, 0];
-      if (covered) {
-        for (dd = 0; dd < 6; dd++) {
-          iid = io[k * 6 + dd];
-          if (iid == null || ifs[iid].b < 0) continue;
-          var nb = ifs[iid].a === k ? ifs[iid].b : ifs[iid].a;
-          var eN = elements[self.elem[nb]];
-          var hN = eN.cap > 0 ? self.C[nb] / eN.cap : 0;
-          var rc = findRecord(el, dd, [hh, hN], self.mode[k] === 0);
-          if (!rc) { covered = false; break; }         // every live seam must be known
-          kTmp[dd] = rc.k;
-        }
-      }
-      if (covered) {
-        self.mode[k] = 0;
-        for (dd = 0; dd < 6; dd++) self.kEst[k * 6 + dd] = kTmp[dd];
+      var rec = due ? null : findRecord(el, [hh, self.op[k * 2 + 1]], self.mode[k] === 0);
+      if (rec) {
+        self.mode[k] = 0; self.lam[k] = rec.lam;
       } else {
         self.mode[k] = 1; self.dwell[k] = ADAPT_DWELL;
         self.fallbacks++; self.winFall++;
         if (due) self.audits++;
-        for (dd = 0; dd < 6; dd++) { self.acc[k * 6 + dd] = 0; self.acc2[k * 6 + dd] = 0; self.accN[k * 6 + dd] = 0; }
+        self.acc[k] = 0; self.acc2[k] = 0; self.accN[k] = 0;
       }
     }
     if (self.mode[k] === 1) {
@@ -1544,21 +1540,22 @@ AdaptWorld.prototype.step = function () {
   /* 4. apply: fine cells, then coarse storage (surrogate pairs + measured fine fluxes) */
   var dC = AdaptWorld._cd && AdaptWorld._cd.length === worldGeom.N ? AdaptWorld._cd : (AdaptWorld._cd = new Float32Array(worldGeom.N));
   dC.fill(0);
+  var pc = { a: 0, b: 0 };
   for (n = 0; n < ifs.length; n++) {
     var ff = ifs[n];
     if (ff.b < 0) continue;
     var aFine = this.mode[ff.a] === 1, bFine = this.mode[ff.b] === 1;
     if (aFine && bFine) continue;                          // handled cell-to-cell
     if (!aFine && !bFine) {
-      var eaa = elements[this.elem[ff.a]], ebb = elements[this.elem[ff.b]];
-      var hA = this.C[ff.a] / eaa.cap, hB = this.C[ff.b] / ebb.cap;
-      var Fp = gP[n] * (hA - hB);
-      dC[ff.a] -= Fp; dC[ff.b] += Fp;                      // symmetric ⇒ conservative
+      portCoef(ff.a, ff.da, pc); var FA = pc.a * u[n] + pc.b;
+      portCoef(ff.b, ff.db, pc); var FB = pc.a * u[n] + pc.b;
+      var Fnet = 0.5 * (FA - FB);                          // symmetric ⇒ exactly conservative
+      dC[ff.a] += Fnet; dC[ff.b] -= Fnet;
     } else {
       var fineSide = aFine ? ff.a : ff.b, surSide = aFine ? ff.b : ff.a;
       var sD = aFine ? ff.da : ff.db;
       var Fm = seamF[fineSide * 6 + sD] || 0;
-      dC[surSide] -= Fm;                                   // equal and opposite to the fine side
+      dC[surSide] -= Fm;
     }
   }
   for (var li = 0; li < comp.usedList.length; li++) {
@@ -1593,57 +1590,52 @@ AdaptWorld.prototype.step = function () {
     }
   });
 
-  /* 5. in-situ calibration from the fine patches, then commit / audit-correct */
+  /* 5. in-situ calibration: ONE amplitude, regressed against the offline port model.
+        (A 6x6 matrix is not identifiable from a short window of barely-varying
+        boundary conditions; a single scale factor is.) */
   forEachValid(worldGeom, function (k) {
     if (self.mode[k] !== 1 || self.role[k] !== 0) return;
     var el = elements[self.elem[k]], hn = self.C[k] / el.cap, ci2 = self.ciOf[k], dd;
-    for (dd = 0; dd < 6; dd++) {
-      var iid3 = io[k * 6 + dd];
-      if (iid3 == null || ifs[iid3].b < 0) continue;
-      var F, uEff;
-      if (self.mode[ifs[iid3].a === k ? ifs[iid3].b : ifs[iid3].a] === 1) {
-        var sc2 = self.seamCells(ci2, dd), Fs = 0, hsum = 0, cnt = 0;
-        for (var q5 = 0; q5 < sc2.length; q5++) {
-          var g5 = sc2[q5].g, ng5 = g5 + m.shifts[sc2[q5].d];
-          if (!comp.used[ng5] || comp.gwalls[ng5]) continue;
-          var dh5 = fc[ng5] - fc[g5];
-          Fs += K * (dh5 > 0 ? satH(fc[ng5]) : satH(fc[g5])) * dh5;
-          hsum += 0.5 * (fc[ng5] + fc[g5]);   // head AT the seam midpoint, not the neighbour centre
-          cnt++;
+    if (self.dwell[k] <= ADAPT_MEASURE) {
+      for (dd = 0; dd < 6; dd++) {
+        var iid3 = io[k * 6 + dd];
+        if (iid3 == null || ifs[iid3].b < 0) continue;
+        var F, uEff;
+        if (self.mode[ifs[iid3].a === k ? ifs[iid3].b : ifs[iid3].a] === 1) {
+          var sc2 = self.seamCells(ci2, dd), Fs = 0, hsum = 0, cnt = 0;
+          for (var q5 = 0; q5 < sc2.length; q5++) {
+            var g5 = sc2[q5].g, ng5 = g5 + m.shifts[sc2[q5].d];
+            if (!comp.used[ng5] || comp.gwalls[ng5]) continue;
+            var dh5 = fc[ng5] - fc[g5];
+            Fs += K * (dh5 > 0 ? satH(fc[ng5]) : satH(fc[g5])) * dh5;
+            hsum += 0.5 * (fc[ng5] + fc[g5]); cnt++;
+          }
+          if (!cnt) continue;
+          F = Fs; uEff = hsum / cnt;
+        } else { F = seamF[k * 6 + dd] || 0; uEff = u[iid3]; }
+        // offline model's unit-amplitude prediction for this port
+        var Mr = (el.M && el.M[dd]) || null, P = el.k[dd] * (uEff - hn);
+        if (Mr) for (var j2 = 0; j2 < 6; j2++) {
+          var ij = io[k * 6 + j2];
+          P += Mr[j2] * (ij != null ? u[ij] : hn);
         }
-        if (!cnt) continue;
-        F = Fs; uEff = hsum / cnt;
-      } else { F = seamF[k * 6 + dd] || 0; uEff = u[iid3]; }
-      var dh6 = uEff - hn;
-      if (self.dwell[k] <= ADAPT_MEASURE && Math.abs(dh6) > 0.002) {
-        self.acc[k * 6 + dd] += F * dh6;      // regression through the origin: k = S(F*dh)/S(dh^2)
-        self.acc2[k * 6 + dd] += dh6 * dh6;   // weights by dh^2, so noisy small-dh samples cannot
-        self.accN[k * 6 + dd]++;              // dominate the way averaging F/dh does
+        if (Math.abs(P) > 1e-4) { self.acc[k] += F * P; self.acc2[k] += P * P; self.accN[k]++; }
       }
     }
     self.dwell[k]--;
     if (self.dwell[k] <= 0) {
-      var seenAny = false;
-      for (dd = 0; dd < 6; dd++) {
-        var cntS = self.accN[k * 6 + dd], den4 = self.acc2[k * 6 + dd];
-        if (cntS === 0 || den4 < 1e-7) continue;
-        var iid4 = io[k * 6 + dd];
-        if (iid4 == null || ifs[iid4].b < 0) continue;
-        var nb2 = ifs[iid4].a === k ? ifs[iid4].b : ifs[iid4].a;
-        var eN2 = elements[self.elem[nb2]];
-        var hN2 = eN2.cap > 0 ? self.C[nb2] / eN2.cap : 0;
-        var kMeas = self.acc[k * 6 + dd] / den4;
-        if (!(kMeas > 0) || kMeas > 40) continue;
-        var prev = findRecord(el, dd, [hn, hN2], false);
-        if (prev) {                                     // AUDIT verdict for this seam
-          var den3 = Math.abs(kMeas) + Math.abs(prev.k);
-          if (den3 > 1e-9 && 2 * Math.abs(kMeas - prev.k) / den3 > AUDIT_TOL) prev.r = Math.max(0.3, prev.r * 0.55);
+      if (self.accN[k] > 0 && self.acc2[k] > 1e-8) {
+        var lamMeas = self.acc[k] / self.acc2[k];
+        if (lamMeas > 0.05 && lamMeas < 8) {
+          var prev = findRecord(el, [hn, self.op[k * 2 + 1]], false);
+          if (prev) {
+            var den5 = Math.abs(lamMeas) + Math.abs(prev.lam);
+            if (den5 > 1e-9 && 2 * Math.abs(lamMeas - prev.lam) / den5 > AUDIT_TOL) prev.r = Math.max(0.3, prev.r * 0.55);
+          }
+          commitRecord(el, [hn, self.op[k * 2 + 1]], lamMeas);
+          self.lam[k] = lamMeas;
         }
-        commitRecord(el, dd, [hn, hN2], kMeas);
-        self.kEst[k * 6 + dd] = kMeas;
-        seenAny = true;
-      }
-      if (!seenAny) self.dwell[k] = 2;
+      } else self.dwell[k] = 2;
     }
   });
 
@@ -1795,7 +1787,7 @@ function drawKnowledge() {
   ctx.strokeStyle = alphaColor('#C4453C', 0.5); ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(px(DRY_H0), 8); ctx.lineTo(px(DRY_H0), H - 22); ctx.stroke();
   ctx.setLineDash([]);
-  var recs = (elements[0] && elements[0].tab) ? elements[0].tab[0] : [];
+  var recs = (elements[0] && elements[0].rec) ? elements[0].rec : [];
   for (var i = 0; i < recs.length; i++) {
     var r = recs[i];
     ctx.beginPath();

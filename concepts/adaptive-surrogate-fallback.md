@@ -243,6 +243,42 @@ conservative, and exact at steady state) instead of 6 scalars, looked up by
 operating point. Cross-seam through-flux is then represented rather than
 misattributed. This is the one remaining rung with direct evidence behind it.
 
+## Built: full port matrix, and the error finally localised (2026-08-18)
+
+**Built** (v3.2): records no longer store per-seam scalars (proven ill-posed).
+They store ONE amplitude lambda applied to the element's offline-characterised
+6x6 port matrix M and star vector k — *shape offline where every mode can be
+excited, amplitude online where only one parameter is identifiable from passive
+observation*. Interface heads solved by Jacobi sweeps on port-flux continuity;
+surrogate-surrogate exchange uses the symmetric average of the two sides'
+predicted port fluxes, so conservation is exact even under-converged.
+
+**Wins**: record store 749 -> **50** entries (one amplitude generalises far
+better than six scalars); novelty-fallback decay 72x -> **260x**; compute
+unchanged at 6x; conservation and all other properties preserved.
+**Accuracy: unchanged** (15.9% -> 16.7%). Sixth prediction, fifth falsified.
+
+**Then the spatial map settled it.** Per-tile error vs hex distance from the
+source: **29.5% (source tile), 22.5%, 16.0%, 13.2%, 10.9%, 8.8%, 6.0%, 4.6%** —
+monotonic decay with distance. The error is concentrated exactly where head
+gradients are steepest, not spread evenly and not a timing artefact.
+
+**Correcting an earlier wrong inference.** The regime-split test (transient vs
+steady error, ratio 0.96) was read as "internal-state compression is not the
+issue". That was the wrong conclusion from a correct measurement: it showed the
+error is not transient *in time*, which says nothing about *spatial* internal
+structure. A tile beside the source is genuinely high on one side and low on the
+other **in steady state**, and one stored number cannot hold that tilt, so it
+passes the wrong flux onward. Steady internal gradients and time transients are
+different failure modes; only the first is active here.
+
+**Next rung, now with evidence**: carry a gradient per tile (mean + dh/dx,
+dh/dy) and reconstruct heads at the seams — i.e. second-order finite-volume
+reconstruction. Note this was tested once (a-priori model C) and scored 82.6%,
+but that test was botched: the face position was anchored to a seam cell's
+centre rather than the seam centroid. Gradient reconstruction has therefore
+never been fairly evaluated, and it is the rung the spatial evidence points at.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

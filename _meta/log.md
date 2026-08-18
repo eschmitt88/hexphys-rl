@@ -34,3 +34,4 @@ skills; read by `/lint`.
 2026-08-15 07:10 foundry v2.2: user-found 32% steady leak → chain-calibrated conductances (all-open 7.6%, dam 1.2%); full-G runtime + mode toggle; fine view rotation-aligned
 2026-08-18 concept: adaptive-surrogate-fallback (ISAT-style trust-region + on-demand refit) — vision capture, prior art, 8 design constraints
 2026-08-18 foundry v3: adaptive runtime shipped — ISAT trust regions + audits + fine patches; 6x compute cut at 15.5% error; transient-dominance prediction falsified
+2026-08-18 a-priori flux diagnosis: model form (not calibration) dominates; per-seam (donor,receiver) features 29.6%->9.5%; scale-separation criterion named

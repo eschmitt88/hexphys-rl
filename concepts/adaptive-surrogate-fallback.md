@@ -109,6 +109,57 @@ near a pulse edge vs 20.1% in steady flow, 0.97x). Internal-state
 compression is not the binding constraint; model form is. Next rung is
 richer seam interfaces (mean+tilt), not retained internal modes.
 
+## A-priori diagnosis of the residual (2026-08-18, diag8/diag9)
+
+Question: is the ~15% adaptive error calibration, boundary conditions, or
+model form? Answered with the LES-standard **a-priori test** — hand the
+flux model the *exact* coarse state from truth and the best-fit
+coefficient, then compare its predicted inter-tile fluxes with the exact
+ones. 3432 interface samples across fill / steady / drain phases:
+
+| flux model (exact coarse state, best-fit coefficient) | flux error |
+|---|---|
+| single global conductance (v2-style) | 29.6% |
+| g(tile-mean saturation) — what v3 keys records on | 19.3% |
+| g(DONOR saturation) — upwind, the actual physics | 15.7% |
+| g(donor, receiver) — per-seam 2-D feature | **9.5%** |
+
+**Verdict: model form, not calibration.** With a perfect coarse state and
+the best possible coefficient, one scalar conductance is 29.6% wrong. The
+cause is the nonlinearity: with saturation-dependent conductivity,
+<f(h)> != f(<h>) — the classic closure problem, and literally the known-hard
+problem of upscaling relative permeability in porous media.
+
+**Why CFD does not suffer this**: two different regimes, which we
+conflated. Where fields are smooth, CFD *discretizes* (cell averages +
+consistent flux stencil, truncation error -> 0 as h -> 0, verified by
+grid-convergence / MMS) rather than lumping. Where CFD *must* model
+unresolved physics — RANS turbulence closures, wall functions, multiphase
+relative permeability — it shows exactly our error magnitudes (10-30% on
+separated flows is standard) and those closures are the acknowledged weak
+point of the field. We are in the second business, so 15% is typical, not
+anomalous.
+
+**Scale separation is the missing criterion.** Homogenization is valid when
+eps = l_micro/L_macro << 1 (Darcy: microns vs kilometres; RVE: grains vs
+parts). A uniform medium homogenized into itself has *no* scale
+separation — the one case where lumping buys nothing. This explains our
+own data: dam+channel world 1.2% error (bottleneck-dominated, field nearly
+piecewise-constant — what a lumped model represents well) vs all-open
+world 15.5% (smooth continuum — the hard case). Same criterion as the
+Biot number for lumped-capacitance validity in heat transfer.
+
+**Evidence-backed ladder** (each rung measured, not guessed):
+1. Key records on per-seam (donor, receiver) heads instead of a
+   tile-global operating point: 29.6% -> 9.5% a priori. This is upwinding.
+2. Carry a gradient so the donor's *local* head at the seam is known
+   rather than its tile mean — attacks the remaining 9.5%.
+3. MsFEM-style basis functions with oversampling for structured tiles.
+4. **Run a grid-convergence study** (radius 2/3/6 tiles). CFD's
+   credibility comes from verification that the scheme achieves its formal
+   order; we have never run one, and a lumped closure would fail it by
+   construction.
+
 ## Connections
 
 - Direct successor to [[tile-homogenization]]: same characterization

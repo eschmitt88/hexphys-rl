@@ -39,3 +39,4 @@ skills; read by `/lint`.
 2026-08-18 diagnosis: residual is star-form error — per-seam k is ill-posed in a 6-port environment (negative conductances measured); Jensen/clamps/transient-dwell all falsified; ratio-estimator replaced with regression
 2026-08-18 foundry v3.2: full port matrix (offline shape + online amplitude) — records 749->50, learning 260x, accuracy flat; spatial map localises error to steep-gradient region near the source
 2026-08-18 foundry v3.3: MUSCL face reconstruction + exact fine-side port response — adaptive error 15.5% -> 7.7% at unchanged 6x compute
+2026-08-19 concept: foundry-testbed-physics — fine sim identified as degenerate nonlinear diffusion (porous medium eq m=2 / Richards-like), single phase, no momentum; measured R~t^0.22 vs Barenblatt t^0.25

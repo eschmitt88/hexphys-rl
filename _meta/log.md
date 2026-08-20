@@ -40,3 +40,4 @@ skills; read by `/lint`.
 2026-08-18 foundry v3.2: full port matrix (offline shape + online amplitude) — records 749->50, learning 260x, accuracy flat; spatial map localises error to steep-gradient region near the source
 2026-08-18 foundry v3.3: MUSCL face reconstruction + exact fine-side port response — adaptive error 15.5% -> 7.7% at unchanged 6x compute
 2026-08-19 concept: foundry-testbed-physics — fine sim identified as degenerate nonlinear diffusion (porous medium eq m=2 / Richards-like), single phase, no momentum; measured R~t^0.22 vs Barenblatt t^0.25
+2026-08-20 reactor: Tier-1 chemistry (A+B->C) shipped at docs/reactor.html; reaction closure 1.17x->12.23x with Damkohler CONFIRMED; transport closure only 3.9%; CSTR hypothesis killed (1%)

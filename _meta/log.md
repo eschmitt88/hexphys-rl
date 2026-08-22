@@ -43,3 +43,4 @@ skills; read by `/lint`.
 2026-08-20 reactor: Tier-1 chemistry (A+B->C) shipped at docs/reactor.html; reaction closure 1.17x->12.23x with Damkohler CONFIRMED; transport closure only 3.9%; CSTR hypothesis killed (1%)
 2026-08-22 closure race shipped (reactor.html): naive/moment/GNN. GNN 320-param message-passer wins fast regime (2.51x->1.31x, 1.01x at k=0.24); moment wins slow; low-k GNN failure proven to be feedback drift (a-priori uniform 11-15%); DAgger-lite tried and reverted
 2026-08-22 oscillatory closure limits measured (diag17): sync regime lumps fine (rho 0.9-1.0); heterogeneity across Hopf + weak coupling -> rho 0.21, lumped 5.5x too strong at 40%-low frequency; criterion is Kuramoto-style synchrony, not wavelength
+2026-08-22 foundry v4 (ports) shipped: docs/ports.html + ADR 0002; P1 confirmed 0.00%, P2 failed-as-stated (5.3%, bounded), P3 failed-as-stated/succeeded-in-substance (naive 0.76x = wide-seam trained GNN)

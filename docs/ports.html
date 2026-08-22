@@ -92,6 +92,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <a class="nl" href="#twin">Closure</a>
     <a class="nl" href="#sweep">Damköhler</a>
     <a class="nl" href="#race">Race</a>
+    <a class="nl keep" href="#zoom">Zoom</a>
     <a class="nl" href="reactor.html">↖ Reactor</a>
   </div>
 </nav>
@@ -271,6 +272,30 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       <div class="stage"><canvas id="cv-race-sweep" width="640" height="300" aria-label="Rate ratio versus reaction rate for all three closures"></canvas></div>
     </div>
     <p class="note" id="r-verdict"></p>
+  </div>
+</section>
+
+<section id="zoom">
+  <div class="wrap">
+    <p class="eyebrow">The zoom · three altitudes, one world</p>
+    <h2>Fly up and the physics gets cheaper</h2>
+    <p>The same world simulated three ways at once, in lockstep: <strong>1,177 fine cells</strong> at ground level, <strong>61 SPICE nodes</strong> one level up, <strong>7 super-nodes</strong> at the top — the super-elements characterized in microseconds by exact linear solves on the tile network, never touching the fine world. Drag the altitude slider: what you see at each height is what <em>that level's model believes</em>, and the error chips tell you how much belief costs. Source in the north-east super, drain in the south-west; flow squeezes through one designated port per super-seam — the one-port rule applied recursively.</p>
+    <div class="demo">
+      <div class="bar">
+        <button class="btn primary" id="z-go" type="button">⛰ assemble &amp; run</button>
+        <output id="z-stat">three levels, unassembled</output>
+        <span class="grow"></span>
+        <label>altitude <input type="range" id="z-alt" min="0" max="200" step="1" value="0" style="width:220px"> <output id="z-altout">ground</output></label>
+      </div>
+      <div class="bar" style="border-bottom:1px solid var(--line);border-top:none">
+        <output id="z-c0">L0 fine · 1177 cells · ·</output>
+        <output id="z-c1">L1 tiles · 61 nodes · ·</output>
+        <output id="z-c2">L2 supers · 7 nodes · ·</output>
+      </div>
+      <div class="stage"><canvas id="cv-zoom" aria-label="Zoom between fine cells, SPICE tiles and super-tiles of the same running world"></canvas></div>
+      <div class="bar"><span class="note">the grids really are rotated: tiles sit 25.3° from the cells (aperture-37 flower tiling) and supers sit 19.1° from the tiles (aperture-7) — the twist you see while zooming is the price of exact hex-in-hex nesting, rendered honestly.</span></div>
+    </div>
+    <p class="note">Measured in harness13: on this configuration the super level runs at a <em>lower</em> error than the tile level it was characterized from (L2/L1 ≈ 0.4) — recursion contracts error here rather than compounding it — and board-size sweeps show coarse error <em>shrinking</em> as boards grow (3.8% → 1.7% from radius 4 to 8). Bigger levels, better fidelity, flat speedup: the scaling law a multi-level game needs.</p>
   </div>
 </section>
 
@@ -799,9 +824,9 @@ Coarse.prototype.reset=function(){
 };
 Coarse.prototype.step=function(kRate){
   var w=this.w, n=w.nT, i;
-  w.tileSums();
   var QP=this._qp||(this._qp=new Float64Array(w.pairs.length));
   if(this.flowMode==='exact'){
+    w.tileSums();
     for(i=0;i<n;i++) this.H[i]=w.cH[i];        // flow handed over exactly
     for(i=0;i<w.pairs.length;i++) QP[i]=w.seamFlux(w.pairs[i].a,w.pairs[i].d);
   } else {
@@ -1733,6 +1758,265 @@ function deviceCheck(ti){
   document.getElementById('t-hint').textContent=
     '🔍 device check, tile '+ti+' ('+(el.name||'open')+'): port fluxes within '+pct+'% of a live 37-cell simulation at this in-circuit operating point (port-level misdistribution largely cancels — board-level state error stays in low single digits)  ·  '+lines.join(' · ');
 }
+
+/* ================= THE ZOOM STATION: three altitudes, lockstep ================= */
+var ZM=(function(){
+  function ccw2(v){ return [v[0]+v[1],-v[0]]; }
+  var SNV=[[2,1]]; for(var i=1;i<6;i++) SNV.push(ccw2(SNV[i-1]));
+  var superCentres=[[0,0]].concat(SNV);
+  return { SNV:SNV, superCentres:superCentres, srcSuper:1, drnSuper:4,
+           assembled:false, running:false, zw:null, lane:null, supH:null, SUPER:null,
+           superOf:null, sPairs:null, ms:[0,0,0], msN:0, err1:0, err2:0 };
+})();
+function zmAssemble(done){
+  var st=document.getElementById('z-stat');
+  var w0=new World();
+  var superOf={};
+  for(var si=0;si<7;si++){
+    var c=ZM.superCentres[si];
+    for(var dq=-1;dq<=1;dq++) for(var dr=-1;dr<=1;dr++){
+      if(Math.abs(dq+dr)>1) continue;
+      superOf[w0.idxOfWk[mapIdx(worldGeom,c[0]+dq,c[1]+dr)]]=si;
+    }
+  }
+  var jOfZ={};
+  for(var j=0;j<localOffsets.length;j++) jOfZ[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j;
+  var closeOf={}, seamKeep={};
+  for(var pi=0;pi<w0.pairs.length;pi++){
+    var p=w0.pairs[pi], sa=superOf[p.a], sb=superOf[p.b];
+    if(sa===undefined||sb===undefined||sa===sb) continue;
+    var key=sa<sb? sa+'_'+sb : sb+'_'+sa;
+    if(!seamKeep[key]){ seamKeep[key]=true; continue; }
+    (closeOf[p.a]||(closeOf[p.a]=new Set())).add(p.d);
+    (closeOf[p.b]||(closeOf[p.b]=new Set())).add((p.d+3)%6);
+  }
+  /* characterize needed mask elements, chunked */
+  var maskCache={}, tasks=[];
+  function keyOf(set){ return Array.from(set).sort().join(''); }
+  for(var ti in closeOf){ var k2=keyOf(closeOf[ti]); if(maskCache[k2]===undefined){ maskCache[k2]=null; tasks.push(k2); } }
+  var solidDesign=new Uint8Array(localOffsets.length);
+  for(j=0;j<localOffsets.length;j++) if(!WALL_TPL[j]) solidDesign[j]=1;
+  var idx=0;
+  function step(){
+    if(idx<tasks.length){
+      var kk=tasks[idx++];
+      var dz=new Uint8Array(localOffsets.length);
+      kk.split('').forEach(function(dch){ dz[jOfZ[PORT[+dch].k]]=1; });
+      ELEM.push(characterizeElement(dz));
+      maskCache[kk]=ELEM.length-1;
+      st.textContent='characterizing port masks '+idx+'/'+tasks.length+'…';
+      setTimeout(step,0);
+      return;
+    }
+    ELEM.push(characterizeElement(solidDesign));
+    var SOLID=ELEM.length-1;
+    var zw=new World();
+    zw.elemIdx=new Int16Array(zw.nT);
+    for(var i2=0;i2<zw.nT;i2++){
+      if(superOf[i2]===undefined) zw.elemIdx[i2]=SOLID;
+      else zw.elemIdx[i2]= closeOf[i2]? maskCache[keyOf(closeOf[i2])] : 0;
+    }
+    var srcTi=zw.idxOfWk[mapIdx(worldGeom,ZM.superCentres[ZM.srcSuper][0],ZM.superCentres[ZM.srcSuper][1])];
+    zw.srcA=srcTi; zw.srcB=srcTi;
+    zw.drn=[]; for(i2=0;i2<zw.nT;i2++) if(superOf[i2]===ZM.drnSuper) zw.drn.push(i2);
+    zw.reset();
+    /* super-element: 15 exact linear solves on the 7-node tile network */
+    var memIdx={}, ipairs=[], portMember=[];
+    for(var dq2=-1;dq2<=1;dq2++) for(var dr2=-1;dr2<=1;dr2++){
+      if(Math.abs(dq2+dr2)>1) continue;
+      memIdx[w0.idxOfWk[mapIdx(worldGeom,dq2,dr2)]]=Object.keys(memIdx).length;
+    }
+    for(pi=0;pi<w0.pairs.length;pi++){
+      var p2=w0.pairs[pi];
+      if(memIdx[p2.a]!==undefined&&memIdx[p2.b]!==undefined) ipairs.push({a:memIdx[p2.a],b:memIdx[p2.b]});
+    }
+    for(var d=0;d<6;d++) portMember.push(memIdx[w0.idxOfWk[mapIdx(worldGeom,DIRS[d][0],DIRS[d][1])]]);
+    var gd=2*G_HOP;
+    function solvePair(a,b){
+      var A=[], rhs=new Float64Array(7), i3, j3, k3;
+      for(i3=0;i3<7;i3++) A.push(new Float64Array(7));
+      ipairs.forEach(function(ip){ A[ip.a][ip.a]+=G_HOP; A[ip.a][ip.b]-=G_HOP; A[ip.b][ip.b]+=G_HOP; A[ip.b][ip.a]-=G_HOP; });
+      A[portMember[a]][portMember[a]]+=gd; rhs[portMember[a]]+=gd*1.4;
+      A[portMember[b]][portMember[b]]+=gd; rhs[portMember[b]]+=gd*0.6;
+      var M=A.map(function(row,i4){ return Array.from(row).concat([rhs[i4]]); });
+      for(i3=0;i3<7;i3++){
+        var pv=i3;
+        for(k3=i3+1;k3<7;k3++) if(Math.abs(M[k3][i3])>Math.abs(M[pv][i3])) pv=k3;
+        var tmp=M[i3]; M[i3]=M[pv]; M[pv]=tmp;
+        for(k3=i3+1;k3<7;k3++){ var cf=M[k3][i3]/M[i3][i3]; for(j3=i3;j3<=7;j3++) M[k3][j3]-=cf*M[i3][j3]; }
+      }
+      var h=new Float64Array(7);
+      for(i3=6;i3>=0;i3--){ var s3=M[i3][7]; for(j3=i3+1;j3<7;j3++) s3-=M[i3][j3]*h[j3]; h[i3]=s3/M[i3][i3]; }
+      return gd*(1.4-h[portMember[a]])/0.8;
+    }
+    var A2=[], bv=new Float64Array(6), rS=0, rC=0;
+    for(var i5=0;i5<6;i5++) A2.push(new Float64Array(6));
+    for(var a2=0;a2<6;a2++) for(var b2=a2+1;b2<6;b2++){
+      var T=solvePair(a2,b2);
+      if(T<=1e-12) continue;
+      var r=1/T;
+      A2[a2][a2]+=1;A2[a2][b2]+=1;A2[b2][a2]+=1;A2[b2][b2]+=1;
+      bv[a2]+=r;bv[b2]+=r; rS+=r; rC++;
+    }
+    var lam=1e-3*(rS/rC);
+    for(i5=0;i5<6;i5++) for(var j5=0;j5<6;j5++) A2[i5][j5]+= i5===j5? lam*5 : -lam;
+    var M2=A2.map(function(row,i6){ return Array.from(row).concat([bv[i6]]); });
+    for(i5=0;i5<6;i5++){
+      var pv2=i5;
+      for(var k5=i5+1;k5<6;k5++) if(Math.abs(M2[k5][i5])>Math.abs(M2[pv2][i5])) pv2=k5;
+      var t2=M2[i5]; M2[i5]=M2[pv2]; M2[pv2]=t2;
+      for(k5=i5+1;k5<6;k5++){ var c5=M2[k5][i5]/M2[i5][i5]; for(j5=i5;j5<=6;j5++) M2[k5][j5]-=c5*M2[i5][j5]; }
+    }
+    var rv=new Float64Array(6);
+    for(i5=5;i5>=0;i5--){ var s5=M2[i5][6]; for(j5=i5+1;j5<6;j5++) s5-=M2[i5][j5]*rv[j5]; rv[i5]=s5/M2[i5][i5]; }
+    ZM.SUPER={ g:Array.from(rv).map(function(r2){return 1/Math.max(r2,1e-9);}), cap:7*CAP_OPEN };
+    /* super pairs */
+    ZM.sPairs=Object.keys(seamKeep).map(function(k6){ var ab=k6.split('_'); return {a:+ab[0], b:+ab[1]}; });
+    ZM.superOf=superOf; ZM.zw=zw;
+    ZM.lane=new Coarse(zw,'naive','network');
+    ZM.supH=new Float64Array(7);
+    ZM.assembled=true; ZM.running=true;
+    st.textContent='running · 3 levels lockstep';
+    if(done) done();
+  }
+  st.textContent='assembling…';
+  setTimeout(step,0);
+}
+function zmSupPairG(a,b){
+  for(var d=0;d<6;d++){
+    var dx=ZM.superCentres[b][0]-ZM.superCentres[a][0], dy=ZM.superCentres[b][1]-ZM.superCentres[a][1];
+    if(dx===ZM.SNV[d][0]&&dy===ZM.SNV[d][1])
+      return ZM.SUPER.g[d]*ZM.SUPER.g[(d+3)%6]/(ZM.SUPER.g[d]+ZM.SUPER.g[(d+3)%6]);
+    if(-dx===ZM.SNV[d][0]&&-dy===ZM.SNV[d][1])
+      return ZM.SUPER.g[d]*ZM.SUPER.g[(d+3)%6]/(ZM.SUPER.g[d]+ZM.SUPER.g[(d+3)%6]);
+  }
+  return 0;
+}
+function zmSupStep(){
+  var dH=new Float64Array(7);
+  ZM.supH[ZM.srcSuper]+=1.8;
+  for(var i=0;i<ZM.sPairs.length;i++){
+    var p=ZM.sPairs[i];
+    var ha=ZM.supH[p.a]/ZM.SUPER.cap, hb=ZM.supH[p.b]/ZM.SUPER.cap;
+    var gsp;
+    if(p.a===ZM.drnSuper||p.b===ZM.drnSuper){
+      var donor=p.a===ZM.drnSuper?p.b:p.a, d0=0;
+      for(var d=0;d<6;d++) if(ZM.superCentres[ZM.drnSuper][0]-ZM.superCentres[donor][0]===ZM.SNV[d][0]&&ZM.superCentres[ZM.drnSuper][1]-ZM.superCentres[donor][1]===ZM.SNV[d][1]) d0=d;
+      gsp=ZM.SUPER.g[d0];
+    } else gsp=zmSupPairG(p.a,p.b);
+    var F=gsp*satH(Math.max(ha,hb))*(ha-hb);
+    dH[p.a]-=F; dH[p.b]+=F;
+  }
+  for(i=0;i<7;i++) ZM.supH[i]=Math.max(0,ZM.supH[i]+dH[i]);
+  ZM.supH[ZM.drnSuper]=0;
+}
+/* geometry for overlay rendering */
+var Z_ROT=-Math.atan2(1.5*NV[0][1], SQ3*(NV[0][0]+NV[0][1]/2));
+var Z_SCL=(SQ3*worldGeom.sz)/Math.hypot(fineGeom.sz*SQ3*(NV[0][0]+NV[0][1]/2), fineGeom.sz*1.5*NV[0][1]);
+var Z_ROT7=Math.atan2(1.5*1, SQ3*(2+0.5));
+var Z_SZ7=Math.sqrt(7)*SQ3*worldGeom.sz/SQ3;
+function headColor(t){
+  t=Math.max(0,Math.min(1,t));
+  if(t<0.02) return '#D8CFBE';
+  var a=parseInt('D8CFBE',16), b=parseInt('173F6E',16), u=0.12+0.88*t;
+  var r=((a>>16)&255)+(((b>>16)&255)-((a>>16)&255))*u;
+  var g=((a>>8)&255)+(((b>>8)&255)-((a>>8)&255))*u;
+  var bl=(a&255)+((b&255)-(a&255))*u;
+  return 'rgb('+(r|0)+','+(g|0)+','+(bl|0)+')';
+}
+var zoomSim=new Sim('cv-zoom', worldGeom.w, worldGeom.h, {
+  tick:function(){
+    if(!ZM.running) return;
+    var t0=performance.now();
+    for(var r2=0;r2<3;r2++) ZM.zw.step(0);
+    var t1=performance.now();
+    for(r2=0;r2<3;r2++) ZM.lane.step(0);
+    var t2=performance.now();
+    for(r2=0;r2<3;r2++) zmSupStep();
+    var t3=performance.now();
+    ZM.ms[0]+= (t1-t0)/3; ZM.ms[1]+=(t2-t1)/3; ZM.ms[2]+=(t3-t2)/3; ZM.msN++;
+    if(ZM.msN%15===0){
+      ZM.zw.tileSums();
+      var fineS=new Float64Array(7), tileS=new Float64Array(7);
+      var e1n=0,e1d=0;
+      for(var i=0;i<ZM.zw.nT;i++){
+        var si=ZM.superOf[i];
+        e1n+=Math.abs(ZM.lane.H[i]-ZM.zw.cH[i]); e1d+=Math.abs(ZM.zw.cH[i]);
+        if(si===undefined) continue;
+        fineS[si]+=ZM.zw.cH[i]; tileS[si]+=ZM.lane.H[i];
+      }
+      var e2n=0,e2d=0;
+      for(si=0;si<7;si++){ e2n+=Math.abs(ZM.supH[si]-fineS[si]); e2d+=Math.abs(fineS[si]); }
+      ZM.err1=e1d>1e-9?e1n/e1d:0; ZM.err2=e2d>1e-9?e2n/e2d:0;
+      var m0=ZM.ms[0]/ZM.msN, m1=ZM.ms[1]/ZM.msN, m2=ZM.ms[2]/ZM.msN;
+      document.getElementById('z-c0').textContent='L0 fine · 1,177 cells · '+m0.toFixed(2)+' ms/step · truth';
+      document.getElementById('z-c1').textContent='L1 tiles · 61 nodes · '+m1.toFixed(3)+' ms/step · err '+(ZM.err1*100).toFixed(1)+'%';
+      document.getElementById('z-c2').textContent='L2 supers · 7 nodes · '+m2.toFixed(4)+' ms/step · err '+(ZM.err2*100).toFixed(1)+'%';
+    }
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    var z=+document.getElementById('z-alt').value/100;   // 0..2
+    document.getElementById('z-altout').textContent= z<0.5?'ground':z<1.5?'tile level':'super level';
+    if(!ZM.assembled){
+      ctx.fillStyle=css['--muted']; ctx.font='13px system-ui'; ctx.textAlign='center';
+      ctx.fillText('⛰ assemble & run to build the three levels', s.w/2, s.h/2);
+      return;
+    }
+    var aF=Math.max(0,1-z), aT=1-Math.min(1,Math.abs(z-1)), aS=Math.max(0,z-1);
+    var norm=function(H,cap){ return H/cap/ (12); };
+    /* L2 supers (bottom layer when fading in) */
+    if(aS>0.01){
+      ctx.globalAlpha=aS;
+      for(var si=0;si<7;si++){
+        var c=ZM.superCentres[si], wk=mapIdx(worldGeom,c[0],c[1]);
+        ctx.save(); ctx.translate(worldGeom.cx[wk],worldGeom.cy[wk]); ctx.rotate(Z_ROT7);
+        hexPath(ctx,0,0,Z_SZ7*0.56);
+        ctx.fillStyle=headColor(norm(ZM.supH[si],ZM.SUPER.cap));
+        ctx.fill();
+        ctx.strokeStyle=COL.gridline; ctx.lineWidth=2; ctx.stroke();
+        ctx.restore();
+      }
+      ctx.globalAlpha=1;
+    }
+    /* L1 tiles */
+    if(aT>0.01){
+      ctx.globalAlpha=aT;
+      for(var i=0;i<ZM.zw.nT;i++){
+        var wk2=ZM.zw.wk[i];
+        var el=ELEM[ZM.zw.elemIdx[i]]||ELEM[0];
+        hexPath(ctx,worldGeom.cx[wk2],worldGeom.cy[wk2],worldGeom.sz*0.96);
+        ctx.fillStyle= el.cap? headColor(norm(ZM.lane.H[i],el.cap)) : COL.wall;
+        ctx.fill();
+        ctx.strokeStyle=COL.gridline; ctx.lineWidth=1; ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+    /* L0 fine, rotated/scaled onto the tile frame */
+    if(aF>0.01){
+      ctx.globalAlpha=aF;
+      ctx.save();
+      ctx.translate(worldGeom.ox,worldGeom.oy);
+      ctx.rotate(Z_ROT); ctx.scale(Z_SCL,Z_SCL);
+      ctx.translate(-fineGeom.ox,-fineGeom.oy);
+      for(var li=0;li<ZM.zw.list.length;li++){
+        var g=ZM.zw.list[li];
+        hexPath(ctx,fineGeom.cx[g],fineGeom.cy[g],fineGeom.sz*0.92);
+        ctx.fillStyle= ZM.zw.wall[g]? COL.wall : headColor(ZM.zw.h[g]/12);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha=1;
+    }
+  }
+});
+document.getElementById('z-go').addEventListener('click',function(){
+  if(ZM.assembled){ ZM.running=!ZM.running;
+    document.getElementById('z-stat').textContent=ZM.running?'running · 3 levels lockstep':'paused';
+    return; }
+  zmAssemble();
+});
+document.getElementById('z-alt').addEventListener('input',function(){});
 /* ---------- main loop ---------- */
 var fc=0;
 function loop(){

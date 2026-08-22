@@ -45,3 +45,4 @@ skills; read by `/lint`.
 2026-08-22 oscillatory closure limits measured (diag17): sync regime lumps fine (rho 0.9-1.0); heterogeneity across Hopf + weak coupling -> rho 0.21, lumped 5.5x too strong at 40%-low frequency; criterion is Kuramoto-style synchrony, not wavelength
 2026-08-22 foundry v4 (ports) shipped: docs/ports.html + ADR 0002; P1 confirmed 0.00%, P2 failed-as-stated (5.3%, bounded), P3 failed-as-stated/succeeded-in-substance (naive 0.76x = wide-seam trained GNN)
 2026-08-22 SPICE loop shipped on ports.html: design->characterize (15 linear probes)->cast->board-on-macromodels->in-circuit device check; heterogeneous board 3.5% flow err; per-port fluxes ~20% (cancel in aggregate)
+2026-08-22 SPICE+oscillations (diag19): wild-het failure identical to wide seams (interface-independence proven); ENGINEERED uniform-material chambers essentially exact (0.97x amp, 1.00x freq, r=0.94, 11/11 dead chambers); phase drift = residual, PLL-resync = fix

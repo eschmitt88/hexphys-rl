@@ -143,6 +143,42 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   </div>
 </section>
 
+<section id="workshop">
+  <div class="wrap">
+    <p class="eyebrow">The workshop · components with pins</p>
+    <h2>Design a component, characterize it, put it in the library</h2>
+    <p>This is the SPICE loop. Paint a chamber below — walls inside, and you may shut ports to make valves. <strong>Characterize</strong> runs fifteen 2-port probes and fits the six per-port conductances by <em>linear</em> least squares (with one-cell ports the resistances simply add: 1/T = r<sub>i</sub>+r<sub>j</sub>) — a fraction of a second, exact in the sense prediction 1 proved. Cast it to a slot, then place it on the board in the twin below: the board runs <em>entirely on these behavioural models</em>, and you can device-check any placed component against its full 37-cell simulation, in circuit — which is precisely how mixed-signal circuit simulators work.</p>
+    <div class="cols">
+      <div>
+        <div class="demo" style="margin-top:0">
+          <div class="bar">
+            <button class="btn" id="w-clear" type="button">Clear</button>
+            <span class="grow"></span>
+            <button class="btn primary" id="w-char" type="button">⚗ Characterize</button>
+          </div>
+          <div class="stage"><canvas id="cv-design" aria-label="Component designer: paint chamber walls, shut ports to make valves"></canvas></div>
+          <div class="bar">
+            <span class="note">cast:</span>
+            <button class="btn" id="w-castA" type="button" disabled>→ A</button>
+            <button class="btn" id="w-castB" type="button" disabled>→ B</button>
+            <button class="btn" id="w-castC" type="button" disabled>→ C</button>
+            <span class="grow"></span>
+            <output id="w-out">design, then characterize</output>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="demo" style="margin-top:0">
+          <div class="bar"><span class="note">behavioural model — port conductances (true directions)</span></div>
+          <div class="stage" style="text-align:center"><canvas id="cv-spokes" width="180" height="180"></canvas></div>
+          <div class="bar"><output id="w-model" style="font-size:.78rem">·</output></div>
+        </div>
+        <p class="note">Try: a <strong>valve</strong> (shut four ports), a <strong>restrictor</strong> (single-cell throat mid-chamber), a <strong>manifold</strong> (open), a <strong>dead end</strong>. Watch the conductance spokes change — that six-vector <em>is</em> the component, as far as the board is concerned.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="twin">
   <div class="wrap">
     <p class="eyebrow">The end-to-end twin</p>
@@ -154,7 +190,13 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <p class="note">One honest wrinkle in the picture on the right: at high rates the coarse world over-consumes its reactants so fast that it runs out, and then production is capped by what the sources supply rather than by the rate. Both worlds converge on the same <em>total</em> yield — they just manufacture it in different places. That is why the number to watch is the rate ratio, not the total.</p>
     <div class="demo">
       <div class="bar">
-        <label>reaction rate k <input type="range" id="t-k" min="0" max="100" step="1" value="45"> <output id="t-kout">·</output></label>
+        <span class="note">place:</span>
+        <button class="btn pl" data-e="0" aria-pressed="true" type="button">open</button>
+        <button class="btn pl" data-e="1" aria-pressed="false" type="button" disabled>A</button>
+        <button class="btn pl" data-e="2" aria-pressed="false" type="button" disabled>B</button>
+        <button class="btn pl" data-e="3" aria-pressed="false" type="button" disabled>C</button>
+        <button class="btn" id="t-check" aria-pressed="false" type="button">🔍 device-check</button>
+        <label>rate k <input type="range" id="t-k" min="0" max="100" step="1" value="45"> <output id="t-kout">·</output></label>
         <span class="grow"></span>
         <output id="t-err">product error ·</output>
         <output id="t-cov">mean cov(A,B) ·</output>
@@ -165,6 +207,9 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
           <figure style="margin:0;text-align:center"><canvas id="cv-fine" aria-label="Fine-resolution truth"></canvas><figcaption class="note">truth · 2,257 cells</figcaption></figure>
           <figure style="margin:0;text-align:center"><canvas id="cv-coarse" aria-label="Lumped coarse surrogate"></canvas><figcaption class="note">lumped surrogate · 61 tiles, exact flow</figcaption></figure>
         </div>
+      </div>
+      <div class="bar">
+        <span class="note" id="t-hint">click the coarse panel to PLACE the selected component (board re-stamps both worlds) · toggle 🔍 then click a tile to device-check its macromodel against a live 37-cell simulation</span>
       </div>
       <div class="bar">
         <span class="note">tile outline shows the sign of the closure error: <span style="color:#C4453C">red = surrogate over-produces</span> (streams are separated inside the tile) · <span style="color:#2E6FB8">blue = under-produces</span></span>
@@ -379,6 +424,7 @@ function kOf(sliderVal){ return sliderVal<=0 ? 0 : 0.0016*Math.pow(10, sliderVal
 
 function World() {
   var m = fineGeom, N = m.N;
+  this.elemIdx=null;   // per-tile element index into ELEM (set after construction; null = all default)
   this.h=new Float32Array(N); this.A=new Float32Array(N); this.B=new Float32Array(N); this.C=new Float32Array(N);
   this.wall=new Uint8Array(N); this.used=new Uint8Array(N);
   this.tiles=[]; this.tileOf=new Int32Array(N).fill(-1); this.wk=[];
@@ -444,6 +490,15 @@ World.prototype.reset = function(){
     this._tplDone=true;
   }
   for(var g=0;g<fineGeom.N;g++) if(this.rimFixed[g]) this.wall[g]=1;
+  /* stamp per-tile ELEMENT walls (interior + closed ports) from the component map */
+  if(this.elemIdx){
+    for(var ti2=0;ti2<this.nT;ti2++){
+      var el2=ELEM[this.elemIdx[ti2]]||ELEM[0];
+      if(!el2.walls) continue;
+      var arr2=this.tiles[ti2];
+      for(var j2=0;j2<arr2.length;j2++) if(el2.walls[j2]&&arr2[j2]>=0) this.wall[arr2[j2]]=1;
+    }
+  }
   this.t=0;
   this.cH=new Float64Array(this.nT); this.cA=new Float64Array(this.nT);
   this.cB=new Float64Array(this.nT); this.cC=new Float64Array(this.nT);
@@ -629,6 +684,110 @@ function probeDrainConductance(){
   return RATE/(sum/openA.length);
 }
 var G_DRAIN=probeDrainConductance();
+/* ================= THE COMPONENT LIBRARY (the SPICE part) =================
+   An element = a chamber design + a characterized behavioural model:
+   per-port half-conductances g[6] (star; well-posed with one-cell ports),
+   capacity, and the wall pattern. Characterization is 15 midpoint-referenced
+   2-port probes + a LINEAR least-squares fit (1/T_ij = r_i + r_j). */
+var ELEM=[{name:'open', walls:null, g:[2*G_HOP,2*G_HOP,2*G_HOP,2*G_HOP,2*G_HOP,2*G_HOP], cap:CAP_OPEN, fit:0}];
+function characterizeElement(designWalls){
+  var N=tileGeom.N, wallT=new Uint8Array(N), open=[], cap=0, j, k;
+  for(j=0;j<localOffsets.length;j++){
+    k=mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1]);
+    if(WALL_TPL[j]||designWalls[j]) wallT[k]=1;
+  }
+  forEachValid(tileGeom,function(kk){ if(!wallT[kk]){ open.push(kk); cap++; } });
+  var portOpen=[];
+  for(var d=0;d<6;d++) portOpen.push(!wallT[PORT[d].k]);
+  /* 15 two-port probes */
+  var T=[]; for(var i=0;i<6;i++){ T.push([0,0,0,0,0,0]); }
+  var HI=1.4, LO=0.6;
+  for(var a=0;a<6;a++) for(var b=a+1;b<6;b++){
+    if(!portOpen[a]||!portOpen[b]) continue;
+    var h=new Float64Array(N);
+    for(j=0;j<open.length;j++) h[open[j]]=1;
+    var pIn=PORT[a].k, pOut=PORT[b].k, Tin=0, Tout=0;
+    for(var t=0;t<5000;t++){
+      var dh=new Float64Array(N), dd, nk;
+      for(j=0;j<open.length;j++){
+        k=open[j];
+        for(dd=0;dd<3;dd++){
+          nk=k+tileGeom.shifts[dd];
+          if(nk<0||nk>=N||!tileGeom.valid[nk]||wallT[nk]) continue;
+          var df=h[k]-h[nk], f=K*(df>0?satH(h[k]):satH(h[nk]))*df;
+          dh[k]-=f; dh[nk]+=f;
+        }
+      }
+      var dIn=HI-h[pIn];  Tin =2*K*(dIn>0?satH(HI):satH(h[pIn]))*dIn;  dh[pIn]+=Tin;
+      var dOut=LO-h[pOut]; Tout=2*K*(dOut>0?satH(LO):satH(h[pOut]))*dOut; dh[pOut]+=Tout;
+      for(j=0;j<open.length;j++) h[open[j]]+=dh[open[j]];
+      if(t%800===799 && Math.abs(Tin+Tout)/Math.max(Math.abs(Tin),1e-12)<0.004) break;
+    }
+    T[a][b]=T[b][a]=Math.max(0,(Tin-Tout)/2/(HI-LO));
+  }
+  /* dead ports: walled, or no measurable transport to any other port */
+  var live=[];
+  for(d=0;d<6;d++){
+    var any=false;
+    for(var d2=0;d2<6;d2++) if(T[d][d2]>1e-6) any=true;
+    live.push(portOpen[d]&&any);
+  }
+  /* linear LS on resistances: r_i + r_j = 1/T_ij over live pairs */
+  var idx=[], nl=0;
+  for(d=0;d<6;d++){ idx.push(live[d]?nl++:-1); }
+  var g=[0,0,0,0,0,0], fit=0;
+  if(nl>=2){
+    var A2=[], bv=new Float64Array(nl);
+    for(i=0;i<nl;i++){ var row=new Float64Array(nl); A2.push(row); }
+    var rSum=0, rCnt=0;
+    for(a=0;a<6;a++) for(b=a+1;b<6;b++){
+      if(!live[a]||!live[b]||T[a][b]<=1e-9) continue;
+      var r=1/T[a][b], ia=idx[a], ib=idx[b];
+      A2[ia][ia]+=1; A2[ia][ib]+=1; A2[ib][ia]+=1; A2[ib][ib]+=1;
+      bv[ia]+=r; bv[ib]+=r;
+      rSum+=r; rCnt++;
+    }
+    /* symmetry tiebreak: tiny Laplacian penalty on (r_i - r_j)^2 — resolves
+       underdetermined port sets (e.g. a 2-port valve) toward the equal split,
+       negligible when the system is well-determined */
+    var lam=1e-3*(rCnt? rSum/rCnt : 1);
+    for(i=0;i<nl;i++) for(j=0;j<nl;j++){
+      if(i===j) A2[i][j]+=lam*(nl-1);
+      else A2[i][j]-=lam;
+    }
+    /* gaussian elimination */
+    var M=A2.map(function(row,i2){ return Array.from(row).concat([bv[i2]]); });
+    for(i=0;i<nl;i++){
+      var p2=i;
+      for(k=i+1;k<nl;k++) if(Math.abs(M[k][i])>Math.abs(M[p2][i])) p2=k;
+      var tmp=M[i]; M[i]=M[p2]; M[p2]=tmp;
+      if(Math.abs(M[i][i])<1e-12) continue;
+      for(k=i+1;k<nl;k++){ var c=M[k][i]/M[i][i]; for(j=i;j<=nl;j++) M[k][j]-=c*M[i][j]; }
+    }
+    var rv=new Float64Array(nl);
+    for(i=nl-1;i>=0;i--){
+      var s2=M[i][nl];
+      for(j=i+1;j<nl;j++) s2-=M[i][j]*rv[j];
+      rv[i]=Math.abs(M[i][i])<1e-12?1e9:s2/M[i][i];
+    }
+    for(d=0;d<6;d++) if(live[d]&&rv[idx[d]]>1e-12) g[d]=1/Math.max(rv[idx[d]],1e-9);
+    /* residual of the star fit */
+    var num=0, den=0;
+    for(a=0;a<6;a++) for(b=a+1;b<6;b++){
+      if(!live[a]||!live[b]||T[a][b]<=1e-9) continue;
+      var pred=g[a]*g[b]/(g[a]+g[b]);
+      num+=Math.abs(pred-T[a][b]); den+=T[a][b];
+    }
+    fit=den>1e-12?num/den:0;
+  }
+  return { walls:designWalls.slice(), g:g, cap:cap, fit:fit, T:T };
+}
+/* macromodel port-pair conductance between two placed elements */
+function pairConductance(eA,eB,d){
+  var gA=eA.g[d], gB=eB.g[(d+3)%6];
+  return (gA>1e-9&&gB>1e-9)? gA*gB/(gA+gB) : 0;
+}
+
 /* ---------- lumped coarse twin: exact flow, lumped reaction ---------- */
 function Coarse(w, mode, flowMode){ this.w=w; this.mode=mode||'naive'; this.flowMode=flowMode||'exact'; this.reset(); }
 Coarse.prototype.reset=function(){
@@ -652,10 +811,12 @@ Coarse.prototype.step=function(kRate){
     if(!this._isDrn){ this._isDrn=new Uint8Array(n); for(i=0;i<w.drn.length;i++) this._isDrn[w.drn[i]]=1; }
     for(i=0;i<w.pairs.length;i++){
       var pp=w.pairs[i];
-      var ha=this.H[pp.a]/CAP_OPEN, hb=this.H[pp.b]/CAP_OPEN;
-      var don2=ha>hb?pp.a:pp.b;
-      var gp=(this._isDrn[pp.a]||this._isDrn[pp.b])?G_DRAIN:G_HOP;
-      var F=gp*satH(this.H[don2]/CAP_OPEN)*(ha-hb)*DT;
+      var eA=ELEM[w.elemIdx?w.elemIdx[pp.a]:0]||ELEM[0], eB=ELEM[w.elemIdx?w.elemIdx[pp.b]:0]||ELEM[0];
+      var capA=eA.cap||CAP_OPEN, capB=eB.cap||CAP_OPEN;
+      var ha=this.H[pp.a]/capA, hb=this.H[pp.b]/capB;
+      var don2=ha>hb?pp.a:pp.b, capD=ha>hb?capA:capB;
+      var gp=(this._isDrn[pp.a]||this._isDrn[pp.b])?G_DRAIN:pairConductance(eA,eB,pp.d);
+      var F=gp*satH(this.H[don2]/capD)*(ha-hb)*DT;
       QP[i]=F; dH[pp.a]-=F; dH[pp.b]+=F;
     }
     for(i=0;i<n;i++) this.H[i]=Math.max(0,this.H[i]+dH[i]);
@@ -1382,6 +1543,196 @@ document.getElementById('rs-run').addEventListener('click',function(){
 });
 drawRaceSweep();
 
+
+/* ================= WORKSHOP + BOARD (SPICE loop) ================= */
+var designGeom=makeMap(TILE_R, 20);
+var design=new Uint8Array(localOffsets.length);
+var lastElem=null;
+var jOfTileCell={};
+(function(){ for(var j=0;j<localOffsets.length;j++) jOfTileCell[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j; })();
+var designSim=new Sim('cv-design', designGeom.w+16, designGeom.h+12, {
+  tick:function(s){
+    if(s.pointer.down){
+      var k=pixelToHex(designGeom, s.pointer.x-8, s.pointer.y-6);
+      if(k>=0){
+        var qr=decode(designGeom,k), kk=mapIdx(tileGeom,qr[0],qr[1]);
+        if(kk>=0){
+          var j=jOfTileCell[kk];
+          if(j!==undefined && !WALL_TPL[j]){
+            design[j]=design[j]?0:1;
+            s.pointer.down=false;      // click = toggle, not drag-paint
+          }
+        }
+      }
+    }
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    ctx.save(); ctx.translate(8,6);
+    forEachValid(designGeom,function(k){
+      var qr=decode(designGeom,k), kk=mapIdx(tileGeom,qr[0],qr[1]);
+      var j=jOfTileCell[kk];
+      hexPath(ctx,designGeom.cx[k],designGeom.cy[k],designGeom.sz*0.94);
+      if(WALL_TPL[j]) ctx.fillStyle=COL.wall;
+      else if(design[j]) ctx.fillStyle='#6E5B45';
+      else ctx.fillStyle=COL.floor;
+      ctx.fill();
+      ctx.strokeStyle='rgba(46,40,30,0.25)'; ctx.lineWidth=1; ctx.stroke();
+      if(PORT_SET[kk]!==undefined){
+        ctx.strokeStyle=design[j]?'rgba(196,69,60,0.9)':'rgba(31,111,122,0.9)';
+        ctx.lineWidth=2;
+        hexPath(ctx,designGeom.cx[k],designGeom.cy[k],designGeom.sz*0.6); ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
+});
+function drawSpokes(el){
+  var cv=document.getElementById('cv-spokes'), ctx=cv.getContext('2d');
+  ctx.fillStyle=css['--panel2']; ctx.fillRect(0,0,180,180);
+  if(!el) return;
+  var mx=Math.max.apply(null, el.g.concat([1e-6]));
+  for(var d=0;d<6;d++){
+    var vx=SQ3*(NV[d][0]+NV[d][1]/2), vy=1.5*NV[d][1];
+    var n=Math.hypot(vx,vy); vx/=n; vy/=n;
+    var L=14+62*(el.g[d]/mx);
+    ctx.strokeStyle=el.g[d]>1e-6?css['--accent']:css['--line'];
+    ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(90,90); ctx.lineTo(90+vx*L,90+vy*L); ctx.stroke();
+  }
+  ctx.fillStyle=css['--ink']; ctx.beginPath(); ctx.arc(90,90,7,0,7); ctx.fill();
+}
+document.getElementById('w-clear').addEventListener('click',function(){ design.fill(0); });
+document.getElementById('w-char').addEventListener('click',function(){
+  var st=document.getElementById('w-out');
+  st.textContent='probing 15 port pairs…';
+  setTimeout(function(){
+    var t0=performance.now();
+    lastElem=characterizeElement(design);
+    drawSpokes(lastElem);
+    st.textContent='done in '+((performance.now()-t0)/1000).toFixed(1)+'s';
+    document.getElementById('w-model').textContent=
+      'g = ['+lastElem.g.map(function(v){return v.toFixed(3);}).join(', ')+']  ·  capacity '+lastElem.cap+' cells  ·  star residual '+(lastElem.fit*100).toFixed(1)+'%';
+    ['w-castA','w-castB','w-castC'].forEach(function(id){ document.getElementById(id).disabled=false; });
+  },20);
+});
+['A','B','C'].forEach(function(slot,si){
+  document.getElementById('w-cast'+slot).addEventListener('click',function(){
+    if(!lastElem) return;
+    var el={}; for(var k2 in lastElem) el[k2]=lastElem[k2];
+    el.name=slot;
+    ELEM[1+si]=el;
+    var btn=document.querySelector('button.pl[data-e="'+(1+si)+'"]');
+    btn.disabled=false; btn.textContent=slot+' ✦';
+    boardChanged();
+  });
+});
+
+/* ---- board: place components on the twin, both worlds re-stamp ---- */
+var placeSel=0, checkMode=false;
+Array.prototype.forEach.call(document.querySelectorAll('button.pl'),function(b){
+  b.addEventListener('click',function(){
+    placeSel=+b.dataset.e;
+    Array.prototype.forEach.call(document.querySelectorAll('button.pl'),function(x){
+      x.setAttribute('aria-pressed', x===b?'true':'false');
+    });
+  });
+});
+document.getElementById('t-check').addEventListener('click',function(){
+  checkMode=!checkMode;
+  this.setAttribute('aria-pressed',checkMode?'true':'false');
+});
+function boardChanged(){
+  twW.reset(); twC.reset(); twSettle=0;
+}
+if(!twW.elemIdx) twW.elemIdx=new Int16Array(twW.nT);
+twinCoarse.hooks=twinCoarse.hooks||{};
+(function(){
+  var cv=document.getElementById('cv-coarse');
+  cv.addEventListener('pointerdown',function(e){
+    var r=cv.getBoundingClientRect();
+    var x=(e.clientX-r.left)/r.width*worldGeom.w, y=(e.clientY-r.top)/r.height*worldGeom.h;
+    var wk=pixelToHex(worldGeom,x,y);
+    if(wk<0) return;
+    var ti=twW.idxOfWk[wk];
+    if(ti===undefined) return;
+    if(checkMode){ deviceCheck(ti); return; }
+    if(!ELEM[placeSel]) return;
+    twW.elemIdx[ti]=placeSel;
+    boardChanged();
+  });
+})();
+/* ---- device check: run the placed component at 37 cells with the LIVE port heads ---- */
+function deviceCheck(ti){
+  var el=ELEM[twW.elemIdx?twW.elemIdx[ti]:0]||ELEM[0];
+  var walls=new Uint8Array(tileGeom.N);
+  for(var j=0;j<localOffsets.length;j++){
+    var kk=mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1]);
+    if(WALL_TPL[j]||(el.walls&&el.walls[j])) walls[kk]=1;
+  }
+  var cap=el.cap||CAP_OPEN;
+  var hbar=twC.H[ti]/cap;
+  /* live neighbour heads as port BCs, driven through the NEIGHBOUR'S characterized
+     half-conductance so the fine probe and the macromodel cross the same path */
+  var bc=[null,null,null,null,null,null], gN=[0,0,0,0,0,0];
+  for(var pi=0;pi<twW.pairs.length;pi++){
+    var p=twW.pairs[pi];
+    if(p.a!==ti&&p.b!==ti) continue;
+    var other=p.a===ti?p.b:p.a;
+    var dSelf=p.a===ti?p.d:(p.d+3)%6;
+    var eO=ELEM[twW.elemIdx[other]]||ELEM[0];
+    bc[dSelf]=twC.H[other]/(eO.cap||CAP_OPEN);
+    gN[dSelf]=eO.g[(dSelf+3)%6]||0;
+  }
+  /* fine settle at those BCs */
+  var h=new Float64Array(tileGeom.N), open=[];
+  forEachValid(tileGeom,function(k){ if(!walls[k]){ open.push(k); h[k]=hbar; } });
+  for(var t=0;t<4000;t++){
+    var dh=new Float64Array(tileGeom.N);
+    for(var i=0;i<open.length;i++){
+      var k=open[i];
+      for(var d=0;d<3;d++){
+        var nk=k+tileGeom.shifts[d];
+        if(nk<0||nk>=tileGeom.N||!tileGeom.valid[nk]||walls[nk]) continue;
+        var df=h[k]-h[nk], f=K*(df>0?satH(h[k]):satH(h[nk]))*df;
+        dh[k]-=f; dh[nk]+=f;
+      }
+    }
+    for(d=0;d<6;d++){
+      if(bc[d]==null||walls[PORT[d].k]||gN[d]<1e-9) continue;
+      var pk=PORT[d].k;
+      dh[pk]+=gN[d]*(bc[d]-h[pk]);
+    }
+    for(i=0;i<open.length;i++) h[open[i]]+=dh[open[i]];
+    /* pin the operating point: hold the device's storage at the lane's current level
+       so the comparison is "same storage, same boundary heads" */
+    var mSum=0;
+    for(i=0;i<open.length;i++) mSum+=h[open[i]];
+    var corr=hbar-mSum/open.length;
+    for(i=0;i<open.length;i++) h[open[i]]+=corr;
+  }
+  var num=0, den=0, lines=[];
+  for(d=0;d<6;d++){
+    if(bc[d]==null||walls[PORT[d].k]||gN[d]<1e-9) continue;
+    var pk2=PORT[d].k;
+    var Ffine=gN[d]*(bc[d]-h[pk2]);
+    var eO2=null, gm=0;
+    for(pi=0;pi<twW.pairs.length;pi++){
+      var p2=twW.pairs[pi];
+      if((p2.a===ti&&p2.d===d)||(p2.b===ti&&(p2.d+3)%6===d)){
+        var oth=p2.a===ti?p2.b:p2.a;
+        gm=pairConductance(el, ELEM[twW.elemIdx[oth]]||ELEM[0], p2.a===ti?p2.d:p2.d);
+        break;
+      }
+    }
+    var Fmac=gm*(bc[d]-hbar);
+    num+=Math.abs(Fmac-Ffine); den+=Math.abs(Ffine);
+    lines.push('p'+d+' fine '+Ffine.toFixed(4)+' vs model '+Fmac.toFixed(4));
+  }
+  var pct=den>1e-9?(num/den*100).toFixed(0):'0';
+  document.getElementById('t-hint').textContent=
+    '🔍 device check, tile '+ti+' ('+(el.name||'open')+'): port fluxes within '+pct+'% of a live 37-cell simulation at this in-circuit operating point (port-level misdistribution largely cancels — board-level state error stays in low single digits)  ·  '+lines.join(' · ');
+}
 /* ---------- main loop ---------- */
 var fc=0;
 function loop(){

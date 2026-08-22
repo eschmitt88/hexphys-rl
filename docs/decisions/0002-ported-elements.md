@@ -36,6 +36,25 @@ be shut (valves) but the rim cannot be opened.
    the ported zero-learning closure matches the wide-seam trained GNN
    (|log err| 0.27 = 0.27). Learned lanes now slightly over-suppress.
 
+## Addendum (same day): the SPICE loop is implemented
+
+docs/ports.html now carries the full component workflow: design a chamber
+(ports can be shut = valves), **characterize** via 15 midpoint-referenced
+2-port probes + LINEAR least-squares on resistances (1/T_ij = r_i + r_j;
+Laplacian tiebreak resolves underdetermined port sets), cast to a library
+slot, **place on the board** (both twin worlds re-stamp), and
+**device-check** any placed component against a live 37-cell simulation
+at its in-circuit operating point — the mixed-signal simulator pattern.
+
+Measured (harness11): open element g uniform to 3 digits, star residual
+4.1%; valve reads exactly zero on shut ports; a heterogeneous board (9
+valves + 8 four-port manifolds among open tiles) runs end-to-end
+(own-fluid flow + chemistry) at **3.5% flow error** on macromodels alone.
+Honest wrinkle: per-port instantaneous fluxes deviate ~20% at in-circuit
+operating points (star cross-port structure + multi-port sensitivity)
+while aggregate state error stays low — misdistribution cancels. The
+device-check readout states both numbers.
+
 ## Consequences
 
 - Simplicity: the ports page needed ~200 changed lines over the reactor

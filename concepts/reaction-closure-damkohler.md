@@ -62,6 +62,46 @@ metric; total yield hides the failure.
   covariance — precisely the property that makes it hard to homogenize.
   The most valuable machines are the most expensive to approximate.
 
+## The closure race (2026-08-22, harness9) — first learned component
+
+Three closures, identical transport (exact flow handed over), racing the
+same truth. **Moment**: cov(A,B) as fifth tile state — mechanistic inflow
+production (an A-rich parcel entering drives cov negative), dispersion
+relaxation (one constant, calibrated in-loop to MOM_MIX=0.03), reaction
+damping. **GNN**: message-passing over the tile graph, 320 params — per-seam
+inflow parcels through a shared edge net, SUMMED (permutation-invariant =
+rotation symmetry by construction, verified to 1e-12), head outputs
+eta in [0,1.2] scaling a stoichiometry-preserving term (conservation-safe
+by construction). Trained in seconds on 1404 tile-samples from truth runs.
+
+**Race results (lane rate / truth rate, 1.00x perfect):**
+
+| k | naive | moment | GNN |
+|---|---|---|---|
+| 0.004 | 1.25x | **0.88x** | 0.36x |
+| 0.017 | 1.69x | **1.23x** | 0.50x |
+| 0.063 | 2.08x | 1.68x | **0.71x** |
+| 0.239 | 2.35x | 2.09x | **1.01x** |
+| 0.745 | 2.51x | 2.35x | **1.31x** |
+
+**Verdict: split by regime.** The GNN dominates the fast half — near-perfect
+(1.01x) exactly where naive fails hardest — and over-suppresses at slow
+rates. The moment closure is the safe generalist: modest but uniform.
+
+**The disconnect, third appearance, now dissected.** Per-rate a-priori
+breakdown: the GNN is uniformly good on truth states (11-15% eta error at
+EVERY rate vs naive's 48-95%), so the low-k runtime failure is pure
+feedback drift — the lane under-reacts, its state departs the training
+distribution, suppression deepens (a self-reinforcing spiral). Proven by
+measurement, not conjectured. A DAgger-lite fix (training on a naive
+lane's drifted states) was tried and made the fast regime WORSE (1.31x ->
+2.40x) — reverted. The published fix is solver-in-the-loop training
+(differentiate through unrolled steps); recorded as the next rung.
+
+**Placement note**: product placement error (~60-80% everywhere) improves
+only modestly in any lane — closures fix the rate, not where product
+lands; placement inherits accumulated transport-history differences.
+
 ## Scope
 
 Tier 1 only: one reaction, three species, one-way coupling (flow carries

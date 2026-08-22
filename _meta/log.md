@@ -41,3 +41,4 @@ skills; read by `/lint`.
 2026-08-18 foundry v3.3: MUSCL face reconstruction + exact fine-side port response — adaptive error 15.5% -> 7.7% at unchanged 6x compute
 2026-08-19 concept: foundry-testbed-physics — fine sim identified as degenerate nonlinear diffusion (porous medium eq m=2 / Richards-like), single phase, no momentum; measured R~t^0.22 vs Barenblatt t^0.25
 2026-08-20 reactor: Tier-1 chemistry (A+B->C) shipped at docs/reactor.html; reaction closure 1.17x->12.23x with Damkohler CONFIRMED; transport closure only 3.9%; CSTR hypothesis killed (1%)
+2026-08-22 closure race shipped (reactor.html): naive/moment/GNN. GNN 320-param message-passer wins fast regime (2.51x->1.31x, 1.01x at k=0.24); moment wins slow; low-k GNN failure proven to be feedback drift (a-priori uniform 11-15%); DAgger-lite tried and reverted

@@ -91,6 +91,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <a class="nl keep" href="#front">Reaction</a>
     <a class="nl" href="#twin">Closure</a>
     <a class="nl" href="#sweep">Damköhler</a>
+    <a class="nl" href="#race">Race</a>
     <a class="nl" href="foundry.html">↖ Foundry</a>
   </div>
 </nav>
@@ -187,6 +188,43 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       <div class="stage"><canvas id="cv-sweep" width="640" height="300" aria-label="Chart of surrogate product error versus reaction rate"></canvas></div>
     </div>
     <p class="note" id="s-verdict"></p>
+  </div>
+</section>
+
+<section id="race">
+  <div class="wrap">
+    <p class="eyebrow">The race</p>
+    <h2>Three closures, one truth</h2>
+    <p>Same world, run four ways. The truth simulates all 2,257 cells. Each coarse lane gets the exact flow and identical species transport — they differ <em>only</em> in how they close the reaction term. <strong>Naive</strong> uses tile means and is blind to segregation. <strong>Moment</strong> carries cov(A,B) as a fifth state per tile: inflows produce segregation mechanically (an A-rich parcel entering an average tile drives cov negative), dispersion relaxes it, reaction damps it — the turbulent-combustion answer, with its one free constant calibrated in-loop. <strong>GNN</strong> is a message-passing network over the tile graph: each tile aggregates its incoming seam fluxes — which is exactly where the segregation information lives — and predicts a rate multiplier η. Summing over seams makes it rotation-invariant by construction, and because η only scales a stoichiometry-preserving term, it cannot violate conservation no matter how wrong it is.</p>
+    <div class="demo">
+      <div class="bar">
+        <button class="btn primary" id="r-train" type="button">⚙ collect + train</button>
+        <output id="r-tstat">untrained — GNN lane runs as naive until trained</output>
+        <canvas id="cv-loss" width="150" height="30" style="border:1px solid var(--line);border-radius:5px"></canvas>
+        <span class="grow"></span>
+        <label>rate k <input type="range" id="r-k" min="0" max="100" step="1" value="80"> <output id="r-kout">·</output></label>
+        <button class="btn" id="r-go" type="button">▶ race</button>
+        <button class="btn" id="r-stop" type="button">■</button>
+      </div>
+      <div class="stage">
+        <div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(215px,1fr))">
+          <figure style="margin:0;text-align:center"><canvas id="cv-race-truth" aria-label="Ground truth"></canvas><figcaption class="note">truth · 2,257 cells<br><output id="r-o-t">·</output></figcaption></figure>
+          <figure style="margin:0;text-align:center"><canvas id="cv-race-n" aria-label="Naive lumped lane"></canvas><figcaption class="note">naive · tile means<br><output id="r-o-n">·</output></figcaption></figure>
+          <figure style="margin:0;text-align:center"><canvas id="cv-race-m" aria-label="Moment closure lane"></canvas><figcaption class="note">moment · carries cov(A,B)<br><output id="r-o-m">·</output></figcaption></figure>
+          <figure style="margin:0;text-align:center"><canvas id="cv-race-g" aria-label="GNN closure lane"></canvas><figcaption class="note">GNN · learned η from seam fluxes<br><output id="r-o-g">·</output></figcaption></figure>
+        </div>
+      </div>
+      <div class="bar"><span class="note">readouts: <strong>rate ×</strong> = lane's instantaneous reaction rate over truth's (1× is perfect) · <strong>place</strong> = product placement error vs truth. On the GNN panel, tile outlines darken where the net suppresses the reaction (low η) — watch it find the front.</span></div>
+    </div>
+    <div class="demo">
+      <div class="bar">
+        <button class="btn primary" id="rs-run" type="button">▶ closure sweep</button>
+        <span class="grow"></span>
+        <output id="rs-stat">·</output>
+      </div>
+      <div class="stage"><canvas id="cv-race-sweep" width="640" height="300" aria-label="Rate ratio versus reaction rate for all three closures"></canvas></div>
+    </div>
+    <p class="note" id="r-verdict"></p>
   </div>
 </section>
 
@@ -448,20 +486,22 @@ World.prototype.seamFlux = function(ti,d){
 };
 
 /* ---------- lumped coarse twin: exact flow, lumped reaction ---------- */
-function Coarse(w){ this.w=w; this.reset(); }
+function Coarse(w, mode){ this.w=w; this.mode=mode||'naive'; this.reset(); }
 Coarse.prototype.reset=function(){
   var n=this.w.nT;
   this.H=new Float64Array(n); this.A=new Float64Array(n); this.B=new Float64Array(n); this.C=new Float64Array(n);
   this.errSign=new Float64Array(n); this.prod=0;
+  this.Z=new Float64Array(n);                 // moment lane: cov(A,B) per tile
+  this.eta=new Float64Array(n); for(var i=0;i<n;i++) this.eta[i]=1;
 };
 Coarse.prototype.step=function(kRate){
   var w=this.w, n=w.nT, i;
   w.tileSums();
   for(i=0;i<n;i++) this.H[i]=w.cH[i];          // flow handed over exactly
   var dA=new Float64Array(n), dB=new Float64Array(n), dC=new Float64Array(n);
-  /* injection matches the fine world */
   this.A[w.srcA]+=0.9; this.B[w.srcB]+=0.9;
-  /* advect species on the exact fluxes */
+  /* advect species on the exact fluxes; record inflow parcels for moment/GNN */
+  var IN=this._in||(this._in=[]); IN.length=0;
   for(i=0;i<w.pairs.length;i++){
     var p=w.pairs[i], Q=w.seamFlux(p.a,p.d);
     var don = Q>0 ? p.a : p.b, rec = Q>0 ? p.b : p.a;
@@ -470,19 +510,57 @@ Coarse.prototype.step=function(kRate){
     var frac=Math.min(0.9, Math.abs(Q)/Hd);
     var mA=this.A[don]*frac, mB=this.B[don]*frac, mC=this.C[don]*frac;
     dA[don]-=mA; dA[rec]+=mA; dB[don]-=mB; dB[rec]+=mB; dC[don]-=mC; dC[rec]+=mC;
+    IN.push({rec:rec, qn:Math.abs(Q), caD:this.A[don]/Hd, cbD:this.B[don]/Hd});
   }
   for(i=0;i<n;i++){
     this.A[i]=Math.max(0,this.A[i]+dA[i]);
     this.B[i]=Math.max(0,this.B[i]+dB[i]);
     this.C[i]=Math.max(0,this.C[i]+dC[i]);
   }
-  /* LUMPED reaction: uses tile means, blind to sub-tile covariance */
+  /* per-tile concentrations */
+  var ca=this._ca||(this._ca=new Float64Array(n)), cb=this._cb||(this._cb=new Float64Array(n));
+  for(i=0;i<n;i++){ var Hh=this.H[i]; ca[i]=Hh>1e-9?this.A[i]/Hh:0; cb[i]=Hh>1e-9?this.B[i]/Hh:0; }
+  /* moment lane: mechanistic covariance transport
+     production: an inflow parcel replaces a fraction of the tile with fluid whose
+     deviation product is (caD-ca)(cbD-cb); dispersion relaxes Z; reaction damps it */
+  if(this.mode==='moment'){
+    for(i=0;i<IN.length;i++){
+      var f=IN[i], r0=f.rec, Hr=this.H[r0];
+      if(Hr<1e-6) continue;
+      var fr=Math.min(0.9, f.qn/Hr);
+      this.Z[r0] += fr*((f.caD-ca[r0])*(f.cbD-cb[r0]) - this.Z[r0]);
+    }
+    for(i=0;i<n;i++){
+      var z=this.Z[i];
+      z*=(1-MOM_MIX);
+      z*=Math.max(0, 1-kRate*(ca[i]+cb[i])*DT);
+      this.Z[i]=Math.max(-2,Math.min(2,z));
+    }
+  }
+  /* GNN lane: message-pass over incoming seam parcels -> rate multiplier eta */
+  if(this.mode==='gnn'&&GNN.trained){
+    var msgs=this._mg||(this._mg=[]);
+    for(i=0;i<n;i++){ if(!msgs[i]) msgs[i]=new Float64Array(GNN.em); else msgs[i].fill(0); }
+    for(i=0;i<IN.length;i++){
+      var f2=IN[i], r2=f2.rec, Hr2=this.H[r2];
+      if(Hr2<1e-6) continue;
+      GNN.phiInto([Math.min(1,f2.qn/Hr2)*3,(f2.caD-ca[r2])*2,(f2.cbD-cb[r2])*2], msgs[r2]);
+    }
+    for(i=0;i<n;i++){
+      this.eta[i]=this.H[i]>1e-6? GNN.headEta([ca[i],cb[i],this.H[i]>1e-9?this.C[i]/this.H[i]:0,this.H[i]/37], msgs[i]) : 1;
+    }
+  }
+  /* reaction, per closure */
   var prod=0;
   for(i=0;i<n;i++){
     var H=this.H[i];
     if(H<1e-6||this.A[i]<=0||this.B[i]<=0) continue;
-    var r=kRate*this.A[i]*this.B[i]/H*DT;
+    var r;
+    if(this.mode==='moment')      r=kRate*Math.max(0, this.A[i]*this.B[i]/H + this.Z[i]*H)*DT;
+    else if(this.mode==='gnn')    r=this.eta[i]*kRate*this.A[i]*this.B[i]/H*DT;
+    else                          r=kRate*this.A[i]*this.B[i]/H*DT;
     r=Math.min(r, this.A[i]*0.5, this.B[i]*0.5);
+    if(r<=0) continue;
     this.A[i]-=r; this.B[i]-=r; this.C[i]+=r; prod+=r;
   }
   this.prod+=prod;
@@ -724,6 +802,414 @@ document.getElementById('s-run').addEventListener('click',function(){
   }, 60);
 });
 drawSweep();
+
+
+/* ================= THE CLOSURE RACE ================= */
+var MOM_MIX=0.12;   // moment lane's one free constant; calibrated in-loop by the trainer
+
+/* ---- tiny message-passing net: phi over incoming seam parcels (sum = D6-invariant), head -> eta ---- */
+var GNN={
+  trained:false, ein:3, eh:8, em:5, nin:9, nh:10,
+  P:null,
+  _rs:777,
+  rnd:function(){ this._rs=(this._rs*1103515245+12345)&0x7fffffff; return this._rs/0x7fffffff-0.5; },
+  init:function(){
+    var self=this; this._rs=777;
+    function mat(r,c,sc){ var m=[]; for(var i=0;i<r;i++){ var row=new Float64Array(c); for(var j=0;j<c;j++) row[j]=self.rnd()*sc; m.push(row);} return m; }
+    this.P={ W1e:mat(this.eh,this.ein,0.8), b1e:new Float64Array(this.eh),
+             W2e:mat(this.em,this.eh,0.5),  b2e:new Float64Array(this.em),
+             W1n:mat(this.nh,this.nin,0.6), b1n:new Float64Array(this.nh),
+             W2n:new Float64Array(this.nh), b2n:0 };
+  },
+  phiInto:function(e,out){          // out += phi(e)
+    var P=this.P,i,j;
+    for(i=0;i<this.eh;i++){
+      var v=P.b1e[i]; for(j=0;j<this.ein;j++) v+=P.W1e[i][j]*e[j];
+      GNN._h1[i]=Math.tanh(v);
+    }
+    for(i=0;i<this.em;i++){
+      var u=P.b2e[i]; for(j=0;j<this.eh;j++) u+=P.W2e[i][j]*GNN._h1[j];
+      out[i]+=u;
+    }
+  },
+  headEta:function(nf,m){
+    var P=this.P,i,j,x=GNN._x;
+    for(i=0;i<4;i++) x[i]=nf[i];
+    for(i=0;i<this.em;i++) x[4+i]=m[i];
+    var o=P.b2n;
+    for(i=0;i<this.nh;i++){
+      var v=P.b1n[i]; for(j=0;j<this.nin;j++) v+=P.W1n[i][j]*x[j];
+      o+=P.W2n[i]*Math.tanh(v);
+    }
+    return 1.2/(1+Math.exp(-o));
+  }
+};
+GNN._h1=new Float64Array(GNN.eh); GNN._x=new Float64Array(GNN.nin);
+GNN.init();
+
+/* full forward+backward on one sample (for training) */
+function gnnLossGrad(sm,G){
+  var P=GNN.P, EH=GNN.eh, EM=GNN.em, NH=GNN.nh, NI=GNN.nin, i,j,e;
+  var m=new Float64Array(EM), H1=[];
+  for(e=0;e<sm.edges.length;e++){
+    var ed=sm.edges[e], h1=new Float64Array(EH);
+    for(i=0;i<EH;i++){ var v=P.b1e[i]; for(j=0;j<3;j++) v+=P.W1e[i][j]*ed[j]; h1[i]=Math.tanh(v); }
+    H1.push(h1);
+    for(i=0;i<EM;i++){ var u=P.b2e[i]; for(j=0;j<EH;j++) u+=P.W2e[i][j]*h1[j]; m[i]+=u; }
+  }
+  var x=new Float64Array(NI);
+  for(i=0;i<4;i++) x[i]=sm.nf[i];
+  for(i=0;i<EM;i++) x[4+i]=m[i];
+  var h2=new Float64Array(NH), o=P.b2n;
+  for(i=0;i<NH;i++){ var v2=P.b1n[i]; for(j=0;j<NI;j++) v2+=P.W1n[i][j]*x[j]; h2[i]=Math.tanh(v2); o+=P.W2n[i]*h2[i]; }
+  var sg=1/(1+Math.exp(-o)), eta=1.2*sg;
+  var d=eta-sm.t, L=sm.w*d*d;
+  var go=sm.w*2*d*1.2*sg*(1-sg);
+  G.b2n+=go;
+  var gx=new Float64Array(NI);
+  for(i=0;i<NH;i++){
+    G.W2n[i]+=go*h2[i];
+    var gh=go*P.W2n[i]*(1-h2[i]*h2[i]);
+    G.b1n[i]+=gh;
+    for(j=0;j<NI;j++){ G.W1n[i][j]+=gh*x[j]; gx[j]+=gh*P.W1n[i][j]; }
+  }
+  for(e=0;e<sm.edges.length;e++){
+    var ed2=sm.edges[e], h1b=H1[e];
+    for(i=0;i<EM;i++){
+      var gu=gx[4+i];
+      G.b2e[i]+=gu;
+      for(j=0;j<EH;j++){
+        G.W2e[i][j]+=gu*h1b[j];
+        GNN._gh1[j]=(i===0? 0:GNN._gh1[j]);
+      }
+    }
+    for(j=0;j<EH;j++){
+      var acc=0;
+      for(i=0;i<EM;i++) acc+=gx[4+i]*P.W2e[i][j];
+      var gh1=acc*(1-h1b[j]*h1b[j]);
+      G.b1e[j]+=gh1;
+      for(i=0;i<3;i++) G.W1e[j][i]+=gh1*ed2[i];
+    }
+  }
+  return L;
+}
+GNN._gh1=new Float64Array(GNN.eh);
+
+/* ---- training data: truth runs across the rate range; features at TILE granularity ---- */
+function tileFeatures(w, i, ca, cb){
+  var H=w.cH[i];
+  var nf=[ca[i], cb[i], H>1e-9? w.cC[i]/H : 0, H/37];
+  var edges=[];
+  for(var pi=0; pi<w.pairs.length; pi++){
+    var p=w.pairs[pi];
+    if(p.a!==i&&p.b!==i) continue;
+    var Q=w.seamFlux(p.a,p.d);
+    var don = Q>0 ? p.a : p.b, rec = Q>0 ? p.b : p.a;
+    if(rec!==i) continue;
+    var Hd=w.cH[don]; if(Hd<1e-9||H<1e-6) continue;
+    edges.push([Math.min(1,Math.abs(Q)/H)*3,(w.cA[don]/Hd-ca[i])*2,(w.cB[don]/Hd-cb[i])*2]);
+  }
+  return {nf:nf, edges:edges};
+}
+function collectSamples(){
+  var samples=[], vs=[15,30,45,60,75,88];
+  for(var vi=0;vi<vs.length;vi++){
+    var w=new World(), k=kOf(vs[vi]);
+    for(var t=0;t<640;t++){
+      w.step(k);
+      if(t<140||t%6!==0) continue;
+      w.tileSums();
+      var ca=[], cb=[];
+      for(var i=0;i<w.nT;i++){ var H=w.cH[i]; ca.push(H>1e-9?w.cA[i]/H:0); cb.push(H>1e-9?w.cB[i]/H:0); }
+      for(i=0;i<w.nT;i++){
+        var H2=w.cH[i]; if(H2<0.5) continue;
+        var Rl=w.cA[i]*w.cB[i]/H2; if(Rl<1e-4) continue;
+        var arr=w.tiles[i], Rt=0;
+        for(var j=0;j<arr.length;j++){ var g=arr[j]; var h=w.h[g]; if(h<1e-9||w.wall[g])continue; Rt+=w.A[g]*w.B[g]/h; }
+        var f=tileFeatures(w,i,ca,cb);
+        samples.push({nf:f.nf, edges:f.edges, t:Math.max(0,Math.min(1.2,Rt/Rl)), w:Rl, k:k});
+      }
+    }
+  }
+  return samples;
+}
+function trainGNN(samples, epochs, cb){
+  GNN.init();
+  /* cap and normalise weights */
+  var sub=samples.length>2600? samples.filter(function(_,i){return i%Math.ceil(samples.length/2600)===0;}) : samples.slice();
+  var wMax=0; sub.forEach(function(s){ wMax=Math.max(wMax,s.w); });
+  sub.forEach(function(s){ s.w=Math.min(1, s.w/(0.25*wMax)); });
+  var P=GNN.P, keys=['W1e','b1e','W2e','b2e','W1n','b1n','W2n'];
+  function zeros(){ return { W1e:P.W1e.map(function(r){return new Float64Array(r.length);}), b1e:new Float64Array(GNN.eh),
+    W2e:P.W2e.map(function(r){return new Float64Array(r.length);}), b2e:new Float64Array(GNN.em),
+    W1n:P.W1n.map(function(r){return new Float64Array(r.length);}), b1n:new Float64Array(GNN.nh),
+    W2n:new Float64Array(GNN.nh), b2n:0 }; }
+  var V=zeros(), losses=[];
+  var ep=0;
+  function oneEpoch(){
+    var G=zeros(), L=0;
+    for(var si=0;si<sub.length;si++) L+=gnnLossGrad(sub[si],G);
+    var lr=0.35*Math.pow(0.995,ep)/sub.length, mom=0.9;
+    keys.forEach(function(key){
+      var g=G[key], v=V[key], p2=P[key];
+      if(key==='W2n'||key==='b1e'||key==='b2e'||key==='b1n'){
+        for(var i=0;i<g.length;i++){ v[i]=mom*v[i]-lr*g[i]; p2[i]+=v[i]; }
+      } else {
+        for(var i2=0;i2<g.length;i2++) for(var j2=0;j2<g[i2].length;j2++){ v[i2][j2]=mom*v[i2][j2]-lr*g[i2][j2]; p2[i2][j2]+=v[i2][j2]; }
+      }
+    });
+    V.b2n=mom*V.b2n-lr*G.b2n; P.b2n+=V.b2n;
+    losses.push(L/sub.length);
+    ep++;
+    if(cb) cb(ep, epochs, losses);
+    return L/sub.length;
+  }
+  return { oneEpoch:oneEpoch, losses:losses, nSamples:sub.length, get epoch(){return ep;} };
+}
+function apriori(samples){
+  var e0=0, eg=0, wsum=0, m=new Float64Array(GNN.em);
+  for(var i=0;i<samples.length;i++){
+    var sm=samples[i];
+    m.fill(0);
+    for(var e=0;e<sm.edges.length;e++) GNN.phiInto(sm.edges[e], m);
+    var eta=GNN.headEta(sm.nf, m);
+    e0+=sm.w*Math.abs(1-sm.t); eg+=sm.w*Math.abs(eta-sm.t); wsum+=sm.w;
+  }
+  return {naive:e0/wsum, gnn:eg/wsum};
+}
+/* moment-lane calibration: pick MOM_MIX by short in-loop runs (its one constant; fair budget) */
+function calibrateMoment(){
+  var best=MOM_MIX, bestE=1e9, cands=[0.03,0.06,0.12,0.25,0.45];
+  for(var ci=0;ci<cands.length;ci++){
+    MOM_MIX=cands[ci];
+    var w=new World(), lane=new Coarse(w,'moment'), k=kOf(80);
+    var pf0=0, lp0=0, ratios=[];
+    for(var t=0;t<520;t++){
+      var a0=w.prodFine, b0=lane.prod;
+      w.step(k); lane.step(k);
+      if(t>200){
+        var tr=w.prodFine-a0, lr=lane.prod-b0;
+        if(tr>1e-4) ratios.push(lr/tr);
+      }
+    }
+    var mean=ratios.reduce(function(a,b){return a+b;},0)/Math.max(1,ratios.length);
+    var err=Math.abs(Math.log(Math.max(mean,1e-3)));
+    if(err<bestE){ bestE=err; best=cands[ci]; }
+  }
+  MOM_MIX=best;
+  return best;
+}
+
+/* ---- race state ---- */
+var race={ running:false, truth:null, lanes:null, ratios:[1,1,1], k:0 };
+function raceReset(){
+  race.truth=new World();
+  race.lanes=[new Coarse(race.truth,'naive'), new Coarse(race.truth,'moment'), new Coarse(race.truth,'gnn')];
+  race.ratios=[1,1,1];
+  race.tick=0;
+}
+function raceStep(){
+  var k=race.k;
+  var p0=race.truth.prodFine, l0=race.lanes.map(function(l){return l.prod;});
+  race.truth.step(k);
+  for(var li=0;li<3;li++) race.lanes[li].step(k);
+  var tr=race.truth.prodFine-p0;
+  if(tr>1e-4){
+    for(li=0;li<3;li++){
+      var r=(race.lanes[li].prod-l0[li])/tr;
+      race.ratios[li]=0.97*race.ratios[li]+0.03*r;
+    }
+  }
+  race.tick++;
+}
+function placeErr(lane){
+  var w=race.truth, num=0, den=0;
+  w.tileSums();
+  for(var i=0;i<w.nT;i++){ num+=Math.abs(lane.C[i]-w.cC[i]); den+=Math.abs(w.cC[i]); }
+  return den>1e-9? num/den : 0;
+}
+
+/* ---- race UI ---- */
+var raceSims=[];
+function laneDrawer(idx){
+  return function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    if(!race.lanes) return;
+    var lane=race.lanes[idx], sc=0.55;
+    ctx.save(); ctx.scale(sc,sc);
+    for(var i=0;i<race.truth.nT;i++){
+      var wk=race.truth.wk[i];
+      mixCell(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz,lane.H[i]/37,lane.A[i]/37,lane.B[i]/37,lane.C[i]/37);
+      if(idx===2&&GNN.trained){
+        var sup=Math.max(0,Math.min(1,1-lane.eta[i]));
+        if(sup>0.05){ ctx.strokeStyle='rgba(31,111,122,'+(0.2+0.8*sup)+')'; ctx.lineWidth=1+3*sup;
+          hexPath(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz); ctx.stroke(); }
+      }
+    }
+    ctx.restore();
+  };
+}
+var raceTruthSim=new Sim('cv-race-truth', fineGeom.w*0.40, fineGeom.h*0.40, {
+  tick:function(){
+    if(!race.running||!race.truth) return;
+    race.k=kOf(+document.getElementById('r-k').value);
+    document.getElementById('r-kout').textContent='k='+race.k.toFixed(3);
+    raceStep();
+    if(race.tick%15===0){
+      document.getElementById('r-o-t').textContent='t='+race.tick;
+      var ids=['r-o-n','r-o-m','r-o-g'];
+      for(var li=0;li<3;li++){
+        document.getElementById(ids[li]).textContent='rate '+race.ratios[li].toFixed(2)+'× · place '+(placeErr(race.lanes[li])*100).toFixed(0)+'%';
+      }
+    }
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    if(!race.truth) { ctx.fillStyle=css['--muted']; ctx.font='12px system-ui'; ctx.textAlign='center';
+      ctx.fillText('▶ race to start', s.w/2, s.h/2); return; }
+    ctx.save(); ctx.scale(0.40,0.40);
+    var m=fineGeom, w=race.truth;
+    for(var i=0;i<w.list.length;i++){
+      var g=w.list[i];
+      mixCell(ctx,m.cx[g],m.cy[g],m.sz*0.95,w.h[g],w.A[g],w.B[g],w.C[g]);
+    }
+    ctx.restore();
+  }
+});
+['cv-race-n','cv-race-m','cv-race-g'].forEach(function(id,idx){
+  new Sim(id, worldGeom.w*0.55, worldGeom.h*0.55, { tick:function(){}, draw:laneDrawer(idx) });
+});
+document.getElementById('r-go').addEventListener('click',function(){ raceReset(); race.running=true; });
+document.getElementById('r-stop').addEventListener('click',function(){ race.running=false; });
+
+/* ---- training UI ---- */
+var trainer=null, trainSamples=null;
+function drawLoss(losses){
+  var cv=document.getElementById('cv-loss'), ctx=cv.getContext('2d');
+  ctx.fillStyle=css['--panel2']; ctx.fillRect(0,0,cv.width,cv.height);
+  if(losses.length<2) return;
+  var mx=losses[0], mn=Math.min.apply(null,losses);
+  ctx.strokeStyle=css['--accent']; ctx.lineWidth=1.3; ctx.beginPath();
+  for(var i=0;i<losses.length;i++){
+    var x=i/(losses.length-1)*(cv.width-4)+2;
+    var y=cv.height-3-((mx-losses[i])/(Math.max(mx-mn,1e-9)))* (cv.height-8)*-1 - (cv.height-8);
+    y=3+((losses[i]-mn)/Math.max(mx-mn,1e-9))*(cv.height-6);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+document.getElementById('r-train').addEventListener('click',function(){
+  if(trainer) return;
+  var st=document.getElementById('r-tstat');
+  st.textContent='collecting truth data…';
+  setTimeout(function(){
+    trainSamples=collectSamples();
+    st.textContent=trainSamples.length+' samples · calibrating moment closure…';
+    setTimeout(function(){
+      var mm=calibrateMoment();
+      st.textContent='MOM_MIX='+mm+' · training GNN…';
+      trainer=trainGNN(trainSamples, 320, null);
+      var EPOCHS=320;
+      function chunk(){
+        for(var i=0;i<16&&trainer.epoch<EPOCHS;i++) trainer.oneEpoch();
+        drawLoss(trainer.losses);
+        st.textContent='training '+trainer.epoch+'/'+EPOCHS+' · loss '+trainer.losses[trainer.losses.length-1].toFixed(4);
+        if(trainer.epoch<EPOCHS){ setTimeout(chunk,0); }
+        else {
+          GNN.trained=true;
+          var ap=apriori(trainSamples);
+          st.textContent='trained · a-priori η error: naive '+(ap.naive*100).toFixed(1)+'% → GNN '+(ap.gnn*100).toFixed(1)+'%';
+          trainer=null;
+        }
+      }
+      chunk();
+    },30);
+  },30);
+});
+
+/* ---- closure sweep: rate ratio vs k for all three lanes ---- */
+var rsPts={n:[],m:[],g:[]};
+function drawRaceSweep(){
+  var cv=document.getElementById('cv-race-sweep'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,W,H);
+  var L=58,Rp=16,T=16,Bm=44, kmin=0.0016,kmax=1.3;
+  var all=rsPts.n.concat(rsPts.m,rsPts.g);
+  var emax=Math.max(2, all.reduce(function(a,p){return Math.max(a,p.r);},0)*1.15);
+  function px(k){ return L+(Math.log(k/kmin)/Math.log(kmax/kmin))*(W-L-Rp); }
+  function py(r){ return H-Bm-(r/emax)*(H-T-Bm); }
+  ctx.strokeStyle=css['--line'];
+  for(var gi=0;gi<=4;gi++){ var yy=T+(H-T-Bm)*gi/4; ctx.beginPath(); ctx.moveTo(L,yy); ctx.lineTo(W-Rp,yy); ctx.stroke(); }
+  ctx.strokeStyle=css['--muted']; ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,H-Bm); ctx.lineTo(W-Rp,H-Bm); ctx.stroke();
+  ctx.fillStyle=css['--muted']; ctx.font='11px ui-monospace, Menlo, monospace'; ctx.textAlign='right';
+  for(gi=0;gi<=4;gi++) ctx.fillText((emax*(4-gi)/4).toFixed(1)+'×', L-6, T+(H-T-Bm)*gi/4+4);
+  ctx.textAlign='center';
+  [0.002,0.01,0.05,0.2,1.0].forEach(function(kk){ ctx.fillText(String(kk), px(kk), H-Bm+16); });
+  ctx.fillText('reaction rate k', (L+W-Rp)/2, H-10);
+  var y1=py(1);
+  ctx.save(); ctx.strokeStyle=css['--good']; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(L,y1); ctx.lineTo(W-Rp,y1); ctx.stroke(); ctx.restore();
+  ctx.textAlign='left'; ctx.fillText('1× = exact', L+6, y1-5);
+  var series=[['n','#6F675E','naive'],['m','#7A4FBF','moment'],['g',css['--accent'],'GNN']];
+  var lx=W-150, ly=T+8;
+  series.forEach(function(sr,si){
+    var arr=rsPts[sr[0]].slice().sort(function(a,b){return a.k-b.k;});
+    if(arr.length>1){
+      ctx.strokeStyle=sr[1]; ctx.lineWidth=2; ctx.beginPath();
+      for(var i=0;i<arr.length;i++){ var x=px(arr[i].k), y=py(arr[i].r); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      ctx.stroke();
+    }
+    for(var i2=0;i2<arr.length;i2++){ ctx.fillStyle=sr[1]; ctx.beginPath(); ctx.arc(px(arr[i2].k),py(arr[i2].r),3,0,7); ctx.fill(); }
+    ctx.fillStyle=sr[1]; ctx.fillRect(lx,ly+si*16-8,10,10);
+    ctx.fillStyle=css['--muted']; ctx.textAlign='left'; ctx.fillText(sr[2], lx+16, ly+si*16+1);
+  });
+}
+var rsRunning=false;
+document.getElementById('rs-run').addEventListener('click',function(){
+  if(rsRunning) return;
+  rsRunning=true;
+  rsPts={n:[],m:[],g:[]};
+  var vals=[15,35,55,75,92], idx=0;
+  var st=document.getElementById('rs-stat');
+  function one(){
+    if(idx>=vals.length){
+      rsRunning=false; st.textContent='sweep complete';
+      var last=rsPts.g.length? rsPts.g[rsPts.g.length-1] : null;
+      var lastN=rsPts.n[rsPts.n.length-1], lastM=rsPts.m[rsPts.m.length-1];
+      if(last&&lastN){
+        document.getElementById('r-verdict').textContent=
+          'Measured at the fastest rate: naive '+lastN.r.toFixed(2)+'×, moment '+lastM.r.toFixed(2)+'×, GNN '+last.r.toFixed(2)+'× the true reaction rate. '+
+          (Math.abs(last.r-1)<Math.abs(lastM.r-1)? 'The learned closure is holding closest to truth where the naive model fails hardest.' :
+           'The moment closure is holding closest to truth — carrying cov(A,B) as state beats the learned multiplier here.');
+      }
+      return;
+    }
+    var v=vals[idx++], k=kOf(v);
+    st.textContent='k='+k.toFixed(3)+' ('+idx+'/'+vals.length+')…';
+    setTimeout(function(){
+      var w=new World();
+      var lanes=[new Coarse(w,'naive'), new Coarse(w,'moment'), new Coarse(w,'gnn')];
+      var sums=[0,0,0], cnt=0;
+      for(var t=0;t<820;t++){
+        var p0=w.prodFine, l0=lanes.map(function(l){return l.prod;});
+        w.step(k);
+        for(var li=0;li<3;li++) lanes[li].step(k);
+        if(t>360){
+          var tr=w.prodFine-p0;
+          if(tr>1e-4){ for(li=0;li<3;li++) sums[li]+=(lanes[li].prod-l0[li])/tr; cnt++; }
+        }
+      }
+      if(cnt>0){
+        rsPts.n.push({k:k,r:sums[0]/cnt});
+        rsPts.m.push({k:k,r:sums[1]/cnt});
+        rsPts.g.push({k:k,r:sums[2]/cnt});
+      }
+      drawRaceSweep();
+      setTimeout(one,20);
+    },20);
+  }
+  one();
+});
+drawRaceSweep();
 
 /* ---------- main loop ---------- */
 var fc=0;

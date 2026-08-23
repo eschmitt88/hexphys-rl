@@ -49,6 +49,36 @@ cancellation of per-tile operating-condition biases); one config,
 flow-only, wet regime — needs replication before leaning on it. Cost per
 level: 1177 fine cells -> 61 nodes -> 7 nodes.
 
+## Replication + rung 3 (2026-08-23, harness15/16)
+
+**Replication (harness15)**: 8 randomized configs — random src/drn supers,
+random designated-port choices per seam, 3 random valve obstacles each
+(with L1-graph connectivity resampling). Per-super L2 elements probed with
+each super's ACTUAL internal conductances. Result: **L2 < L1 in 8/8**,
+ratios 0.50-0.81, median 0.60. The contraction is a property of the
+architecture, not config luck.
+
+**Rung 3 (harness16)**: chain of three 49-tile super-supers on a radius-12
+board (147 active tiles, 322 solid), one-port rule applied at ALL levels
+(one tile-crossing per super seam, ONE super-crossing per SS seam). Each
+of 21 supers probed on its 7-tile network; the SS probed on its 7-super
+network — every level characterized from the level below, microseconds
+each. Four levels lockstep, 16k steps:
+
+| level | state | error vs fine (SS granularity) |
+|---|---|---|
+| fine | 17,353 cells | truth |
+| L1 | 469 nodes | 1.0% |
+| L2 | 21 nodes | 0.3% |
+| L3 | 3 nodes | 1.0% |
+
+**5,784x state compression, error flat at ~1% through three recursion
+rungs — no compounding.** The chain config is bottleneck-dominated and
+thus lump-friendly (L1 already 1.0% vs ~15% on the dense R4 hierarchy),
+consistent with the boundary-fraction scaling law. Caveats: flow-only,
+wet/linear regime, uniform interiors, L3 probed as a 2-port along the
+chain axis with the end-SS halves approximated by the middle SS's.
+
 ## Bugs eaten en route (both instructive)
 
 1. Index-space collision: super assignment keyed by geometry index while

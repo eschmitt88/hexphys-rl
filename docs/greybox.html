@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hexphys Ports</title>
+<title>Hexphys Greyboxes</title>
 </head>
 <body>
 <style>
@@ -79,273 +79,194 @@ button.btn:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px s
   font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88rem; overflow-x: auto; margin: 1rem 0; }
 footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--muted); font-size: .88rem; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-</style>
 
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:var(--panel2);padding:.05em .3em;border-radius:4px}
+</style>
 <nav class="top">
   <div class="wrap">
     <a class="wordmark" href="#top">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L17 6 V14 L10 18 L3 14 V6 Z" fill="none" stroke="var(--accent)" stroke-width="1.7"/><circle cx="7" cy="10" r="2" fill="var(--accent)"/><circle cx="13" cy="10" r="2" fill="var(--accent2)"/></svg>
-      HEXPHYS PORTS
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L17 6 V14 L10 18 L3 14 V6 Z" fill="none" stroke="var(--accent)" stroke-width="1.7"/><circle cx="10" cy="10" r="2.4" fill="var(--accent2)"/></svg>
+      HEXPHYS GREYBOXES
     </a>
     <div class="spacer"></div>
-    <a class="nl keep" href="#front">Reaction</a>
-    <a class="nl" href="#twin">Closure</a>
-    <a class="nl" href="#sweep">Damköhler</a>
-    <a class="nl" href="#race">Race</a>
-    <a class="nl keep" href="#zoom">Zoom</a>
-    <a class="nl keep" href="greybox.html">Greyboxes ↗</a>
-    <a class="nl" href="reactor.html">↖ Reactor</a>
+    <a class="nl keep" href="#g1">Contracts</a>
+    <a class="nl" href="#g2">Watershed</a>
+    <a class="nl" href="#g3">Clockwork</a>
+    <a class="nl" href="#g4">Descent</a>
+    <a class="nl" href="#g5">Creep</a>
+    <a class="nl" href="#g6">Inspector</a>
+    <a class="nl" href="ports.html">↖ Ports</a>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap hero-copy">
-    <p class="eyebrow">Foundry v4 · the ported world</p>
-    <h1>Six ports.<br>Everything else is wall.</h1>
-    <p class="sub">Every tile now has a structural rim with exactly <strong>one open cell per side</strong> — six ports. Inside, a 25-cell chamber you design. The physics is unchanged; the <em>interfaces</em> became exact: a port's state is one number because a port is one cell. The wide-seam pathologies that cost weeks — ill-posed conductances, seam profiles, chain calibration — close by construction. Paint walls in the chambers below (you can shut a port to make a valve, but the rim is permanent) and watch A, B and product thread the network.</p>
-  </div>
-  <div class="demo" style="margin:0;border-radius:0;border-left:none;border-right:none">
-    <div class="bar">
-      <span class="legend">
-        <span><i style="background:#2E6FB8"></i>A</span>
-        <span><i style="background:#D2691E"></i>B</span>
-        <span><i style="background:#E0B33C"></i>C (product)</span>
-        <span><i style="background:#4E463A"></i>wall</span>
-        <span><i style="background:#1F6F7A"></i>port</span>
-      </span>
-      <label>reaction rate k <input type="range" id="h-k" min="0" max="100" step="1" value="45"> <output id="h-kout">·</output></label>
-      <span class="grow"></span>
-      <output id="h-stat">·</output>
-      <button class="btn" id="h-wall" aria-pressed="false" type="button">paint walls</button>
-      <button class="btn" id="h-reset" type="button">Reset</button>
-    </div>
-    <div class="stage"><canvas id="cv-hero" aria-label="Ported hex world: chambers joined by single-cell ports"></canvas></div>
+    <p class="eyebrow">six playable greyboxes · rubric prototype gate · juice off by design</p>
+    <h1>Six games. No art. Is the loop fun?</h1>
+    <p class="sub">Each station below is a complete core loop on the shared engine — a goal, the decision that matters, a score, an end state — rendered as plainly as possible on purpose. The fun rubric's prototype gate asks one question first: strip everything and toggle the juice off — is the thirty-second loop worth repeating? Play each for five minutes and answer that, per game, before anything else.</p>
   </div>
 </header>
 
-<section id="front">
+<section id="g1">
   <div class="wrap">
-    <p class="eyebrow">What the slider is doing</p>
-    <h2>One number decides whether mixing or reacting wins</h2>
-    <div class="cols">
-      <div>
-        <p>Drag the rate to the far left and the two streams simply <em>interpenetrate</em>: A and B coexist across a wide, soft overlap, and product forms slowly and diffusely through the whole region. Drag it to the far right and A and B become mutually exclusive — they annihilate on contact, so they can only meet in a thin sheet, and all the product is manufactured in that sheet.</p>
-        <p>The ratio that governs this is the <strong>Damköhler number</strong>: reaction speed divided by transport speed. It is the single most important number in reactor design, and it is about to be the single most important number for our surrogate too.</p>
-        <p>Paint walls into the flow and you're doing reactor engineering: a baffle that folds the streams into each other raises contact area and product yield; a clean channel keeps them apart and passes them through unreacted.</p>
-      </div>
-      <div>
-        <div class="eq">fine scale, per cell:<br>
-          ∂h/∂t = ∇·( K·sat(h)·∇h )        <span style="color:var(--muted)">— the flow (unchanged)</span><br>
-          ∂mₓ/∂t + ∇·( q·cₓ ) = ±k·cA·cB·h  <span style="color:var(--muted)">— species, carried by that flow</span><br><br>
-          Da  =  k · L / v  =  reaction rate / transport rate
-        </div>
-        <p class="note">Species ride the volumetric flux the flow solver already computes, using donor-cell upwinding — the same upstream weighting reservoir simulators use. The reaction is plain mass action. Nothing here is exotic; the interesting part is what it does to coarse-graining.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="workshop">
-  <div class="wrap">
-    <p class="eyebrow">The workshop · components with pins</p>
-    <h2>Design a component, characterize it, put it in the library</h2>
-    <p>This is the SPICE loop. Paint a chamber below — walls inside, and you may shut ports to make valves. <strong>Characterize</strong> runs fifteen 2-port probes and fits the six per-port conductances by <em>linear</em> least squares (with one-cell ports the resistances simply add: 1/T = r<sub>i</sub>+r<sub>j</sub>) — a fraction of a second, exact in the sense prediction 1 proved. Cast it to a slot, then place it on the board in the twin below: the board runs <em>entirely on these behavioural models</em>, and you can device-check any placed component against its full 37-cell simulation, in circuit — which is precisely how mixed-signal circuit simulators work.</p>
-    <div class="cols">
-      <div>
-        <div class="demo" style="margin-top:0">
-          <div class="bar">
-            <button class="btn" id="w-clear" type="button">Clear</button>
-            <span class="grow"></span>
-            <button class="btn primary" id="w-char" type="button">⚗ Characterize</button>
-          </div>
-          <div class="stage"><canvas id="cv-design" aria-label="Component designer: paint chamber walls, shut ports to make valves"></canvas></div>
-          <div class="bar">
-            <span class="note">cast:</span>
-            <button class="btn" id="w-castA" type="button" disabled>→ A</button>
-            <button class="btn" id="w-castB" type="button" disabled>→ B</button>
-            <button class="btn" id="w-castC" type="button" disabled>→ C</button>
-            <span class="grow"></span>
-            <output id="w-out">design, then characterize</output>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="demo" style="margin-top:0">
-          <div class="bar"><span class="note">behavioural model — port conductances (true directions)</span></div>
-          <div class="stage" style="text-align:center"><canvas id="cv-spokes" width="180" height="180"></canvas></div>
-          <div class="bar"><output id="w-model" style="font-size:.78rem">·</output></div>
-        </div>
-        <p class="note">Try: a <strong>valve</strong> (shut four ports), a <strong>restrictor</strong> (single-cell throat mid-chamber), a <strong>manifold</strong> (open), a <strong>dead end</strong>. Watch the conductance spokes change — that six-vector <em>is</em> the component, as far as the board is concerned.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="twin">
-  <div class="wrap">
-    <p class="eyebrow">The end-to-end twin</p>
-    <h2>The coarse model now runs its own fluid</h2>
-    <p>Left: the full 2,257-cell truth. Right: the coarse world — 61 tiles — which in this ported build <strong>evolves its own flow</strong> through a single characterized hop conductance per port pair (no flow handed over, no chain calibration: with one-cell ports, a single-tile probe <em>is</em> the hop conductance). Watch the FLOW error readout — with wide seams this took chain calibration, MUSCL reconstruction and exact fine-side ports to tame; here one number per port does it.</p>
-    <div class="eq">true tile reaction  =  k·⟨A·B⟩  =  k·( ⟨A⟩⟨B⟩ + <b>cov(A,B)</b> )<br>
-      lumped surrogate    =  k·⟨A⟩⟨B⟩        <span style="color:var(--bad)">← misses the covariance term entirely</span></div>
-    <p>When A arrives through one seam and B through another, they are <em>anticorrelated</em> inside the tile — cov &lt; 0 — so the lumped model thinks they are mixing when they are not, and manufactures product that truth never makes. Measured across the rate range: the lumped tile computes between <strong>1.2× and 12.2×</strong> the true reaction rate, with individual tiles reaching 27×.</p>
-    <p class="note">One honest wrinkle in the picture on the right: at high rates the coarse world over-consumes its reactants so fast that it runs out, and then production is capped by what the sources supply rather than by the rate. Both worlds converge on the same <em>total</em> yield — they just manufacture it in different places. That is why the number to watch is the rate ratio, not the total.</p>
+    <p class="eyebrow">01 · foundry contracts · puzzle</p>
+    <h2>Design a reactor to spec</h2>
+    <p>Click chamber cells to place walls; click a port to shut it (free). A enters at the blue port, B at the orange one, product must leave through the gold ones. <strong>Commission</strong> runs the fine simulation; the score is the fraction of exiting mass that is product. Pass the target within the wall budget to unlock the next contract.</p>
     <div class="demo">
       <div class="bar">
-        <span class="note">place:</span>
-        <button class="btn pl" data-e="0" aria-pressed="true" type="button">open</button>
-        <button class="btn pl" data-e="1" aria-pressed="false" type="button" disabled>A</button>
-        <button class="btn pl" data-e="2" aria-pressed="false" type="button" disabled>B</button>
-        <button class="btn pl" data-e="3" aria-pressed="false" type="button" disabled>C</button>
-        <button class="btn" id="t-check" aria-pressed="false" type="button">🔍 device-check</button>
-        <label>rate k <input type="range" id="t-k" min="0" max="100" step="1" value="45"> <output id="t-kout">·</output></label>
+        <strong id="c-title">·</strong>
         <span class="grow"></span>
-        <output id="t-err">product error ·</output>
-        <output id="t-cov">mean cov(A,B) ·</output>
-        <button class="btn" id="t-reset" type="button">Reset</button>
+        <output id="c-target">·</output>
+        <output id="c-best">·</output>
       </div>
-      <div class="stage">
-        <div class="cols">
-          <figure style="margin:0;text-align:center"><canvas id="cv-fine" aria-label="Fine-resolution truth"></canvas><figcaption class="note">truth · 2,257 cells</figcaption></figure>
-          <figure style="margin:0;text-align:center"><canvas id="cv-coarse" aria-label="Lumped coarse surrogate"></canvas><figcaption class="note">lumped surrogate · 61 tiles, exact flow</figcaption></figure>
-        </div>
-      </div>
+      <div class="bar" style="border-top:none"><span class="note" id="c-brief">·</span></div>
+      <div class="stage"><canvas id="cv-contract" aria-label="Contract reactor designer"></canvas></div>
       <div class="bar">
-        <span class="note" id="t-hint">click the coarse panel to PLACE the selected component (board re-stamps both worlds) · toggle 🔍 then click a tile to device-check its macromodel against a live 37-cell simulation</span>
-      </div>
-      <div class="bar">
-        <span class="note">tile outline shows the sign of the closure error: <span style="color:#C4453C">red = surrogate over-produces</span> (streams are separated inside the tile) · <span style="color:#2E6FB8">blue = under-produces</span></span>
+        <button class="btn" id="c-prev" type="button">‹ prev</button>
+        <button class="btn" id="c-clear" type="button">Clear</button>
+        <button class="btn primary" id="c-run" type="button">⚗ Commission</button>
+        <output id="c-walls">·</output>
+        <span class="grow"></span>
+        <output id="c-status">design, then commission</output>
+        <button class="btn" id="c-next" type="button" disabled>next contract ›</button>
       </div>
     </div>
   </div>
 </section>
 
-<section id="sweep">
+<section id="g2">
   <div class="wrap">
-    <p class="eyebrow">The experiment</p>
-    <h2>Where homogenization stops working</h2>
-    <p>The chart plots the quantity that isolates the closure exactly: <strong>the reaction rate a lumped tile would compute, divided by the rate truth actually achieves</strong>, measured on the true field. The reaction constant cancels in that ratio, so what remains is purely a measure of how badly a tile average misrepresents its own interior. Every rate you leave running drops a point; <strong>run sweep</strong> walks the range automatically.</p>
-    <p class="note">Worth knowing before you read it: transport was measured separately and is <em>not</em> the problem — with the reaction switched off entirely, the coarse model tracks species to within 3.9%. And the well-stirred-tank assumption, which looked like a likely culprit, turns out to be sound: fluid leaves a tile within 1% of the tile's mean concentration. What follows is the reaction closure, alone.</p>
+    <p class="eyebrow">02 · watershed · continent strategy</p>
+    <h2>Feed five towns through eight seasons</h2>
+    <p>Two rivers (blue) pulse: wet phase, dry phase. Five towns (triangles) each need a season's worth of water — the bar fills as they drink. Any tile above the flood line turns red and costs you. You get six builds per season: <strong>reservoirs</strong> hold three times the water and smooth the pulse, <strong>dams</strong> steer, <strong>pipes</strong> pass flow along one axis only. Score: 10 per fed town, minus flood damage.</p>
     <div class="demo">
       <div class="bar">
-        <button class="btn primary" id="s-run" type="button">▶ run sweep</button>
-        <button class="btn" id="s-clear" type="button">clear</button>
+        <span class="note">build:</span>
+        <button class="btn ws-tool" data-t="open" aria-pressed="true" type="button">open</button>
+        <button class="btn ws-tool" data-t="res" aria-pressed="false" type="button">reservoir</button>
+        <button class="btn ws-tool" data-t="dam" aria-pressed="false" type="button">dam</button>
+        <button class="btn ws-tool" data-t="v03" aria-pressed="false" type="button">pipe —</button>
+        <button class="btn ws-tool" data-t="v14" aria-pressed="false" type="button">pipe ⟋</button>
+        <button class="btn ws-tool" data-t="v25" aria-pressed="false" type="button">pipe ⟍</button>
         <span class="grow"></span>
-        <output id="s-stat">·</output>
+        <output id="ws-budget">·</output>
+        <output id="ws-season">·</output>
+        <output id="ws-score">·</output>
       </div>
-      <div class="stage"><canvas id="cv-sweep" width="640" height="300" aria-label="Chart of surrogate product error versus reaction rate"></canvas></div>
+      <div class="stage"><canvas id="cv-watershed" aria-label="Watershed board"></canvas></div>
+      <div class="bar">
+        <button class="btn" id="ws-new" type="button">new continent</button>
+        <button class="btn" id="ws-go" type="button">▶ / ❚❚</button>
+        <span id="ws-towns" class="note">·</span>
+        <span class="grow"></span>
+        <output id="ws-flood">·</output>
+      </div>
+      <div class="bar" style="border-top:none"><span class="note" id="ws-log">·</span></div>
     </div>
-    <p class="note" id="s-verdict"></p>
   </div>
 </section>
 
-<section id="race">
+<section id="g3">
   <div class="wrap">
-    <p class="eyebrow">The race</p>
-    <h2>Three closures, one truth</h2>
-    <p>This is the wide-seam closure race, re-run on the ported world — same code, same closures, new physics substrate. Same world, run four ways. The truth simulates all 2,257 cells. Each coarse lane gets the exact flow and identical species transport — they differ <em>only</em> in how they close the reaction term. <strong>Naive</strong> uses tile means and is blind to segregation. <strong>Moment</strong> carries cov(A,B) as a fifth state per tile: inflows produce segregation mechanically (an A-rich parcel entering an average tile drives cov negative), dispersion relaxes it, reaction damps it — the turbulent-combustion answer, with its one free constant calibrated in-loop. <strong>GNN</strong> is a message-passing network over the tile graph: each tile aggregates its incoming seam fluxes — which is exactly where the segregation information lives — and predicts a rate multiplier η. Summing over seams makes it rotation-invariant by construction, and because η only scales a stoichiometry-preserving term, it cannot violate conservation no matter how wrong it is.</p>
+    <p class="eyebrow">03 · clockwork · oscillator performance</p>
+    <h2>Bring ninety-one clocks into one beat</h2>
+    <p>Every tile is a chemical oscillator; colour is phase, grey tiles are dead (their material is below the threshold). Impure material drifts. <strong>Purify</strong> a tile to fix its frequency (10 uses), plant a <strong>pacemaker</strong> that couples four times harder (2 uses), or <strong>tap</strong> a tile to snap it to its neighbours' phase — a manual phase-lock. Raise the coupling slider and the lattice locks easier but slower. Win by holding synchrony R ≥ 0.85 for 200 beats.</p>
     <div class="demo">
       <div class="bar">
-        <button class="btn primary" id="r-train" type="button">⚙ collect + train</button>
-        <output id="r-tstat">untrained — GNN lane runs as naive until trained</output>
-        <canvas id="cv-loss" width="150" height="30" style="border:1px solid var(--line);border-radius:5px"></canvas>
+        <button class="btn ck-tool" data-t="purify" aria-pressed="true" type="button">purify</button>
+        <button class="btn ck-tool" data-t="pace" aria-pressed="false" type="button">pacemaker</button>
+        <button class="btn ck-tool" data-t="tap" aria-pressed="false" type="button">tap</button>
+        <label>coupling <input type="range" id="ck-D" min="5" max="120" step="1" value="30"> <output id="ck-Dout">·</output></label>
         <span class="grow"></span>
-        <label>rate k <input type="range" id="r-k" min="0" max="100" step="1" value="80"> <output id="r-kout">·</output></label>
-        <button class="btn" id="r-go" type="button">▶ race</button>
-        <button class="btn" id="r-stop" type="button">■</button>
+        <output id="ck-budget">·</output>
       </div>
-      <div class="stage">
-        <div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(215px,1fr))">
-          <figure style="margin:0;text-align:center"><canvas id="cv-race-truth" aria-label="Ground truth"></canvas><figcaption class="note">truth · 2,257 cells<br><output id="r-o-t">·</output></figcaption></figure>
-          <figure style="margin:0;text-align:center"><canvas id="cv-race-n" aria-label="Naive lumped lane"></canvas><figcaption class="note">naive · tile means<br><output id="r-o-n">·</output></figcaption></figure>
-          <figure style="margin:0;text-align:center"><canvas id="cv-race-m" aria-label="Moment closure lane"></canvas><figcaption class="note">moment · carries cov(A,B)<br><output id="r-o-m">·</output></figcaption></figure>
-          <figure style="margin:0;text-align:center"><canvas id="cv-race-g" aria-label="GNN closure lane"></canvas><figcaption class="note">GNN · learned η from seam fluxes<br><output id="r-o-g">·</output></figcaption></figure>
-        </div>
-      </div>
-      <div class="bar"><span class="note">readouts: <strong>rate ×</strong> = lane's instantaneous reaction rate over truth's (1× is perfect) · <strong>place</strong> = product placement error vs truth. On the GNN panel, tile outlines darken where the net suppresses the reaction (low η) — watch it find the front.</span></div>
-    </div>
-    <div class="demo">
+      <div class="stage"><canvas id="cv-clockwork" aria-label="Clockwork lattice"></canvas></div>
       <div class="bar">
-        <button class="btn primary" id="rs-run" type="button">▶ closure sweep</button>
+        <button class="btn" id="ck-new" type="button">new lattice</button>
+        <output id="ck-R">·</output>
         <span class="grow"></span>
-        <output id="rs-stat">·</output>
+        <output id="ck-time">·</output>
       </div>
-      <div class="stage"><canvas id="cv-race-sweep" width="640" height="300" aria-label="Rate ratio versus reaction rate for all three closures"></canvas></div>
     </div>
-    <p class="note" id="r-verdict"></p>
   </div>
 </section>
 
-<section id="zoom">
+<section id="g4">
   <div class="wrap">
-    <p class="eyebrow">The zoom · three altitudes, one world</p>
-    <h2>Fly up and the physics gets cheaper</h2>
-    <p>The same world simulated three ways at once, in lockstep: <strong>1,177 fine cells</strong> at ground level, <strong>61 SPICE nodes</strong> one level up, <strong>7 super-nodes</strong> at the top — the super-elements characterized in microseconds by exact linear solves on the tile network, never touching the fine world. Drag the altitude slider: what you see at each height is what <em>that level's model believes</em>, and the error chips tell you how much belief costs. Source in the north-east super, drain in the south-west; flow squeezes through one designated port per super-seam — the one-port rule applied recursively.</p>
+    <p class="eyebrow">04 · the descent · exploration roguelike</p>
+    <h2>Escape a flooding machine</h2>
+    <p>You are the red dot inside a randomly generated ported machine that has been running for a while. Water flows from hidden sources to hidden drains; dark blue cells are flooded and drown you slowly. Reach the <strong>green</strong> tile. Click an adjacent cell to step (or focus the board and use <span class="mono">d e w a z x</span> for the six directions). Amber cells are valves: click one to open it and let a flooded passage drain — or hold Shift and click an open valve to shut it and stop a flood upstream. Gold diamonds are castings worth salvaging.</p>
     <div class="demo">
       <div class="bar">
-        <button class="btn primary" id="z-go" type="button">⛰ assemble &amp; run</button>
-        <output id="z-stat">three levels, unassembled</output>
+        <button class="btn primary" id="ds-new" type="button">⛏ new machine</button>
+        <output id="ds-seed">·</output>
         <span class="grow"></span>
-        <label>altitude <input type="range" id="z-alt" min="0" max="200" step="1" value="0" style="width:220px"> <output id="z-altout">ground</output></label>
+        <output id="ds-hp">·</output>
+        <output id="ds-score">·</output>
       </div>
-      <div class="bar" style="border-bottom:1px solid var(--line);border-top:none">
-        <output id="z-c0">L0 fine · 1177 cells · ·</output>
-        <output id="z-c1">L1 tiles · 61 nodes · ·</output>
-        <output id="z-c2">L2 supers · 7 nodes · ·</output>
-      </div>
-      <div class="stage"><canvas id="cv-zoom" aria-label="Zoom between fine cells, SPICE tiles and super-tiles of the same running world"></canvas></div>
-      <div class="bar"><span class="note">the grids really are rotated: tiles sit 25.3° from the cells (aperture-37 flower tiling) and supers sit 19.1° from the tiles (aperture-7) — the twist you see while zooming is the price of exact hex-in-hex nesting, rendered honestly.</span></div>
+      <div class="stage"><canvas id="cv-descent" aria-label="The Descent: fine-grid machine with agent"></canvas></div>
+      <div class="bar"><output id="ds-status">press new machine to start a run</output></div>
     </div>
-    <p class="note"><strong>Replicated, then pushed a rung deeper.</strong> Across 8 randomized configurations (random source/drain supers, random designated ports, random valve obstacles), the super level beat the tile level in <strong>8 of 8</strong> — L2/L1 ratios 0.50–0.81, median 0.60. Then a chain of three 49-tile super-supers ran <strong>four levels lockstep</strong>: 17,353 fine cells → 469 tile nodes → 21 super nodes → 3 super-super nodes, with errors <strong>1.0% → 0.3% → 1.0%</strong> — a 5,784× state compression with no error compounding across three rungs of recursion, every level characterized from the level below in microseconds. Board-size sweeps add the last piece: coarse error <em>shrinks</em> as boards grow (3.8% → 1.7%, radius 4 → 8). Bigger levels, better fidelity, flat speedup — the scaling law a multi-level game needs, measured.</p>
   </div>
 </section>
 
-<section id="verdict">
+<section id="g5">
   <div class="wrap">
-    <p class="eyebrow">The three predictions</p>
-    <h2>What ports were promised to buy — measured</h2>
-    <div class="cols">
-      <div>
-        <h3>1 · Characterization becomes single-shot</h3>
-        <p id="v-p1" class="note"><strong>CONFIRMED — 0.00% deviation.</strong> A single-tile 2-port probe gives G=0.0444; length-differenced 2- and 3-tile chains give 0.0444. In the wide-seam world this disagreement was 45%; with one-cell ports, chain calibration is provably unnecessary.</p>
-        <h3>2 · Flow error collapses</h3>
-        <p id="v-p2" class="note"><strong>FAILED as stated, at 5.3%</strong> — not the promised &lt;1%, but delivered with <em>one probed number and zero calibration campaigns</em>, versus 7.6% on the wide-seam open world after chain calibration, MUSCL reconstruction and exact fine-side ports. Diagnosed residual: multi-port operating-condition sensitivity (a source discharging through six ports at once is not chain through-flow) — bounded at ~5% here versus ill-posed (negative conductances) with wide seams. Two targeted probes were tried against it; neither helped; the general fix is the Foundry's operating-point record machinery, deliberately not duplicated on this page.</p>
+    <p class="eyebrow">05 · creep wars · real-time strategy</p>
+    <h2>Drown the hive before it takes the board</h2>
+    <p>Purple creep grows and spreads through open ports from its hives (dark purple); every so often it seeds a new hive on the frontier where the ground is driest. Water kills creep, and a hive under three units of head drowns. You earn a credit every 150 ticks: <strong>pumps</strong> (5) push water, <strong>dams</strong> (2) block both water and creep, <strong>reservoirs</strong> (3) store. The slider is the creep's growth rate — the AI's difficulty. Win when every hive has drowned; lose at 65% coverage.</p>
+    <div class="demo">
+      <div class="bar">
+        <button class="btn cw-tool" data-t="pump" aria-pressed="true" type="button">pump · 5</button>
+        <button class="btn cw-tool" data-t="dam" aria-pressed="false" type="button">dam · 2</button>
+        <button class="btn cw-tool" data-t="res" aria-pressed="false" type="button">reservoir · 3</button>
+        <label>growth <input type="range" id="cw-r" min="1" max="6" step="1" value="1"></label>
+        <span class="grow"></span>
+        <output id="cw-credits">·</output>
+        <output id="cw-cover">·</output>
       </div>
-      <div>
-        <h3>3 · The closure race gets easier</h3>
-        <p id="v-p3" class="note"><strong>FAILED as stated — and succeeded in substance.</strong> On the ported world the <em>naive</em> closure runs at 0.72–0.76× across the entire rate range (wide seams: 1.25–2.51×), with a-priori error down from 67% to 17%. The chambers are forced mixers: everything entering a tile funnels through single ports into a 25-cell chamber, the A/B segregation that made closure hard is destroyed by geometry, and the learned lanes have nothing left to fix — they now slightly over-suppress. The ported world's <em>zero-learning</em> closure matches the wide-seam world's best <em>trained</em> closure (|log-error| 0.27 vs 0.27). The design replaced the network.</p>
-        <h3>What ports do not fix</h3>
-        <p class="note">The chamber interior is still continuum: within-tile covariance (the reaction closure), storage dynamics, and oscillator phase all remain — but each is now a property of a well-defined 6-port device, which is textbook system identification instead of an ill-posed seam problem.</p>
+      <div class="stage"><canvas id="cv-creep" aria-label="Creep Wars board"></canvas></div>
+      <div class="bar">
+        <button class="btn" id="cw-new" type="button">new board</button>
+        <span class="grow"></span>
+        <output id="cw-status">place pumps upstream of the hives</output>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="g6">
+  <div class="wrap">
+    <p class="eyebrow">06 · the inspector · deduction</p>
+    <h2>Four faults, eight inspections</h2>
+    <p>One hundred and twenty-seven components run on their certified behavioural models. Four of them are lying — clogged or leaking — and the clogs get worse while you wait. You can't see the truth; you see the <strong>residual</strong>: gauge readings minus what the models predict, red where the real world holds less water than it should, blue where it holds more. Read the pattern (a clog starves everything downstream; a leak makes a local sink), then click a tile to inspect it. A fault found is repaired on the spot. Eight inspections, no more.</p>
+    <div class="demo">
+      <div class="bar">
+        <button class="btn primary" id="in-new" type="button">🔍 new case</button>
+        <span class="grow"></span>
+        <output id="in-budget">·</output>
+        <output id="in-found">·</output>
+      </div>
+      <div class="stage"><canvas id="cv-inspector" aria-label="Inspector residual map"></canvas></div>
+      <div class="bar"><output id="in-status">read the residual, then inspect</output></div>
     </div>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <p class="eyebrow">Why this matters beyond chemistry</p>
-    <h2>Notes</h2>
-    <div class="cols">
-      <div>
-        <h3>This is the trigger we predicted</h3>
-        <p>The coarse state per tile just went from 1 number to 4. The adaptive runtime's lookup table keys on the operating point; in 2-D that took 115 bins, and in 8-D the same resolution needs on the order of 10⁵. This is the measured moment where a table stops being viable and a learned closure earns its place — exactly the boundary argued for in the <a href="foundry.html">Foundry</a> notes, now with chemistry to test it on.</p>
-        <h3>Second moments, second chance</h3>
-        <p>Carrying variance was proposed once before, to fix a concave-mobility bias, and measurement killed it: the gap was 0.4%. Here the covariance is not a correction — it <em>is</em> the error term, exactly and by construction. Turbulent-combustion modelling carries exactly these second moments for exactly this reason.</p>
-      </div>
-      <div>
-        <h3>And a game mechanic falls out</h3>
-        <p>A good mixer is a tile that destroys within-tile covariance. That is precisely the property that makes a tile hard to homogenize — so the most <em>valuable</em> machines are the most <em>expensive</em> to approximate. With compute already a resource in this design, players would face a real trade: elegant, predictable plumbing that costs nothing to simulate, versus baroque high-yield reactors that demand detailed simulation to stay honest.</p>
-        <p class="note">Scope held deliberately: one irreversible reaction, three species, one-way coupling (flow carries chemistry, chemistry does not yet clog the flow). Precipitation feedback is Tier 2.</p>
-      </div>
-    </div>
+    <p class="eyebrow">how to playtest these</p>
+    <h2>Score the loop, not the sim</h2>
+    <p class="note">Rubric protocol, prototype gate: for each game answer G1 (is the 30-second loop worth repeating with no art?) and G2 (is there a real decision between a blind guess and a solved line?), then rate learning &amp; mastery, challenge–skill balance, and feel 0–4. Two or three raters, independently, before discussing. Everything here is deliberately unjuiced — that is the test, not a limitation.</p>
   </div>
 </section>
 
-<footer><div class="wrap">hexphys-rl · reactor · A + B → C on a hex lattice · truth 2,257 cells vs 61 lumped tiles, flow handed over exactly</div></footer>
+<footer><div class="wrap">hexphys-rl · greyboxes · six core loops on one engine · scored against game-fun-rubric v0.5 prototype gate</div></footer>
 
-<script>
-(function () {
+<script>(function () {
 'use strict';
+
+
 var css = {};
 function refreshPalette() {
   var s = getComputedStyle(document.documentElement);
@@ -985,1040 +906,709 @@ Sim.prototype.frame=function(){
   this.hooks.draw(this,this.cx);
 };
 
-/* ---------- HERO ---------- */
-var heroW=new World(), heroWall=false;
-var heroSim=new Sim('cv-hero', fineGeom.w, fineGeom.h, {
-  tick:function(s){
-    var k=kOf(+document.getElementById('h-k').value);
-    document.getElementById('h-kout').textContent='k='+k.toFixed(3);
-    if(s.pointer.down && heroWall){
-      var g=pixelToHex(fineGeom,s.pointer.x,s.pointer.y);
-      if(g>=0&&heroW.used[g]&&!heroW.rimFixed[g]){ heroW.wall[g]=1; heroW.h[g]=0; heroW.A[g]=0; heroW.B[g]=0; heroW.C[g]=0; }
-    }
-    for(var i=0;i<2;i++) heroW.step(k);
-    if(heroW.t%20===0){
-      var tA=0,tB=0,tC=0;
-      for(var j=0;j<heroW.list.length;j++){ var g2=heroW.list[j]; tA+=heroW.A[g2]; tB+=heroW.B[g2]; tC+=heroW.C[g2]; }
-      var y=(tA+tB)>1e-9? tC/(tC+tA+tB) : 0;
-      document.getElementById('h-stat').textContent='product fraction '+(y*100).toFixed(0)+'%  ·  A '+tA.toFixed(0)+' B '+tB.toFixed(0)+' C '+tC.toFixed(0);
-    }
-  },
-  draw:function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    var m=fineGeom;
-    for(var i=0;i<heroW.list.length;i++){
-      var g=heroW.list[i];
-      if(heroW.wall[g]){ ctx.fillStyle=COL.wall; hexPath(ctx,m.cx[g],m.cy[g],m.sz*0.95); ctx.fill(); continue; }
-      mixCell(ctx,m.cx[g],m.cy[g],m.sz*0.95,heroW.h[g],heroW.A[g],heroW.B[g],heroW.C[g]);
-    }
-    /* source + drain rings */
-    function ring(ti,col){
-      var arr=heroW.tiles[ti], cx=0,cy=0;
-      for(var j=0;j<arr.length;j++){ cx+=m.cx[arr[j]]; cy+=m.cy[arr[j]]; }
-      cx/=arr.length; cy/=arr.length;
-      ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,m.sz*3.4,0,7); ctx.stroke();
-    }
-    ctx.strokeStyle='rgba(31,111,122,0.75)'; ctx.lineWidth=1.2;
-    for(var pi=0;pi<heroW.portCells.length;pi++){
-      var pg=heroW.portCells[pi];
-      if(heroW.wall[pg]) continue;
-      hexPath(ctx,m.cx[pg],m.cy[pg],m.sz*0.95); ctx.stroke();
-    }
-    ring(heroW.srcA,'#2E6FB8'); ring(heroW.srcB,'#D2691E');
-    ring(heroW.drn[0],css['--muted']); ring(heroW.drn[1],css['--muted']);
-  }
-});
-document.getElementById('h-wall').addEventListener('click',function(){
-  heroWall=!heroWall; this.setAttribute('aria-pressed',heroWall?'true':'false');
-});
-document.getElementById('h-reset').addEventListener('click',function(){ heroW.reset(); });
 
-/* ---------- TWIN ---------- */
-var twW=new World(), twC=new Coarse(twW,'naive','network'), twSettle=0;
-var twinFine=new Sim('cv-fine', fineGeom.w*0.82, fineGeom.h*0.82, {
-  tick:function(){
-    var k=kOf(+document.getElementById('t-k').value);
-    document.getElementById('t-kout').textContent='k='+k.toFixed(3);
-    twW.step(k); twC.step(k); twSettle++;
-    if(twSettle%20===0){
-      var cov=twC.diagnose(k), cr=twW.closureRatio();
-      document.getElementById('t-err').textContent='lumped makes '+cr.ratio.toFixed(2)+'× too much product (worst tile '+cr.worst.toFixed(1)+'×)';
-      var fN=0,fD=0; twW.tileSums();
-      for(var fi=0;fi<twW.nT;fi++){ fN+=Math.abs(twC.H[fi]-twW.cH[fi]); fD+=Math.abs(twW.cH[fi]); }
-      document.getElementById('t-cov').textContent='FLOW error '+(fD>1e-9?(fN/fD*100).toFixed(1):'0')+'% (network, own fluid) · cov '+cov.toFixed(4)+' · place '+(twC.productError()*100).toFixed(0)+'%';
-      if(twSettle>500) recordPoint(k, cr.ratio);
-    }
-  },
-  draw:function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    ctx.save(); ctx.scale(0.82,0.82);
-    var m=fineGeom;
-    for(var i=0;i<twW.list.length;i++){
-      var g=twW.list[i];
-      if(twW.wall[g]){ ctx.fillStyle=COL.wall; hexPath(ctx,m.cx[g],m.cy[g],m.sz*0.95); ctx.fill(); continue; }
-      mixCell(ctx,m.cx[g],m.cy[g],m.sz*0.95,twW.h[g],twW.A[g],twW.B[g],twW.C[g]);
-    }
-    ctx.restore();
-  }
-});
-var twinCoarse=new Sim('cv-coarse', worldGeom.w, worldGeom.h, {
-  tick:function(){},
-  draw:function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    for(var i=0;i<twW.nT;i++){
-      var wk=twW.wk[i], H=twC.H[i];
-      mixCell(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz,H/37,twC.A[i]/37,twC.B[i]/37,twC.C[i]/37);
-      var cv=twC.errSign[i];
-      var mag=Math.min(1,Math.abs(cv)*180);
-      ctx.strokeStyle = cv<0 ? 'rgba(196,69,60,'+(0.15+0.85*mag)+')' : 'rgba(46,111,184,'+(0.15+0.85*mag)+')';
-      ctx.lineWidth=1+2*mag;
-      hexPath(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz); ctx.stroke();
-    }
-  }
-});
-document.getElementById('t-reset').addEventListener('click',function(){ twW.reset(); twC.reset(); twSettle=0; });
-document.getElementById('t-k').addEventListener('input',function(){ twSettle=0; });
-
-/* ---------- SWEEP CHART ---------- */
-var pts=[];
-function recordPoint(k,r){
-  if(k<=0||!isFinite(r)) return;
-  for(var i=0;i<pts.length;i++) if(Math.abs(Math.log(pts[i].k/k))<0.05){ pts[i].err=0.7*pts[i].err+0.3*r; drawSweep(); return; }
-  pts.push({k:k,err:r}); drawSweep();
+/* ================= shared: coarse network of ported elements + palette ================= */
+var GBE={open:0, dam:0, res:0, v03:0, v14:0, v25:0};
+function gbInitElems(){
+  var jOf={}, j;
+  for(j=0;j<localOffsets.length;j++) jOf[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j;
+  function mask(closed){ var dz=new Uint8Array(localOffsets.length); closed.forEach(function(d){ dz[jOf[PORT[d].k]]=1; }); return dz; }
+  var solid=new Uint8Array(localOffsets.length);
+  for(j=0;j<localOffsets.length;j++) if(!WALL_TPL[j]) solid[j]=1;
+  ELEM.push(characterizeElement(solid)); GBE.dam=ELEM.length-1; ELEM[GBE.dam].name='dam';
+  var res={}; for(var k2 in ELEM[0]) res[k2]=ELEM[0][k2]; res.cap=3*CAP_OPEN; res.name='reservoir'; res.g=ELEM[0].g.slice();
+  ELEM.push(res); GBE.res=ELEM.length-1;
+  ELEM.push(characterizeElement(mask([1,2,4,5]))); GBE.v03=ELEM.length-1; ELEM[GBE.v03].name='pipe 0-3';
+  ELEM.push(characterizeElement(mask([0,2,3,5]))); GBE.v14=ELEM.length-1; ELEM[GBE.v14].name='pipe 1-4';
+  ELEM.push(characterizeElement(mask([0,1,3,4]))); GBE.v25=ELEM.length-1; ELEM[GBE.v25].name='pipe 2-5';
 }
-function drawSweep(){
-  var cv=document.getElementById('cv-sweep'); if(!cv) return;
-  var ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
-  ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,W,H);
-  var L=58, Rp=16, T=16, Bm=44;
-  var kmin=0.0016, kmax=1.3;
-  var emax=Math.max(2, pts.reduce(function(a,p){return Math.max(a,p.err);},0)*1.15);
-  function px(k){ return L+(Math.log(k/kmin)/Math.log(kmax/kmin))*(W-L-Rp); }
-  function py(e){ return H-Bm-(e/emax)*(H-T-Bm); }
-  ctx.strokeStyle=css['--line']; ctx.lineWidth=1;
-  for(var gi=0; gi<=4; gi++){
-    var yy=T+(H-T-Bm)*gi/4;
-    ctx.beginPath(); ctx.moveTo(L,yy); ctx.lineTo(W-Rp,yy); ctx.stroke();
+function gbRng(seed){ var s=seed>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
+
+function Net(R, sz){
+  var g=this.geom=makeMap(R,sz), self=this;
+  this.nodes=[]; this.idx=new Int32Array(g.N).fill(-1);
+  forEachValid(g,function(k){ self.idx[k]=self.nodes.length; self.nodes.push(k); });
+  this.n=this.nodes.length;
+  this.pairs=[];
+  for(var i=0;i<this.n;i++) for(var d=0;d<3;d++){
+    var nk=this.nodes[i]+g.shifts[d];
+    if(nk<0||nk>=g.N||this.idx[nk]<0) continue;
+    this.pairs.push({a:i,b:this.idx[nk],d:d});
   }
-  ctx.strokeStyle=css['--muted'];
-  ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,H-Bm); ctx.lineTo(W-Rp,H-Bm); ctx.stroke();
-  ctx.fillStyle=css['--muted']; ctx.font='11px ui-monospace, Menlo, monospace';
-  ctx.textAlign='right';
-  for(gi=0;gi<=4;gi++) ctx.fillText((emax*(4-gi)/4).toFixed(1)+'×', L-6, T+(H-T-Bm)*gi/4+4);
-  var y1=py(1);
-  if(y1>T&&y1<H-Bm){ ctx.save(); ctx.strokeStyle=css['--good']; ctx.setLineDash([4,3]);
-    ctx.beginPath(); ctx.moveTo(L,y1); ctx.lineTo(W-Rp,y1); ctx.stroke(); ctx.restore();
-    ctx.textAlign='left'; ctx.fillText('1× = exact', L+6, y1-5); ctx.textAlign='center'; }
-  ctx.textAlign='center';
-  [0.002,0.01,0.05,0.2,1.0].forEach(function(kk){
-    if(kk<kmin||kk>kmax) return;
-    ctx.fillText(String(kk), px(kk), H-Bm+16);
-  });
-  ctx.fillText('reaction rate k   (slow mixing-limited  →  fast reaction-limited)', (L+W-Rp)/2, H-10);
-  ctx.save(); ctx.translate(14,(T+H-Bm)/2); ctx.rotate(-Math.PI/2);
-  ctx.fillText('lumped rate / true rate', 0,0); ctx.restore();
-  var sorted=pts.slice().sort(function(a,b){return a.k-b.k;});
-  if(sorted.length>1){
-    ctx.strokeStyle=css['--accent']; ctx.lineWidth=2; ctx.beginPath();
-    for(var i2=0;i2<sorted.length;i2++){
-      var x=px(sorted[i2].k), y=py(sorted[i2].err);
-      if(i2===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-  }
-  for(i2=0;i2<sorted.length;i2++){
-    ctx.fillStyle=css['--accent2'];
-    ctx.beginPath(); ctx.arc(px(sorted[i2].k),py(sorted[i2].err),3.5,0,7); ctx.fill();
-  }
-  var v=document.getElementById('s-verdict');
-  if(sorted.length>=4){
-    var lo=sorted[0].err, hi=sorted[sorted.length-1].err;
-    v.textContent = hi>lo*1.5
-      ? 'Measured on this run: the lumped closure goes from '+lo.toFixed(2)+'× to '+hi.toFixed(2)+'× the true reaction rate across the range — exactly the Damköhler failure predicted. At slow rates a tile mixes internally before anything reacts and the mean-field guess is nearly right; at fast rates the reaction retreats into a sheet thinner than a tile, the reactants stop coexisting anywhere the tile average can see, and the surrogate manufactures product out of nothing.'
-      : 'Measured on this run: the ratio stays near '+hi.toFixed(2)+'× across the range — the predicted Damköhler dependence is not appearing, which would mean something other than the reaction closure is setting the error.';
-  }
+  this.nbr=[]; for(i=0;i<this.n;i++) this.nbr.push([]);
+  this.pairs.forEach(function(p){ self.nbr[p.a].push(p.b); self.nbr[p.b].push(p.a); });
+  this.elem=new Int16Array(this.n);
+  this.H=new Float64Array(this.n);
+  this.src={}; this.drn=new Uint8Array(this.n);
+  this.gMul=null; this.gScale=1; this.evap=0; this.t=0;
+  this.lastQ=new Float64Array(this.pairs.length);
 }
-document.getElementById('s-clear').addEventListener('click',function(){ pts=[]; drawSweep(); });
-var sweeping=null;
-document.getElementById('s-run').addEventListener('click',function(){
-  if(sweeping){ clearInterval(sweeping); sweeping=null; document.getElementById('s-run').textContent='▶ run sweep'; return; }
-  var vals=[8,22,36,50,64,78,92], idx=0;
-  document.getElementById('s-run').textContent='■ stop';
-  document.getElementById('cv-sweep').scrollIntoView({block:'center'});
-  sweeping=setInterval(function(){
-    if(idx>=vals.length){ clearInterval(sweeping); sweeping=null;
-      document.getElementById('s-run').textContent='▶ run sweep';
-      document.getElementById('s-stat').textContent='sweep complete'; return; }
-    var v=vals[idx++];
-    document.getElementById('t-k').value=v;
-    var k=kOf(v);
-    twW.reset(); twC.reset();
-    for(var i=0;i<900;i++){ twW.step(k); twC.step(k); }
-    twC.diagnose(k);
-    recordPoint(k, twW.closureRatio().ratio);
-    document.getElementById('s-stat').textContent='k='+k.toFixed(3)+'  ('+idx+'/'+vals.length+')';
-  }, 60);
-});
-drawSweep();
-
-
-/* ================= THE CLOSURE RACE ================= */
-var MOM_MIX=0.12;   // moment lane's one free constant; calibrated in-loop by the trainer
-
-/* ---- tiny message-passing net: phi over incoming seam parcels (sum = D6-invariant), head -> eta ---- */
-var GNN={
-  trained:false, ein:3, eh:8, em:5, nin:9, nh:10,
-  P:null,
-  _rs:777,
-  rnd:function(){ this._rs=(this._rs*1103515245+12345)&0x7fffffff; return this._rs/0x7fffffff-0.5; },
-  init:function(){
-    var self=this; this._rs=777;
-    function mat(r,c,sc){ var m=[]; for(var i=0;i<r;i++){ var row=new Float64Array(c); for(var j=0;j<c;j++) row[j]=self.rnd()*sc; m.push(row);} return m; }
-    this.P={ W1e:mat(this.eh,this.ein,0.8), b1e:new Float64Array(this.eh),
-             W2e:mat(this.em,this.eh,0.5),  b2e:new Float64Array(this.em),
-             W1n:mat(this.nh,this.nin,0.6), b1n:new Float64Array(this.nh),
-             W2n:new Float64Array(this.nh), b2n:0 };
-  },
-  phiInto:function(e,out){          // out += phi(e)
-    var P=this.P,i,j;
-    for(i=0;i<this.eh;i++){
-      var v=P.b1e[i]; for(j=0;j<this.ein;j++) v+=P.W1e[i][j]*e[j];
-      GNN._h1[i]=Math.tanh(v);
-    }
-    for(i=0;i<this.em;i++){
-      var u=P.b2e[i]; for(j=0;j<this.eh;j++) u+=P.W2e[i][j]*GNN._h1[j];
-      out[i]+=u;
-    }
-  },
-  headEta:function(nf,m){
-    var P=this.P,i,j,x=GNN._x;
-    for(i=0;i<4;i++) x[i]=nf[i];
-    for(i=0;i<this.em;i++) x[4+i]=m[i];
-    var o=P.b2n;
-    for(i=0;i<this.nh;i++){
-      var v=P.b1n[i]; for(j=0;j<this.nin;j++) v+=P.W1n[i][j]*x[j];
-      o+=P.W2n[i]*Math.tanh(v);
-    }
-    return 1.2/(1+Math.exp(-o));
+Net.prototype.reset=function(){ this.H.fill(0); this.t=0; };
+Net.prototype.cap=function(i){ return (ELEM[this.elem[i]]||ELEM[0]).cap||CAP_OPEN; };
+Net.prototype.head=function(i){ return this.H[i]/this.cap(i); };
+Net.prototype.step=function(){
+  var i, n=this.n, dH=this._dH||(this._dH=new Float64Array(n)); dH.fill(0);
+  for(var s in this.src){ var r=this.src[s]; this.H[+s]+= (typeof r==='function')? r(this.t) : r; }
+  for(i=0;i<this.pairs.length;i++){
+    var p=this.pairs[i], eA=ELEM[this.elem[p.a]]||ELEM[0], eB=ELEM[this.elem[p.b]]||ELEM[0];
+    var ha=this.H[p.a]/(eA.cap||CAP_OPEN), hb=this.H[p.b]/(eB.cap||CAP_OPEN);
+    var gp=(this.drn[p.a]||this.drn[p.b])? G_DRAIN : pairConductance(eA,eB,p.d);
+    gp*=this.gScale; if(this.gMul) gp*=this.gMul[i];
+    var don=ha>hb?p.a:p.b, capD=ha>hb?(eA.cap||CAP_OPEN):(eB.cap||CAP_OPEN);
+    var F=gp*satH(this.H[don]/capD)*(ha-hb)*DT;
+    this.lastQ[i]=F; dH[p.a]-=F; dH[p.b]+=F;
+  }
+  for(i=0;i<n;i++){
+    var v=this.H[i]+dH[i];
+    if(this.evap) v*=(1-this.evap);
+    this.H[i]=v>0?v:0;
+    if(this.drn[i]) this.H[i]=0;
+  }
+  this.t++;
+};
+Net.prototype.pick=function(x,y){ var k=pixelToHex(this.geom,x,y); return k<0?-1:this.idx[k]; };
+Net.prototype.drawBase=function(ctx, colorFn){
+  var g=this.geom;
+  for(var i=0;i<this.n;i++){
+    var k=this.nodes[i];
+    hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.95);
+    ctx.fillStyle=colorFn(i); ctx.fill();
   }
 };
-GNN._h1=new Float64Array(GNN.eh); GNN._x=new Float64Array(GNN.nin);
-GNN.init();
-
-/* full forward+backward on one sample (for training) */
-function gnnLossGrad(sm,G){
-  var P=GNN.P, EH=GNN.eh, EM=GNN.em, NH=GNN.nh, NI=GNN.nin, i,j,e;
-  var m=new Float64Array(EM), H1=[];
-  for(e=0;e<sm.edges.length;e++){
-    var ed=sm.edges[e], h1=new Float64Array(EH);
-    for(i=0;i<EH;i++){ var v=P.b1e[i]; for(j=0;j<3;j++) v+=P.W1e[i][j]*ed[j]; h1[i]=Math.tanh(v); }
-    H1.push(h1);
-    for(i=0;i<EM;i++){ var u=P.b2e[i]; for(j=0;j<EH;j++) u+=P.W2e[i][j]*h1[j]; m[i]+=u; }
-  }
-  var x=new Float64Array(NI);
-  for(i=0;i<4;i++) x[i]=sm.nf[i];
-  for(i=0;i<EM;i++) x[4+i]=m[i];
-  var h2=new Float64Array(NH), o=P.b2n;
-  for(i=0;i<NH;i++){ var v2=P.b1n[i]; for(j=0;j<NI;j++) v2+=P.W1n[i][j]*x[j]; h2[i]=Math.tanh(v2); o+=P.W2n[i]*h2[i]; }
-  var sg=1/(1+Math.exp(-o)), eta=1.2*sg;
-  var d=eta-sm.t, L=sm.w*d*d;
-  var go=sm.w*2*d*1.2*sg*(1-sg);
-  G.b2n+=go;
-  var gx=new Float64Array(NI);
-  for(i=0;i<NH;i++){
-    G.W2n[i]+=go*h2[i];
-    var gh=go*P.W2n[i]*(1-h2[i]*h2[i]);
-    G.b1n[i]+=gh;
-    for(j=0;j<NI;j++){ G.W1n[i][j]+=gh*x[j]; gx[j]+=gh*P.W1n[i][j]; }
-  }
-  for(e=0;e<sm.edges.length;e++){
-    var ed2=sm.edges[e], h1b=H1[e];
-    for(i=0;i<EM;i++){
-      var gu=gx[4+i];
-      G.b2e[i]+=gu;
-      for(j=0;j<EH;j++){
-        G.W2e[i][j]+=gu*h1b[j];
-        GNN._gh1[j]=(i===0? 0:GNN._gh1[j]);
-      }
-    }
-    for(j=0;j<EH;j++){
-      var acc=0;
-      for(i=0;i<EM;i++) acc+=gx[4+i]*P.W2e[i][j];
-      var gh1=acc*(1-h1b[j]*h1b[j]);
-      G.b1e[j]+=gh1;
-      for(i=0;i<3;i++) G.W1e[j][i]+=gh1*ed2[i];
-    }
-  }
-  return L;
-}
-GNN._gh1=new Float64Array(GNN.eh);
-
-/* ---- training data: truth runs across the rate range; features at TILE granularity ---- */
-function tileFeatures(w, i, ca, cb){
-  var H=w.cH[i];
-  var nf=[ca[i], cb[i], H>1e-9? w.cC[i]/H : 0, H/37];
-  var edges=[];
-  for(var pi=0; pi<w.pairs.length; pi++){
-    var p=w.pairs[pi];
-    if(p.a!==i&&p.b!==i) continue;
-    var Q=w.seamFlux(p.a,p.d);
-    var don = Q>0 ? p.a : p.b, rec = Q>0 ? p.b : p.a;
-    if(rec!==i) continue;
-    var Hd=w.cH[don]; if(Hd<1e-9||H<1e-6) continue;
-    edges.push([Math.min(1,Math.abs(Q)/H)*3,(w.cA[don]/Hd-ca[i])*2,(w.cB[don]/Hd-cb[i])*2]);
-  }
-  return {nf:nf, edges:edges};
-}
-function collectSamples(){
-  var samples=[], vs=[15,30,45,60,75,88];
-  for(var vi=0;vi<vs.length;vi++){
-    var w=new World(), k=kOf(vs[vi]);
-    for(var t=0;t<2200;t++){
-      w.step(k);
-      if(t<700||t%10!==0) continue;
-      w.tileSums();
-      var ca=[], cb=[];
-      for(var i=0;i<w.nT;i++){ var H=w.cH[i]; ca.push(H>1e-9?w.cA[i]/H:0); cb.push(H>1e-9?w.cB[i]/H:0); }
-      for(i=0;i<w.nT;i++){
-        var H2=w.cH[i]; if(H2<0.5) continue;
-        var Rl=w.cA[i]*w.cB[i]/H2; if(Rl<1e-4) continue;
-        var arr=w.tiles[i], Rt=0;
-        for(var j=0;j<arr.length;j++){ var g=arr[j]; var h=w.h[g]; if(h<1e-9||w.wall[g])continue; Rt+=w.A[g]*w.B[g]/h; }
-        var f=tileFeatures(w,i,ca,cb);
-        samples.push({nf:f.nf, edges:f.edges, t:Math.max(0,Math.min(1.2,Rt/Rl)), w:Rl, k:k});
-      }
-    }
-  }
-  return samples;
-}
-function trainGNN(samples, epochs, cb){
-  GNN.init();
-  /* cap and normalise weights */
-  var sub=samples.length>2600? samples.filter(function(_,i){return i%Math.ceil(samples.length/2600)===0;}) : samples.slice();
-  var wMax=0; sub.forEach(function(s){ wMax=Math.max(wMax,s.w); });
-  sub.forEach(function(s){ s.w=Math.min(1, s.w/(0.25*wMax)); });
-  var P=GNN.P, keys=['W1e','b1e','W2e','b2e','W1n','b1n','W2n'];
-  function zeros(){ return { W1e:P.W1e.map(function(r){return new Float64Array(r.length);}), b1e:new Float64Array(GNN.eh),
-    W2e:P.W2e.map(function(r){return new Float64Array(r.length);}), b2e:new Float64Array(GNN.em),
-    W1n:P.W1n.map(function(r){return new Float64Array(r.length);}), b1n:new Float64Array(GNN.nh),
-    W2n:new Float64Array(GNN.nh), b2n:0 }; }
-  var V=zeros(), losses=[];
-  var ep=0;
-  function oneEpoch(){
-    var G=zeros(), L=0;
-    for(var si=0;si<sub.length;si++) L+=gnnLossGrad(sub[si],G);
-    var lr=0.35*Math.pow(0.995,ep)/sub.length, mom=0.9;
-    keys.forEach(function(key){
-      var g=G[key], v=V[key], p2=P[key];
-      if(key==='W2n'||key==='b1e'||key==='b2e'||key==='b1n'){
-        for(var i=0;i<g.length;i++){ v[i]=mom*v[i]-lr*g[i]; p2[i]+=v[i]; }
-      } else {
-        for(var i2=0;i2<g.length;i2++) for(var j2=0;j2<g[i2].length;j2++){ v[i2][j2]=mom*v[i2][j2]-lr*g[i2][j2]; p2[i2][j2]+=v[i2][j2]; }
-      }
-    });
-    V.b2n=mom*V.b2n-lr*G.b2n; P.b2n+=V.b2n;
-    losses.push(L/sub.length);
-    ep++;
-    if(cb) cb(ep, epochs, losses);
-    return L/sub.length;
-  }
-  return { oneEpoch:oneEpoch, losses:losses, nSamples:sub.length, get epoch(){return ep;} };
-}
-function apriori(samples){
-  var e0=0, eg=0, wsum=0, m=new Float64Array(GNN.em);
-  for(var i=0;i<samples.length;i++){
-    var sm=samples[i];
-    m.fill(0);
-    for(var e=0;e<sm.edges.length;e++) GNN.phiInto(sm.edges[e], m);
-    var eta=GNN.headEta(sm.nf, m);
-    e0+=sm.w*Math.abs(1-sm.t); eg+=sm.w*Math.abs(eta-sm.t); wsum+=sm.w;
-  }
-  return {naive:e0/wsum, gnn:eg/wsum};
-}
-/* moment-lane calibration: pick MOM_MIX by short in-loop runs (its one constant; fair budget) */
-function calibrateMoment(){
-  var best=MOM_MIX, bestE=1e9, cands=[0.03,0.06,0.12,0.25,0.45];
-  for(var ci=0;ci<cands.length;ci++){
-    MOM_MIX=cands[ci];
-    var w=new World(), lane=new Coarse(w,'moment'), k=kOf(80);
-    var pf0=0, lp0=0, ratios=[];
-    for(var t=0;t<520;t++){
-      var a0=w.prodFine, b0=lane.prod;
-      w.step(k); lane.step(k);
-      if(t>200){
-        var tr=w.prodFine-a0, lr=lane.prod-b0;
-        if(tr>1e-4) ratios.push(lr/tr);
-      }
-    }
-    var mean=ratios.reduce(function(a,b){return a+b;},0)/Math.max(1,ratios.length);
-    var err=Math.abs(Math.log(Math.max(mean,1e-3)));
-    if(err<bestE){ bestE=err; best=cands[ci]; }
-  }
-  MOM_MIX=best;
-  return best;
-}
-
-/* ---- race state ---- */
-var race={ running:false, truth:null, lanes:null, ratios:[1,1,1], k:0 };
-function raceReset(){
-  race.truth=new World();
-  race.lanes=[new Coarse(race.truth,'naive'), new Coarse(race.truth,'moment'), new Coarse(race.truth,'gnn')];
-  race.ratios=[1,1,1];
-  race.tick=0;
-}
-function raceStep(){
-  var k=race.k;
-  var p0=race.truth.prodFine, l0=race.lanes.map(function(l){return l.prod;});
-  race.truth.step(k);
-  for(var li=0;li<3;li++) race.lanes[li].step(k);
-  var tr=race.truth.prodFine-p0;
-  if(tr>1e-4){
-    for(li=0;li<3;li++){
-      var r=(race.lanes[li].prod-l0[li])/tr;
-      race.ratios[li]=0.97*race.ratios[li]+0.03*r;
-    }
-  }
-  race.tick++;
-}
-function placeErr(lane){
-  var w=race.truth, num=0, den=0;
-  w.tileSums();
-  for(var i=0;i<w.nT;i++){ num+=Math.abs(lane.C[i]-w.cC[i]); den+=Math.abs(w.cC[i]); }
-  return den>1e-9? num/den : 0;
-}
-
-/* ---- race UI ---- */
-var raceSims=[];
-function laneDrawer(idx){
-  return function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    if(!race.lanes) return;
-    var lane=race.lanes[idx], sc=0.55;
-    ctx.save(); ctx.scale(sc,sc);
-    for(var i=0;i<race.truth.nT;i++){
-      var wk=race.truth.wk[i];
-      mixCell(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz,lane.H[i]/37,lane.A[i]/37,lane.B[i]/37,lane.C[i]/37);
-      if(idx===2&&GNN.trained){
-        var sup=Math.max(0,Math.min(1,1-lane.eta[i]));
-        if(sup>0.05){ ctx.strokeStyle='rgba(31,111,122,'+(0.2+0.8*sup)+')'; ctx.lineWidth=1+3*sup;
-          hexPath(ctx,worldGeom.cx[wk],worldGeom.cy[wk],worldGeom.sz); ctx.stroke(); }
-      }
-    }
-    ctx.restore();
-  };
-}
-var raceTruthSim=new Sim('cv-race-truth', fineGeom.w*0.40, fineGeom.h*0.40, {
-  tick:function(){
-    if(!race.running||!race.truth) return;
-    race.k=kOf(+document.getElementById('r-k').value);
-    document.getElementById('r-kout').textContent='k='+race.k.toFixed(3);
-    raceStep();
-    if(race.tick%15===0){
-      document.getElementById('r-o-t').textContent='t='+race.tick;
-      var ids=['r-o-n','r-o-m','r-o-g'];
-      for(var li=0;li<3;li++){
-        document.getElementById(ids[li]).textContent='rate '+race.ratios[li].toFixed(2)+'× · place '+(placeErr(race.lanes[li])*100).toFixed(0)+'%';
-      }
-    }
-  },
-  draw:function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    if(!race.truth) { ctx.fillStyle=css['--muted']; ctx.font='12px system-ui'; ctx.textAlign='center';
-      ctx.fillText('▶ race to start', s.w/2, s.h/2); return; }
-    ctx.save(); ctx.scale(0.40,0.40);
-    var m=fineGeom, w=race.truth;
-    for(var i=0;i<w.list.length;i++){
-      var g=w.list[i];
-      mixCell(ctx,m.cx[g],m.cy[g],m.sz*0.95,w.h[g],w.A[g],w.B[g],w.C[g]);
-    }
-    ctx.restore();
-  }
-});
-['cv-race-n','cv-race-m','cv-race-g'].forEach(function(id,idx){
-  new Sim(id, worldGeom.w*0.55, worldGeom.h*0.55, { tick:function(){}, draw:laneDrawer(idx) });
-});
-document.getElementById('r-go').addEventListener('click',function(){ raceReset(); race.running=true; });
-document.getElementById('r-stop').addEventListener('click',function(){ race.running=false; });
-
-/* ---- training UI ---- */
-var trainer=null, trainSamples=null;
-function drawLoss(losses){
-  var cv=document.getElementById('cv-loss'), ctx=cv.getContext('2d');
-  ctx.fillStyle=css['--panel2']; ctx.fillRect(0,0,cv.width,cv.height);
-  if(losses.length<2) return;
-  var mx=losses[0], mn=Math.min.apply(null,losses);
-  ctx.strokeStyle=css['--accent']; ctx.lineWidth=1.3; ctx.beginPath();
-  for(var i=0;i<losses.length;i++){
-    var x=i/(losses.length-1)*(cv.width-4)+2;
-    var y=cv.height-3-((mx-losses[i])/(Math.max(mx-mn,1e-9)))* (cv.height-8)*-1 - (cv.height-8);
-    y=3+((losses[i]-mn)/Math.max(mx-mn,1e-9))*(cv.height-6);
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  }
-  ctx.stroke();
-}
-document.getElementById('r-train').addEventListener('click',function(){
-  if(trainer) return;
-  var st=document.getElementById('r-tstat');
-  st.textContent='collecting truth data…';
-  setTimeout(function(){
-    trainSamples=collectSamples();
-    st.textContent=trainSamples.length+' samples · calibrating moment closure…';
-    setTimeout(function(){
-      var mm=calibrateMoment();
-      st.textContent='MOM_MIX='+mm+' · training GNN…';
-      trainer=trainGNN(trainSamples, 320, null);
-      var EPOCHS=320;
-      function chunk(){
-        for(var i=0;i<16&&trainer.epoch<EPOCHS;i++) trainer.oneEpoch();
-        drawLoss(trainer.losses);
-        st.textContent='training '+trainer.epoch+'/'+EPOCHS+' · loss '+trainer.losses[trainer.losses.length-1].toFixed(4);
-        if(trainer.epoch<EPOCHS){ setTimeout(chunk,0); }
-        else {
-          GNN.trained=true;
-          var ap=apriori(trainSamples);
-          st.textContent='trained · a-priori η error: naive '+(ap.naive*100).toFixed(1)+'% → GNN '+(ap.gnn*100).toFixed(1)+'%';
-          trainer=null;
-        }
-      }
-      chunk();
-    },30);
-  },30);
-});
-
-/* ---- closure sweep: rate ratio vs k for all three lanes ---- */
-var rsPts={n:[],m:[],g:[]};
-function drawRaceSweep(){
-  var cv=document.getElementById('cv-race-sweep'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
-  ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,W,H);
-  var L=58,Rp=16,T=16,Bm=44, kmin=0.0016,kmax=1.3;
-  var all=rsPts.n.concat(rsPts.m,rsPts.g);
-  var emax=Math.max(2, all.reduce(function(a,p){return Math.max(a,p.r);},0)*1.15);
-  function px(k){ return L+(Math.log(k/kmin)/Math.log(kmax/kmin))*(W-L-Rp); }
-  function py(r){ return H-Bm-(r/emax)*(H-T-Bm); }
-  ctx.strokeStyle=css['--line'];
-  for(var gi=0;gi<=4;gi++){ var yy=T+(H-T-Bm)*gi/4; ctx.beginPath(); ctx.moveTo(L,yy); ctx.lineTo(W-Rp,yy); ctx.stroke(); }
-  ctx.strokeStyle=css['--muted']; ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,H-Bm); ctx.lineTo(W-Rp,H-Bm); ctx.stroke();
-  ctx.fillStyle=css['--muted']; ctx.font='11px ui-monospace, Menlo, monospace'; ctx.textAlign='right';
-  for(gi=0;gi<=4;gi++) ctx.fillText((emax*(4-gi)/4).toFixed(1)+'×', L-6, T+(H-T-Bm)*gi/4+4);
-  ctx.textAlign='center';
-  [0.002,0.01,0.05,0.2,1.0].forEach(function(kk){ ctx.fillText(String(kk), px(kk), H-Bm+16); });
-  ctx.fillText('reaction rate k', (L+W-Rp)/2, H-10);
-  var y1=py(1);
-  ctx.save(); ctx.strokeStyle=css['--good']; ctx.setLineDash([4,3]);
-  ctx.beginPath(); ctx.moveTo(L,y1); ctx.lineTo(W-Rp,y1); ctx.stroke(); ctx.restore();
-  ctx.textAlign='left'; ctx.fillText('1× = exact', L+6, y1-5);
-  var series=[['n','#6F675E','naive'],['m','#7A4FBF','moment'],['g',css['--accent'],'GNN']];
-  var lx=W-150, ly=T+8;
-  series.forEach(function(sr,si){
-    var arr=rsPts[sr[0]].slice().sort(function(a,b){return a.k-b.k;});
-    if(arr.length>1){
-      ctx.strokeStyle=sr[1]; ctx.lineWidth=2; ctx.beginPath();
-      for(var i=0;i<arr.length;i++){ var x=px(arr[i].k), y=py(arr[i].r); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
-      ctx.stroke();
-    }
-    for(var i2=0;i2<arr.length;i2++){ ctx.fillStyle=sr[1]; ctx.beginPath(); ctx.arc(px(arr[i2].k),py(arr[i2].r),3,0,7); ctx.fill(); }
-    ctx.fillStyle=sr[1]; ctx.fillRect(lx,ly+si*16-8,10,10);
-    ctx.fillStyle=css['--muted']; ctx.textAlign='left'; ctx.fillText(sr[2], lx+16, ly+si*16+1);
-  });
-}
-var rsRunning=false;
-document.getElementById('rs-run').addEventListener('click',function(){
-  if(rsRunning) return;
-  rsRunning=true;
-  rsPts={n:[],m:[],g:[]};
-  var vals=[15,35,55,75,92], idx=0;
-  var st=document.getElementById('rs-stat');
-  function one(){
-    if(idx>=vals.length){
-      rsRunning=false; st.textContent='sweep complete';
-      var last=rsPts.g.length? rsPts.g[rsPts.g.length-1] : null;
-      var lastN=rsPts.n[rsPts.n.length-1], lastM=rsPts.m[rsPts.m.length-1];
-      if(last&&lastN){
-        document.getElementById('r-verdict').textContent=
-          'Measured at the fastest rate: naive '+lastN.r.toFixed(2)+'×, moment '+lastM.r.toFixed(2)+'×, GNN '+last.r.toFixed(2)+'× the true reaction rate. '+
-          (Math.abs(last.r-1)<Math.abs(lastM.r-1)? 'The learned closure is holding closest to truth where the naive model fails hardest.' :
-           'The moment closure is holding closest to truth — carrying cov(A,B) as state beats the learned multiplier here.');
-      }
-      return;
-    }
-    var v=vals[idx++], k=kOf(v);
-    st.textContent='k='+k.toFixed(3)+' ('+idx+'/'+vals.length+')…';
-    setTimeout(function(){
-      var w=new World();
-      var lanes=[new Coarse(w,'naive'), new Coarse(w,'moment'), new Coarse(w,'gnn')];
-      var sums=[0,0,0], cnt=0;
-      for(var t=0;t<1400;t++){
-        var p0=w.prodFine, l0=lanes.map(function(l){return l.prod;});
-        w.step(k);
-        for(var li=0;li<3;li++) lanes[li].step(k);
-        if(t>700){
-          var tr=w.prodFine-p0;
-          if(tr>1e-4){ for(li=0;li<3;li++) sums[li]+=(lanes[li].prod-l0[li])/tr; cnt++; }
-        }
-      }
-      if(cnt>0){
-        rsPts.n.push({k:k,r:sums[0]/cnt});
-        rsPts.m.push({k:k,r:sums[1]/cnt});
-        rsPts.g.push({k:k,r:sums[2]/cnt});
-      }
-      drawRaceSweep();
-      setTimeout(one,20);
-    },20);
-  }
-  one();
-});
-drawRaceSweep();
-
-
-/* ================= WORKSHOP + BOARD (SPICE loop) ================= */
-var designGeom=makeMap(TILE_R, 20);
-var design=new Uint8Array(localOffsets.length);
-var lastElem=null;
-var jOfTileCell={};
-(function(){ for(var j=0;j<localOffsets.length;j++) jOfTileCell[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j; })();
-var designSim=new Sim('cv-design', designGeom.w+16, designGeom.h+12, {
-  tick:function(s){
-    if(s.pointer.down){
-      var k=pixelToHex(designGeom, s.pointer.x-8, s.pointer.y-6);
-      if(k>=0){
-        var qr=decode(designGeom,k), kk=mapIdx(tileGeom,qr[0],qr[1]);
-        if(kk>=0){
-          var j=jOfTileCell[kk];
-          if(j!==undefined && !WALL_TPL[j]){
-            design[j]=design[j]?0:1;
-            s.pointer.down=false;      // click = toggle, not drag-paint
-          }
-        }
-      }
-    }
-  },
-  draw:function(s,ctx){
-    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    ctx.save(); ctx.translate(8,6);
-    forEachValid(designGeom,function(k){
-      var qr=decode(designGeom,k), kk=mapIdx(tileGeom,qr[0],qr[1]);
-      var j=jOfTileCell[kk];
-      hexPath(ctx,designGeom.cx[k],designGeom.cy[k],designGeom.sz*0.94);
-      if(WALL_TPL[j]) ctx.fillStyle=COL.wall;
-      else if(design[j]) ctx.fillStyle='#6E5B45';
-      else ctx.fillStyle=COL.floor;
-      ctx.fill();
-      ctx.strokeStyle='rgba(46,40,30,0.25)'; ctx.lineWidth=1; ctx.stroke();
-      if(PORT_SET[kk]!==undefined){
-        ctx.strokeStyle=design[j]?'rgba(196,69,60,0.9)':'rgba(31,111,122,0.9)';
-        ctx.lineWidth=2;
-        hexPath(ctx,designGeom.cx[k],designGeom.cy[k],designGeom.sz*0.6); ctx.stroke();
-      }
-    });
-    ctx.restore();
-  }
-});
-function drawSpokes(el){
-  var cv=document.getElementById('cv-spokes'), ctx=cv.getContext('2d');
-  ctx.fillStyle=css['--panel2']; ctx.fillRect(0,0,180,180);
-  if(!el) return;
-  var mx=Math.max.apply(null, el.g.concat([1e-6]));
-  for(var d=0;d<6;d++){
-    var vx=SQ3*(NV[d][0]+NV[d][1]/2), vy=1.5*NV[d][1];
-    var n=Math.hypot(vx,vy); vx/=n; vy/=n;
-    var L=14+62*(el.g[d]/mx);
-    ctx.strokeStyle=el.g[d]>1e-6?css['--accent']:css['--line'];
-    ctx.lineWidth=5;
-    ctx.beginPath(); ctx.moveTo(90,90); ctx.lineTo(90+vx*L,90+vy*L); ctx.stroke();
-  }
-  ctx.fillStyle=css['--ink']; ctx.beginPath(); ctx.arc(90,90,7,0,7); ctx.fill();
-}
-document.getElementById('w-clear').addEventListener('click',function(){ design.fill(0); });
-document.getElementById('w-char').addEventListener('click',function(){
-  var st=document.getElementById('w-out');
-  st.textContent='probing 15 port pairs…';
-  setTimeout(function(){
-    var t0=performance.now();
-    lastElem=characterizeElement(design);
-    drawSpokes(lastElem);
-    st.textContent='done in '+((performance.now()-t0)/1000).toFixed(1)+'s';
-    document.getElementById('w-model').textContent=
-      'g = ['+lastElem.g.map(function(v){return v.toFixed(3);}).join(', ')+']  ·  capacity '+lastElem.cap+' cells  ·  star residual '+(lastElem.fit*100).toFixed(1)+'%';
-    ['w-castA','w-castB','w-castC'].forEach(function(id){ document.getElementById(id).disabled=false; });
-  },20);
-});
-['A','B','C'].forEach(function(slot,si){
-  document.getElementById('w-cast'+slot).addEventListener('click',function(){
-    if(!lastElem) return;
-    var el={}; for(var k2 in lastElem) el[k2]=lastElem[k2];
-    el.name=slot;
-    ELEM[1+si]=el;
-    var btn=document.querySelector('button.pl[data-e="'+(1+si)+'"]');
-    btn.disabled=false; btn.textContent=slot+' ✦';
-    boardChanged();
-  });
-});
-
-/* ---- board: place components on the twin, both worlds re-stamp ---- */
-var placeSel=0, checkMode=false;
-Array.prototype.forEach.call(document.querySelectorAll('button.pl'),function(b){
-  b.addEventListener('click',function(){
-    placeSel=+b.dataset.e;
-    Array.prototype.forEach.call(document.querySelectorAll('button.pl'),function(x){
-      x.setAttribute('aria-pressed', x===b?'true':'false');
-    });
-  });
-});
-document.getElementById('t-check').addEventListener('click',function(){
-  checkMode=!checkMode;
-  this.setAttribute('aria-pressed',checkMode?'true':'false');
-});
-function boardChanged(){
-  twW.reset(); twC.reset(); twSettle=0;
-}
-if(!twW.elemIdx) twW.elemIdx=new Int16Array(twW.nT);
-twinCoarse.hooks=twinCoarse.hooks||{};
-(function(){
-  var cv=document.getElementById('cv-coarse');
-  cv.addEventListener('pointerdown',function(e){
-    var r=cv.getBoundingClientRect();
-    var x=(e.clientX-r.left)/r.width*worldGeom.w, y=(e.clientY-r.top)/r.height*worldGeom.h;
-    var wk=pixelToHex(worldGeom,x,y);
-    if(wk<0) return;
-    var ti=twW.idxOfWk[wk];
-    if(ti===undefined) return;
-    if(checkMode){ deviceCheck(ti); return; }
-    if(!ELEM[placeSel]) return;
-    twW.elemIdx[ti]=placeSel;
-    boardChanged();
-  });
-})();
-/* ---- device check: run the placed component at 37 cells with the LIVE port heads ---- */
-function deviceCheck(ti){
-  var el=ELEM[twW.elemIdx?twW.elemIdx[ti]:0]||ELEM[0];
-  var walls=new Uint8Array(tileGeom.N);
-  for(var j=0;j<localOffsets.length;j++){
-    var kk=mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1]);
-    if(WALL_TPL[j]||(el.walls&&el.walls[j])) walls[kk]=1;
-  }
-  var cap=el.cap||CAP_OPEN;
-  var hbar=twC.H[ti]/cap;
-  /* live neighbour heads as port BCs, driven through the NEIGHBOUR'S characterized
-     half-conductance so the fine probe and the macromodel cross the same path */
-  var bc=[null,null,null,null,null,null], gN=[0,0,0,0,0,0];
-  for(var pi=0;pi<twW.pairs.length;pi++){
-    var p=twW.pairs[pi];
-    if(p.a!==ti&&p.b!==ti) continue;
-    var other=p.a===ti?p.b:p.a;
-    var dSelf=p.a===ti?p.d:(p.d+3)%6;
-    var eO=ELEM[twW.elemIdx[other]]||ELEM[0];
-    bc[dSelf]=twC.H[other]/(eO.cap||CAP_OPEN);
-    gN[dSelf]=eO.g[(dSelf+3)%6]||0;
-  }
-  /* fine settle at those BCs */
-  var h=new Float64Array(tileGeom.N), open=[];
-  forEachValid(tileGeom,function(k){ if(!walls[k]){ open.push(k); h[k]=hbar; } });
-  for(var t=0;t<4000;t++){
-    var dh=new Float64Array(tileGeom.N);
-    for(var i=0;i<open.length;i++){
-      var k=open[i];
-      for(var d=0;d<3;d++){
-        var nk=k+tileGeom.shifts[d];
-        if(nk<0||nk>=tileGeom.N||!tileGeom.valid[nk]||walls[nk]) continue;
-        var df=h[k]-h[nk], f=K*(df>0?satH(h[k]):satH(h[nk]))*df;
-        dh[k]-=f; dh[nk]+=f;
-      }
-    }
-    for(d=0;d<6;d++){
-      if(bc[d]==null||walls[PORT[d].k]||gN[d]<1e-9) continue;
-      var pk=PORT[d].k;
-      dh[pk]+=gN[d]*(bc[d]-h[pk]);
-    }
-    for(i=0;i<open.length;i++) h[open[i]]+=dh[open[i]];
-    /* pin the operating point: hold the device's storage at the lane's current level
-       so the comparison is "same storage, same boundary heads" */
-    var mSum=0;
-    for(i=0;i<open.length;i++) mSum+=h[open[i]];
-    var corr=hbar-mSum/open.length;
-    for(i=0;i<open.length;i++) h[open[i]]+=corr;
-  }
-  var num=0, den=0, lines=[];
-  for(d=0;d<6;d++){
-    if(bc[d]==null||walls[PORT[d].k]||gN[d]<1e-9) continue;
-    var pk2=PORT[d].k;
-    var Ffine=gN[d]*(bc[d]-h[pk2]);
-    var eO2=null, gm=0;
-    for(pi=0;pi<twW.pairs.length;pi++){
-      var p2=twW.pairs[pi];
-      if((p2.a===ti&&p2.d===d)||(p2.b===ti&&(p2.d+3)%6===d)){
-        var oth=p2.a===ti?p2.b:p2.a;
-        gm=pairConductance(el, ELEM[twW.elemIdx[oth]]||ELEM[0], p2.a===ti?p2.d:p2.d);
-        break;
-      }
-    }
-    var Fmac=gm*(bc[d]-hbar);
-    num+=Math.abs(Fmac-Ffine); den+=Math.abs(Ffine);
-    lines.push('p'+d+' fine '+Ffine.toFixed(4)+' vs model '+Fmac.toFixed(4));
-  }
-  var pct=den>1e-9?(num/den*100).toFixed(0):'0';
-  document.getElementById('t-hint').textContent=
-    '🔍 device check, tile '+ti+' ('+(el.name||'open')+'): port fluxes within '+pct+'% of a live 37-cell simulation at this in-circuit operating point (port-level misdistribution largely cancels — board-level state error stays in low single digits)  ·  '+lines.join(' · ');
-}
-
-/* ================= THE ZOOM STATION: three altitudes, lockstep ================= */
-var ZM=(function(){
-  function ccw2(v){ return [v[0]+v[1],-v[0]]; }
-  var SNV=[[2,1]]; for(var i=1;i<6;i++) SNV.push(ccw2(SNV[i-1]));
-  var superCentres=[[0,0]].concat(SNV);
-  return { SNV:SNV, superCentres:superCentres, srcSuper:1, drnSuper:4,
-           assembled:false, running:false, zw:null, lane:null, supH:null, SUPER:null,
-           superOf:null, sPairs:null, ms:[0,0,0], msN:0, err1:0, err2:0 };
-})();
-function zmAssemble(done){
-  var st=document.getElementById('z-stat');
-  var w0=new World();
-  var superOf={};
-  for(var si=0;si<7;si++){
-    var c=ZM.superCentres[si];
-    for(var dq=-1;dq<=1;dq++) for(var dr=-1;dr<=1;dr++){
-      if(Math.abs(dq+dr)>1) continue;
-      superOf[w0.idxOfWk[mapIdx(worldGeom,c[0]+dq,c[1]+dr)]]=si;
-    }
-  }
-  var jOfZ={};
-  for(var j=0;j<localOffsets.length;j++) jOfZ[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j;
-  var closeOf={}, seamKeep={};
-  for(var pi=0;pi<w0.pairs.length;pi++){
-    var p=w0.pairs[pi], sa=superOf[p.a], sb=superOf[p.b];
-    if(sa===undefined||sb===undefined||sa===sb) continue;
-    var key=sa<sb? sa+'_'+sb : sb+'_'+sa;
-    if(!seamKeep[key]){ seamKeep[key]=true; continue; }
-    (closeOf[p.a]||(closeOf[p.a]=new Set())).add(p.d);
-    (closeOf[p.b]||(closeOf[p.b]=new Set())).add((p.d+3)%6);
-  }
-  /* characterize needed mask elements, chunked */
-  var maskCache={}, tasks=[];
-  function keyOf(set){ return Array.from(set).sort().join(''); }
-  for(var ti in closeOf){ var k2=keyOf(closeOf[ti]); if(maskCache[k2]===undefined){ maskCache[k2]=null; tasks.push(k2); } }
-  var solidDesign=new Uint8Array(localOffsets.length);
-  for(j=0;j<localOffsets.length;j++) if(!WALL_TPL[j]) solidDesign[j]=1;
-  var idx=0;
-  function step(){
-    if(idx<tasks.length){
-      var kk=tasks[idx++];
-      var dz=new Uint8Array(localOffsets.length);
-      kk.split('').forEach(function(dch){ dz[jOfZ[PORT[+dch].k]]=1; });
-      ELEM.push(characterizeElement(dz));
-      maskCache[kk]=ELEM.length-1;
-      st.textContent='characterizing port masks '+idx+'/'+tasks.length+'…';
-      setTimeout(step,0);
-      return;
-    }
-    ELEM.push(characterizeElement(solidDesign));
-    var SOLID=ELEM.length-1;
-    var zw=new World();
-    zw.elemIdx=new Int16Array(zw.nT);
-    for(var i2=0;i2<zw.nT;i2++){
-      if(superOf[i2]===undefined) zw.elemIdx[i2]=SOLID;
-      else zw.elemIdx[i2]= closeOf[i2]? maskCache[keyOf(closeOf[i2])] : 0;
-    }
-    var srcTi=zw.idxOfWk[mapIdx(worldGeom,ZM.superCentres[ZM.srcSuper][0],ZM.superCentres[ZM.srcSuper][1])];
-    zw.srcA=srcTi; zw.srcB=srcTi;
-    zw.drn=[]; for(i2=0;i2<zw.nT;i2++) if(superOf[i2]===ZM.drnSuper) zw.drn.push(i2);
-    zw.reset();
-    /* super-element: 15 exact linear solves on the 7-node tile network */
-    var memIdx={}, ipairs=[], portMember=[];
-    for(var dq2=-1;dq2<=1;dq2++) for(var dr2=-1;dr2<=1;dr2++){
-      if(Math.abs(dq2+dr2)>1) continue;
-      memIdx[w0.idxOfWk[mapIdx(worldGeom,dq2,dr2)]]=Object.keys(memIdx).length;
-    }
-    for(pi=0;pi<w0.pairs.length;pi++){
-      var p2=w0.pairs[pi];
-      if(memIdx[p2.a]!==undefined&&memIdx[p2.b]!==undefined) ipairs.push({a:memIdx[p2.a],b:memIdx[p2.b]});
-    }
-    for(var d=0;d<6;d++) portMember.push(memIdx[w0.idxOfWk[mapIdx(worldGeom,DIRS[d][0],DIRS[d][1])]]);
-    var gd=2*G_HOP;
-    function solvePair(a,b){
-      var A=[], rhs=new Float64Array(7), i3, j3, k3;
-      for(i3=0;i3<7;i3++) A.push(new Float64Array(7));
-      ipairs.forEach(function(ip){ A[ip.a][ip.a]+=G_HOP; A[ip.a][ip.b]-=G_HOP; A[ip.b][ip.b]+=G_HOP; A[ip.b][ip.a]-=G_HOP; });
-      A[portMember[a]][portMember[a]]+=gd; rhs[portMember[a]]+=gd*1.4;
-      A[portMember[b]][portMember[b]]+=gd; rhs[portMember[b]]+=gd*0.6;
-      var M=A.map(function(row,i4){ return Array.from(row).concat([rhs[i4]]); });
-      for(i3=0;i3<7;i3++){
-        var pv=i3;
-        for(k3=i3+1;k3<7;k3++) if(Math.abs(M[k3][i3])>Math.abs(M[pv][i3])) pv=k3;
-        var tmp=M[i3]; M[i3]=M[pv]; M[pv]=tmp;
-        for(k3=i3+1;k3<7;k3++){ var cf=M[k3][i3]/M[i3][i3]; for(j3=i3;j3<=7;j3++) M[k3][j3]-=cf*M[i3][j3]; }
-      }
-      var h=new Float64Array(7);
-      for(i3=6;i3>=0;i3--){ var s3=M[i3][7]; for(j3=i3+1;j3<7;j3++) s3-=M[i3][j3]*h[j3]; h[i3]=s3/M[i3][i3]; }
-      return gd*(1.4-h[portMember[a]])/0.8;
-    }
-    var A2=[], bv=new Float64Array(6), rS=0, rC=0;
-    for(var i5=0;i5<6;i5++) A2.push(new Float64Array(6));
-    for(var a2=0;a2<6;a2++) for(var b2=a2+1;b2<6;b2++){
-      var T=solvePair(a2,b2);
-      if(T<=1e-12) continue;
-      var r=1/T;
-      A2[a2][a2]+=1;A2[a2][b2]+=1;A2[b2][a2]+=1;A2[b2][b2]+=1;
-      bv[a2]+=r;bv[b2]+=r; rS+=r; rC++;
-    }
-    var lam=1e-3*(rS/rC);
-    for(i5=0;i5<6;i5++) for(var j5=0;j5<6;j5++) A2[i5][j5]+= i5===j5? lam*5 : -lam;
-    var M2=A2.map(function(row,i6){ return Array.from(row).concat([bv[i6]]); });
-    for(i5=0;i5<6;i5++){
-      var pv2=i5;
-      for(var k5=i5+1;k5<6;k5++) if(Math.abs(M2[k5][i5])>Math.abs(M2[pv2][i5])) pv2=k5;
-      var t2=M2[i5]; M2[i5]=M2[pv2]; M2[pv2]=t2;
-      for(k5=i5+1;k5<6;k5++){ var c5=M2[k5][i5]/M2[i5][i5]; for(j5=i5;j5<=6;j5++) M2[k5][j5]-=c5*M2[i5][j5]; }
-    }
-    var rv=new Float64Array(6);
-    for(i5=5;i5>=0;i5--){ var s5=M2[i5][6]; for(j5=i5+1;j5<6;j5++) s5-=M2[i5][j5]*rv[j5]; rv[i5]=s5/M2[i5][i5]; }
-    ZM.SUPER={ g:Array.from(rv).map(function(r2){return 1/Math.max(r2,1e-9);}), cap:7*CAP_OPEN };
-    /* super pairs */
-    ZM.sPairs=Object.keys(seamKeep).map(function(k6){ var ab=k6.split('_'); return {a:+ab[0], b:+ab[1]}; });
-    ZM.superOf=superOf; ZM.zw=zw;
-    ZM.lane=new Coarse(zw,'naive','network');
-    ZM.supH=new Float64Array(7);
-    ZM.assembled=true; ZM.running=true;
-    st.textContent='running · 3 levels lockstep';
-    if(done) done();
-  }
-  st.textContent='assembling…';
-  setTimeout(step,0);
-}
-function zmSupPairG(a,b){
-  for(var d=0;d<6;d++){
-    var dx=ZM.superCentres[b][0]-ZM.superCentres[a][0], dy=ZM.superCentres[b][1]-ZM.superCentres[a][1];
-    if(dx===ZM.SNV[d][0]&&dy===ZM.SNV[d][1])
-      return ZM.SUPER.g[d]*ZM.SUPER.g[(d+3)%6]/(ZM.SUPER.g[d]+ZM.SUPER.g[(d+3)%6]);
-    if(-dx===ZM.SNV[d][0]&&-dy===ZM.SNV[d][1])
-      return ZM.SUPER.g[d]*ZM.SUPER.g[(d+3)%6]/(ZM.SUPER.g[d]+ZM.SUPER.g[(d+3)%6]);
-  }
-  return 0;
-}
-function zmSupStep(){
-  var dH=new Float64Array(7);
-  ZM.supH[ZM.srcSuper]+=1.8;
-  for(var i=0;i<ZM.sPairs.length;i++){
-    var p=ZM.sPairs[i];
-    var ha=ZM.supH[p.a]/ZM.SUPER.cap, hb=ZM.supH[p.b]/ZM.SUPER.cap;
-    var gsp;
-    if(p.a===ZM.drnSuper||p.b===ZM.drnSuper){
-      var donor=p.a===ZM.drnSuper?p.b:p.a, d0=0;
-      for(var d=0;d<6;d++) if(ZM.superCentres[ZM.drnSuper][0]-ZM.superCentres[donor][0]===ZM.SNV[d][0]&&ZM.superCentres[ZM.drnSuper][1]-ZM.superCentres[donor][1]===ZM.SNV[d][1]) d0=d;
-      gsp=ZM.SUPER.g[d0];
-    } else gsp=zmSupPairG(p.a,p.b);
-    var F=gsp*satH(Math.max(ha,hb))*(ha-hb);
-    dH[p.a]-=F; dH[p.b]+=F;
-  }
-  for(i=0;i<7;i++) ZM.supH[i]=Math.max(0,ZM.supH[i]+dH[i]);
-  ZM.supH[ZM.drnSuper]=0;
-}
-/* geometry for overlay rendering */
-var Z_ROT=-Math.atan2(1.5*NV[0][1], SQ3*(NV[0][0]+NV[0][1]/2));
-var Z_SCL=(SQ3*worldGeom.sz)/Math.hypot(fineGeom.sz*SQ3*(NV[0][0]+NV[0][1]/2), fineGeom.sz*1.5*NV[0][1]);
-var Z_ROT7=Math.atan2(1.5*1, SQ3*(2+0.5));
-var Z_SZ7=Math.sqrt(7)*SQ3*worldGeom.sz/SQ3;
-function headColor(t){
+function gbHeadColor(t){
   t=Math.max(0,Math.min(1,t));
   if(t<0.02) return '#D8CFBE';
-  var a=parseInt('D8CFBE',16), b=parseInt('173F6E',16), u=0.12+0.88*t;
-  var r=((a>>16)&255)+(((b>>16)&255)-((a>>16)&255))*u;
-  var g=((a>>8)&255)+(((b>>8)&255)-((a>>8)&255))*u;
-  var bl=(a&255)+((b&255)-(a&255))*u;
-  return 'rgb('+(r|0)+','+(g|0)+','+(bl|0)+')';
+  var u=0.12+0.88*t, r=216+(23-216)*u, gg=207+(63-207)*u, b=190+(110-190)*u;
+  return 'rgb('+(r|0)+','+(gg|0)+','+(b|0)+')';
 }
-var zoomSim=new Sim('cv-zoom', worldGeom.w, worldGeom.h, {
-  tick:function(){
-    if(!ZM.running) return;
-    var t0=performance.now();
-    for(var r2=0;r2<3;r2++) ZM.zw.step(0);
-    var t1=performance.now();
-    for(r2=0;r2<3;r2++) ZM.lane.step(0);
-    var t2=performance.now();
-    for(r2=0;r2<3;r2++) zmSupStep();
-    var t3=performance.now();
-    ZM.ms[0]+= (t1-t0)/3; ZM.ms[1]+=(t2-t1)/3; ZM.ms[2]+=(t3-t2)/3; ZM.msN++;
-    if(ZM.msN%15===0){
-      ZM.zw.tileSums();
-      var fineS=new Float64Array(7), tileS=new Float64Array(7);
-      var e1n=0,e1d=0;
-      for(var i=0;i<ZM.zw.nT;i++){
-        var si=ZM.superOf[i];
-        e1n+=Math.abs(ZM.lane.H[i]-ZM.zw.cH[i]); e1d+=Math.abs(ZM.zw.cH[i]);
-        if(si===undefined) continue;
-        fineS[si]+=ZM.zw.cH[i]; tileS[si]+=ZM.lane.H[i];
+function gbElemGlyph(ctx,x,y,sz,e){
+  if(e===GBE.dam){ ctx.fillStyle=COL.wall; hexPath(ctx,x,y,sz*0.95); ctx.fill(); return; }
+  if(e===GBE.res){ ctx.strokeStyle='#1F6F7A'; ctx.lineWidth=2.5; hexPath(ctx,x,y,sz*0.62); ctx.stroke(); return; }
+  var ax=[GBE.v03,GBE.v14,GBE.v25].indexOf(e);
+  if(ax>=0){
+    var d=ax, dx=SQ3*(DIRS[d][0]+DIRS[d][1]/2), dy=1.5*DIRS[d][1], nrm=Math.hypot(dx,dy);
+    ctx.strokeStyle='#4E463A'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(x-dx/nrm*sz*0.7,y-dy/nrm*sz*0.7); ctx.lineTo(x+dx/nrm*sz*0.7,y+dy/nrm*sz*0.7); ctx.stroke();
+  }
+}
+
+gbInitElems();
+/* ================= GAME 1: FOUNDRY CONTRACTS ================= */
+function TileReactor(design, inA, inB, outlets, k){
+  var N=tileGeom.N, j;
+  this.wall=new Uint8Array(N); this.open=[];
+  for(j=0;j<localOffsets.length;j++){
+    var kk=mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1]);
+    if(WALL_TPL[j]||design[j]) this.wall[kk]=1;
+  }
+  var self=this;
+  forEachValid(tileGeom,function(kk2){ if(!self.wall[kk2]) self.open.push(kk2); });
+  this.h=new Float64Array(N); this.A=new Float64Array(N); this.B=new Float64Array(N); this.C=new Float64Array(N);
+  this.inA=PORT[inA].k; this.inB=PORT[inB].k;
+  this.outs=outlets.map(function(d){ return PORT[d].k; }).filter(function(pk){ return !self.wall[pk]; });
+  this.k=k; this.outA=0; this.outB=0; this.outC=0; this.t=0;
+  this.ok=!this.wall[this.inA]&&!this.wall[this.inB]&&this.outs.length>0;
+}
+TileReactor.prototype.step=function(){
+  var N=tileGeom.N, dh=new Float64Array(N), dA=new Float64Array(N), dB=new Float64Array(N), dC=new Float64Array(N), i, g, d, ng;
+  var RATE=0.22;
+  this.h[this.inA]+=RATE; this.A[this.inA]+=RATE;
+  this.h[this.inB]+=RATE; this.B[this.inB]+=RATE;
+  for(i=0;i<this.open.length;i++){
+    g=this.open[i];
+    var hg=this.h[g], cg=hg>1e-9?1/hg:0;
+    for(d=0;d<3;d++){
+      ng=g+tileGeom.shifts[d];
+      if(ng<0||ng>=N||!tileGeom.valid[ng]||this.wall[ng]) continue;
+      var hn=this.h[ng], diff=hg-hn;
+      var q=K*(diff>0?satH(hg):satH(hn))*diff;
+      dh[g]-=q; dh[ng]+=q;
+      var don=q>0?g:ng, hd=this.h[don];
+      if(hd>1e-9){
+        var frac=Math.min(0.9,Math.abs(q)/hd), sgn=q>0?1:-1;
+        var mA=this.A[don]*frac, mB=this.B[don]*frac, mC=this.C[don]*frac;
+        dA[g]-=sgn*mA; dA[ng]+=sgn*mA; dB[g]-=sgn*mB; dB[ng]+=sgn*mB; dC[g]-=sgn*mC; dC[ng]+=sgn*mC;
       }
-      var e2n=0,e2d=0;
-      for(si=0;si<7;si++){ e2n+=Math.abs(ZM.supH[si]-fineS[si]); e2d+=Math.abs(fineS[si]); }
-      ZM.err1=e1d>1e-9?e1n/e1d:0; ZM.err2=e2d>1e-9?e2n/e2d:0;
-      var m0=ZM.ms[0]/ZM.msN, m1=ZM.ms[1]/ZM.msN, m2=ZM.ms[2]/ZM.msN;
-      document.getElementById('z-c0').textContent='L0 fine · 1,177 cells · '+m0.toFixed(2)+' ms/step · truth';
-      document.getElementById('z-c1').textContent='L1 tiles · 61 nodes · '+m1.toFixed(3)+' ms/step · err '+(ZM.err1*100).toFixed(1)+'%';
-      document.getElementById('z-c2').textContent='L2 supers · 7 nodes · '+m2.toFixed(4)+' ms/step · err '+(ZM.err2*100).toFixed(1)+'%';
+      var cn=hn>1e-9?1/hn:0, hm=Math.min(hg,hn);
+      if(hm>1e-6){
+        var fA=DSP*hm*(this.A[g]*cg-this.A[ng]*cn), fB=DSP*hm*(this.B[g]*cg-this.B[ng]*cn), fC=DSP*hm*(this.C[g]*cg-this.C[ng]*cn);
+        dA[g]-=fA; dA[ng]+=fA; dB[g]-=fB; dB[ng]+=fB; dC[g]-=fC; dC[ng]+=fC;
+      }
+    }
+  }
+  for(i=0;i<this.open.length;i++){
+    g=this.open[i];
+    this.h[g]=Math.max(0,this.h[g]+dh[g]); this.A[g]=Math.max(0,this.A[g]+dA[g]);
+    this.B[g]=Math.max(0,this.B[g]+dB[g]); this.C[g]=Math.max(0,this.C[g]+dC[g]);
+  }
+  for(i=0;i<this.open.length;i++){
+    g=this.open[i]; var hh=this.h[g];
+    if(hh<1e-6||this.A[g]<=0||this.B[g]<=0) continue;
+    var r=this.k*this.A[g]*this.B[g]/hh;
+    r=Math.min(r,this.A[g]*0.5,this.B[g]*0.5);
+    this.A[g]-=r; this.B[g]-=r; this.C[g]+=r;
+  }
+  for(i=0;i<this.outs.length;i++){
+    g=this.outs[i];
+    if(this.t>400){ this.outA+=this.A[g]; this.outB+=this.B[g]; this.outC+=this.C[g]; }
+    this.h[g]=0; this.A[g]=0; this.B[g]=0; this.C[g]=0;
+  }
+  this.t++;
+};
+TileReactor.prototype.conversion=function(){ var tot=this.outA+this.outB+this.outC; return tot>1e-9? this.outC/tot : 0; };
+
+var C_CONTRACTS=[
+  {name:'01 · First light', brief:'A enters from the west port, B from the east. Get any product out of the other four ports.', inA:3, inB:0, outs:[1,2,4,5], target:0.18, walls:25},
+  {name:'02 · Mixer', brief:'Same feeds. Now force them to meet — a straight chamber lets the streams slide past each other.', inA:3, inB:0, outs:[1,2,4,5], target:0.30, walls:25},
+  {name:'03 · Lean mixer', brief:'Hit the same yield with at most six walls. Every baffle costs.', inA:3, inB:0, outs:[1,2,4,5], target:0.22, walls:6},
+  {name:'04 · Side by side', brief:'A and B enter through ADJACENT ports and want to leave together unreacted. Fold them in.', inA:0, inB:1, outs:[2,3,4,5], target:0.45, walls:25},
+  {name:'05 · Single exit', brief:'Product must leave through the south-east port only — shut the others (shutting ports is free).', inA:3, inB:0, outs:[5], target:0.55, walls:25}
+];
+var c_design=new Uint8Array(localOffsets.length), c_cur=0, c_run=null, c_best=[], c_lastScore=null;
+var c_jOf={}; (function(){ for(var j=0;j<localOffsets.length;j++) c_jOf[mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1])]=j; })();
+var c_geom=makeMap(TILE_R,22);
+var C_K=0.09, C_STEPS=1600;
+function c_wallCount(){ var n=0; for(var j=0;j<localOffsets.length;j++){ var kk=mapIdx(tileGeom,localOffsets[j][0],localOffsets[j][1]); if(c_design[j]&&PORT_SET[kk]===undefined) n++; } return n; }
+function c_refresh(){
+  var ct=C_CONTRACTS[c_cur];
+  document.getElementById('c-title').textContent=ct.name;
+  document.getElementById('c-brief').textContent=ct.brief;
+  document.getElementById('c-target').textContent='target ≥ '+(ct.target*100).toFixed(0)+'% conversion · walls ≤ '+ct.walls;
+  var b=c_best[c_cur];
+  document.getElementById('c-best').textContent= b? 'best '+(b*100).toFixed(0)+'%' : 'no run yet';
+  document.getElementById('c-walls').textContent='walls '+c_wallCount()+'/'+ct.walls;
+}
+var c_sim=new Sim('cv-contract', c_geom.w+90, c_geom.h+16, {
+  tick:function(s){
+    if(s.pointer.down && !c_run){
+      var k=pixelToHex(c_geom, s.pointer.x-45, s.pointer.y-8);
+      if(k>=0){ var qr=decode(c_geom,k), kk=mapIdx(tileGeom,qr[0],qr[1]); var j=c_jOf[kk];
+        if(j!==undefined && !WALL_TPL[j]){ c_design[j]=c_design[j]?0:1; c_refresh(); } }
+      s.pointer.down=false;
+    }
+    if(c_run){
+      for(var i=0;i<28;i++) if(c_run.t<C_STEPS) c_run.step();
+      var pct=Math.min(1,c_run.t/C_STEPS);
+      document.getElementById('c-status').textContent= c_run.ok? 'commissioning… '+(pct*100).toFixed(0)+'%' : 'a feed port is walled — nothing can run';
+      if(c_run.t>=C_STEPS||!c_run.ok){
+        var conv=c_run.ok?c_run.conversion():0, ct=C_CONTRACTS[c_cur], w=c_wallCount();
+        var pass=conv>=ct.target && w<=ct.walls;
+        c_lastScore={conv:conv,pass:pass,w:w};
+        if(!c_best[c_cur]||conv>c_best[c_cur]) c_best[c_cur]=conv;
+        document.getElementById('c-status').textContent=(pass?'✔ PASSED — ':'✘ not yet — ')+'conversion '+(conv*100).toFixed(0)+'% · walls '+w+'/'+ct.walls+(pass&&c_cur<C_CONTRACTS.length-1?' · next contract unlocked':'');
+        if(pass) document.getElementById('c-next').disabled=false;
+        c_run=null; c_refresh();
+      }
     }
   },
   draw:function(s,ctx){
     ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    var z=+document.getElementById('z-alt').value/100;   // 0..2
-    document.getElementById('z-altout').textContent= z<0.5?'ground':z<1.5?'tile level':'super level';
-    if(!ZM.assembled){
-      ctx.fillStyle=css['--muted']; ctx.font='13px system-ui'; ctx.textAlign='center';
-      ctx.fillText('⛰ assemble & run to build the three levels', s.w/2, s.h/2);
-      return;
-    }
-    var aF=Math.max(0,1-z), aT=1-Math.min(1,Math.abs(z-1)), aS=Math.max(0,z-1);
-    var norm=function(H,cap){ return H/cap/ (12); };
-    /* L2 supers (bottom layer when fading in) */
-    if(aS>0.01){
-      ctx.globalAlpha=aS;
-      for(var si=0;si<7;si++){
-        var c=ZM.superCentres[si], wk=mapIdx(worldGeom,c[0],c[1]);
-        ctx.save(); ctx.translate(worldGeom.cx[wk],worldGeom.cy[wk]); ctx.rotate(Z_ROT7);
-        hexPath(ctx,0,0,Z_SZ7*0.56);
-        ctx.fillStyle=headColor(norm(ZM.supH[si],ZM.SUPER.cap));
-        ctx.fill();
-        ctx.strokeStyle=COL.gridline; ctx.lineWidth=2; ctx.stroke();
-        ctx.restore();
+    ctx.save(); ctx.translate(45,8);
+    var ct=C_CONTRACTS[c_cur];
+    forEachValid(c_geom,function(k){
+      var qr=decode(c_geom,k), kk=mapIdx(tileGeom,qr[0],qr[1]), j=c_jOf[kk];
+      var x=c_geom.cx[k], y=c_geom.cy[k];
+      if(WALL_TPL[j]||c_design[j]){ ctx.fillStyle=WALL_TPL[j]?COL.wall:'#6E5B45'; hexPath(ctx,x,y,c_geom.sz*0.94); ctx.fill(); }
+      else if(c_run){ mixCell(ctx,x,y,c_geom.sz*0.94,c_run.h[kk],c_run.A[kk],c_run.B[kk],c_run.C[kk]); }
+      else { ctx.fillStyle=COL.floor; hexPath(ctx,x,y,c_geom.sz*0.94); ctx.fill(); }
+      ctx.strokeStyle='rgba(46,40,30,0.25)'; ctx.lineWidth=1; hexPath(ctx,x,y,c_geom.sz*0.94); ctx.stroke();
+      var pd=PORT_SET[kk];
+      if(pd!==undefined){
+        var role= pd===ct.inA?'A': pd===ct.inB?'B': (ct.outs.indexOf(pd)>=0?'out':'x');
+        ctx.strokeStyle= role==='A'?'#2E6FB8': role==='B'?'#D2691E': role==='out'?'#E0B33C':'rgba(120,120,120,0.5)';
+        ctx.lineWidth=2.5; hexPath(ctx,x,y,c_geom.sz*0.6); ctx.stroke();
+        ctx.fillStyle=ctx.strokeStyle; ctx.font='bold 10px system-ui'; ctx.textAlign='center';
+        var lx=x+(x-c_geom.ox)*0.55, ly=y+(y-c_geom.oy)*0.55+4;
+        ctx.fillText(role==='out'?'→':role==='x'?'':role, lx, ly);
       }
-      ctx.globalAlpha=1;
-    }
-    /* L1 tiles */
-    if(aT>0.01){
-      ctx.globalAlpha=aT;
-      for(var i=0;i<ZM.zw.nT;i++){
-        var wk2=ZM.zw.wk[i];
-        var el=ELEM[ZM.zw.elemIdx[i]]||ELEM[0];
-        hexPath(ctx,worldGeom.cx[wk2],worldGeom.cy[wk2],worldGeom.sz*0.96);
-        ctx.fillStyle= el.cap? headColor(norm(ZM.lane.H[i],el.cap)) : COL.wall;
-        ctx.fill();
-        ctx.strokeStyle=COL.gridline; ctx.lineWidth=1; ctx.stroke();
+    });
+    ctx.restore();
+  }
+});
+document.getElementById('c-run').addEventListener('click',function(){
+  if(c_run) return;
+  var ct=C_CONTRACTS[c_cur];
+  c_run=new TileReactor(c_design, ct.inA, ct.inB, ct.outs, C_K);
+  c_sim.running=true;
+});
+document.getElementById('c-clear').addEventListener('click',function(){ c_design.fill(0); c_refresh(); });
+document.getElementById('c-next').addEventListener('click',function(){
+  if(c_cur<C_CONTRACTS.length-1){ c_cur++; c_design.fill(0); this.disabled=true; document.getElementById('c-status').textContent='new contract'; c_refresh(); }
+});
+document.getElementById('c-prev').addEventListener('click',function(){ if(c_cur>0){ c_cur--; c_design.fill(0); c_refresh(); } });
+c_refresh();
+
+/* ================= GAME 2: WATERSHED ================= */
+var WS_R=6, ws=new Net(WS_R,22), ws_seed=7;
+var WS_SEASON=600, WS_ON=300, WS_SEASONS=8, WS_BUDGET=6, WS_DEMAND=260, WS_FLOOD=12;
+var ws_state={season:0, budget:WS_BUDGET, towns:[], rivers:[], fed:[], floodTicks:0, score:0, over:false, log:[]};
+var ws_tool=GBE.open;
+function ws_setup(seed){
+  var rnd=gbRng(seed), g=ws.geom, i;
+  ws.elem.fill(0); ws.src={}; ws.drn.fill(0); ws.reset();
+  ws_state={season:0, budget:WS_BUDGET, towns:[], rivers:[], fed:[], floodTicks:0, score:0, over:false, log:[]};
+  /* rivers: two western rim tiles; towns: five tiles on the eastern half */
+  var rim=[], east=[];
+  for(i=0;i<ws.n;i++){ var qr=decode(g,ws.nodes[i]); var dd=hexDist(qr[0],qr[1]); if(dd===WS_R&&qr[0]<=-3) rim.push(i); if(qr[0]>=1&&dd<=WS_R-1) east.push(i); }
+  while(ws_state.rivers.length<2&&rim.length){ var r=rim.splice(Math.floor(rnd()*rim.length),1)[0]; ws_state.rivers.push(r); }
+  while(ws_state.towns.length<5&&east.length){ var t=east.splice(Math.floor(rnd()*east.length),1)[0]; ws_state.towns.push(t); ws.drn[t]=1; }
+  ws_state.rivers.forEach(function(r){ ws.src[r]=function(t){ return (t%WS_SEASON)<WS_ON? 3.2 : 0; }; });
+  ws_state.fed=ws_state.towns.map(function(){ return 0; });
+  ws.gScale=6;
+  for(i=0;i<2*WS_SEASON;i++) ws.step();       // the continent has weather before you arrive
+  ws.t=0;
+  ws_updateHud();
+}
+function ws_updateHud(){
+  document.getElementById('ws-season').textContent='season '+Math.min(ws_state.season+1,WS_SEASONS)+'/'+WS_SEASONS+(ws_state.over?' · OVER':'');
+  document.getElementById('ws-budget').textContent='builds left '+ws_state.budget;
+  document.getElementById('ws-score').textContent='score '+ws_state.score;
+  var bars=ws_state.towns.map(function(t,i){ var f=Math.min(1,ws_state.fed[i]/WS_DEMAND); return '<span style="display:inline-block;width:52px;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:4px"><span style="display:block;height:100%;width:'+(f*100).toFixed(0)+'%;background:'+(f>=1?'var(--good)':'var(--accent)')+'"></span></span>'; }).join('');
+  document.getElementById('ws-towns').innerHTML='towns this season '+bars;
+  document.getElementById('ws-flood').textContent='flood-ticks '+ws_state.floodTicks;
+}
+var ws_sim=new Sim('cv-watershed', ws.geom.w, ws.geom.h, {
+  tick:function(s){
+    if(s.pointer.down){
+      var i=ws.pick(s.pointer.x,s.pointer.y); s.pointer.down=false;
+      if(i>=0&&!ws_state.over&&ws_state.budget>0&&!ws.drn[i]&&ws_state.rivers.indexOf(i)<0){
+        if(ws.elem[i]!==ws_tool){ ws.elem[i]=ws_tool; ws_state.budget--; ws_updateHud(); }
       }
-      ctx.globalAlpha=1;
     }
-    /* L0 fine, rotated/scaled onto the tile frame */
-    if(aF>0.01){
-      ctx.globalAlpha=aF;
-      ctx.save();
-      ctx.translate(worldGeom.ox,worldGeom.oy);
-      ctx.rotate(Z_ROT); ctx.scale(Z_SCL,Z_SCL);
-      ctx.translate(-fineGeom.ox,-fineGeom.oy);
-      for(var li=0;li<ZM.zw.list.length;li++){
-        var g=ZM.zw.list[li];
-        hexPath(ctx,fineGeom.cx[g],fineGeom.cy[g],fineGeom.sz*0.92);
-        ctx.fillStyle= ZM.zw.wall[g]? COL.wall : headColor(ZM.zw.h[g]/12);
-        ctx.fill();
+    if(ws_state.over) return;
+    for(var r=0;r<3;r++){
+      var tPrev=ws.t;
+      /* measure town inflow before drains zero it: sum of positive flux into drain tiles */
+      ws.step();
+      for(var pi=0;pi<ws.pairs.length;pi++){
+        var p=ws.pairs[pi], q=ws.lastQ[pi];
+        var ti=-1; if(ws.drn[p.b]&&q>0) ti=p.b; else if(ws.drn[p.a]&&q<0) ti=p.a;
+        if(ti>=0){ var ix=ws_state.towns.indexOf(ti); if(ix>=0) ws_state.fed[ix]+=Math.abs(q); }
       }
-      ctx.restore();
-      ctx.globalAlpha=1;
+      for(var i2=0;i2<ws.n;i2++) if(ws.head(i2)>WS_FLOOD) ws_state.floodTicks++;
+      if(ws.t%WS_SEASON===0){
+        var fedN=ws_state.fed.filter(function(f){ return f>=WS_DEMAND; }).length;
+        var floodPen=Math.floor(ws_state.floodTicks/200);
+        ws_state.score+=fedN*10-floodPen;
+        ws_state.log.push('S'+(ws_state.season+1)+': '+fedN+'/5 towns fed, −'+floodPen+' flood');
+        ws_state.season++; ws_state.budget=WS_BUDGET; ws_state.fed=ws_state.towns.map(function(){ return 0; }); ws_state.floodTicks=0;
+        if(ws_state.season>=WS_SEASONS){ ws_state.over=true; }
+        document.getElementById('ws-log').textContent=ws_state.log.slice(-3).join(' · ');
+        ws_updateHud(); break;
+      }
+    }
+    if(ws.t%30===0) ws_updateHud();
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    var g=ws.geom;
+    ws.drawBase(ctx,function(i){ var h=ws.head(i); return h>WS_FLOOD? '#B4433A' : gbHeadColor(h/6); });
+    for(var i=0;i<ws.n;i++){ var k=ws.nodes[i]; gbElemGlyph(ctx,g.cx[k],g.cy[k],g.sz,ws.elem[i]); }
+    ws_state.rivers.forEach(function(i){ var k=ws.nodes[i]; ctx.fillStyle='#2E6FB8'; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],6,0,7); ctx.fill(); });
+    ws_state.towns.forEach(function(i,ix){ var k=ws.nodes[i]; var f=Math.min(1,ws_state.fed[ix]/WS_DEMAND);
+      ctx.fillStyle=f>=1?'#3E8E4C':'#E0B33C'; ctx.beginPath(); ctx.moveTo(g.cx[k],g.cy[k]-8); ctx.lineTo(g.cx[k]+7,g.cy[k]+5); ctx.lineTo(g.cx[k]-7,g.cy[k]+5); ctx.closePath(); ctx.fill(); });
+    var on=(ws.t%WS_SEASON)<WS_ON;
+    ctx.fillStyle=css['--muted']; ctx.font='12px system-ui'; ctx.textAlign='left';
+    ctx.fillText(on?'☔ wet phase':'☀ dry phase', 10, 16);
+  }
+});
+Array.prototype.forEach.call(document.querySelectorAll('button.ws-tool'),function(b){
+  b.addEventListener('click',function(){
+    ws_tool=GBE[b.dataset.t];
+    Array.prototype.forEach.call(document.querySelectorAll('button.ws-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); });
+  });
+});
+document.getElementById('ws-new').addEventListener('click',function(){ ws_seed=(ws_seed*7+3)%1000; ws_setup(ws_seed); ws_sim.running=true; });
+document.getElementById('ws-go').addEventListener('click',function(){ ws_sim.running=!ws_sim.running; });
+
+/* ================= GAME 3: CLOCKWORK ================= */
+var CK_R=5, ck_geom=makeMap(CK_R,24), ck_nodes=[], ck_idx=new Int32Array(ck_geom.N).fill(-1);
+forEachValid(ck_geom,function(k){ ck_idx[k]=ck_nodes.length; ck_nodes.push(k); });
+var ck_n=ck_nodes.length, ck_pairs=[];
+(function(){ for(var i=0;i<ck_n;i++) for(var d=0;d<3;d++){ var nk=ck_nodes[i]+ck_geom.shifts[d]; if(nk<0||nk>=ck_geom.N||ck_idx[nk]<0) continue; ck_pairs.push({a:i,b:ck_idx[nk]}); } })();
+var ck_u=new Float64Array(ck_n), ck_v=new Float64Array(ck_n), ck_b=new Float64Array(ck_n), ck_pace=new Uint8Array(ck_n), ck_pure=new Uint8Array(ck_n);
+var CK_A=1.0, CK_DT=0.02, CK_SPREAD=1.3;
+var ck_state={purify:10, pace:2, tool:'purify', R:0, locked:0, time:0, won:false, seed:11, hist:[]};
+function ck_setup(seed){
+  var rnd=gbRng(seed);
+  for(var i=0;i<ck_n;i++){ ck_b[i]=2.5+CK_SPREAD*(rnd()-0.5); ck_u[i]=CK_A+0.3*(rnd()-0.5); ck_v[i]=2.5+0.3*(rnd()-0.5); }
+  ck_pace.fill(0); ck_pure.fill(0);
+  ck_state={purify:10, pace:2, tool:ck_state.tool, R:0, locked:0, time:0, won:false, seed:seed, hist:[]};
+  ck_hud();
+}
+function ck_D(){ return +document.getElementById('ck-D').value/1000; }
+function ck_step(){
+  var D=ck_D(), du=new Float64Array(ck_n), dv=new Float64Array(ck_n), i;
+  for(i=0;i<ck_pairs.length;i++){
+    var p=ck_pairs[i], w=D*((ck_pace[p.a]||ck_pace[p.b])?4:1);
+    var fu=w*(ck_u[p.a]-ck_u[p.b]), fv=w*(ck_v[p.a]-ck_v[p.b]);
+    du[p.a]-=fu; du[p.b]+=fu; dv[p.a]-=fv; dv[p.b]+=fv;
+  }
+  for(i=0;i<ck_n;i++){
+    var uu=ck_u[i], vv=ck_v[i], b=ck_b[i];
+    ck_u[i]=uu+CK_DT*(CK_A-(b+1)*uu+uu*uu*vv)+CK_DT*du[i];
+    ck_v[i]=vv+CK_DT*(b*uu-uu*uu*vv)+CK_DT*dv[i];
+  }
+}
+function ck_phase(i){ return Math.atan2(ck_v[i]-2.5, ck_u[i]-1.0); }
+function ck_order(){
+  var cx=0, cy=0, n=0;
+  for(var i=0;i<ck_n;i++){ var amp=Math.hypot(ck_v[i]-2.5, ck_u[i]-1.0); if(amp<0.08) continue; var th=ck_phase(i); cx+=Math.cos(th); cy+=Math.sin(th); n++; }
+  return n? Math.hypot(cx,cy)/n : 0;
+}
+function ck_hud(){
+  document.getElementById('ck-R').textContent='synchrony R = '+ck_state.R.toFixed(2)+(ck_state.won?' · LOCKED ✔':'');
+  document.getElementById('ck-budget').textContent='purify '+ck_state.purify+' · pacemakers '+ck_state.pace;
+  document.getElementById('ck-time').textContent='t = '+ck_state.time;
+  document.getElementById('ck-Dout').textContent='coupling '+ck_D().toFixed(3);
+}
+var ck_sim=new Sim('cv-clockwork', ck_geom.w, ck_geom.h+40, {
+  tick:function(s){
+    if(s.pointer.down){
+      s.pointer.down=false;
+      var k=pixelToHex(ck_geom,s.pointer.x,s.pointer.y-34), i=k>=0?ck_idx[k]:-1;
+      if(i>=0&&!ck_state.won){
+        if(ck_state.tool==='purify'&&ck_state.purify>0&&!ck_pure[i]){ ck_b[i]=2.5; ck_pure[i]=1; ck_state.purify--; }
+        else if(ck_state.tool==='pace'&&ck_state.pace>0&&!ck_pace[i]){ ck_b[i]=2.5; ck_pure[i]=1; ck_pace[i]=1; ck_state.pace--; }
+        else if(ck_state.tool==='tap'){
+          var su=0,sv=0,c=0; ck_pairs.forEach(function(p){ if(p.a===i){ su+=ck_u[p.b]; sv+=ck_v[p.b]; c++; } else if(p.b===i){ su+=ck_u[p.a]; sv+=ck_v[p.a]; c++; } });
+          if(c){ ck_u[i]=su/c; ck_v[i]=sv/c; }
+        }
+        ck_hud();
+      }
+    }
+    if(ck_state.won) return;
+    for(var r=0;r<8;r++) ck_step();
+    ck_state.time++;
+    if(ck_state.time%5===0){
+      ck_state.R=ck_order(); ck_state.hist.push(ck_state.R); if(ck_state.hist.length>120) ck_state.hist.shift();
+      if(ck_state.R>=0.85) ck_state.locked+=5; else ck_state.locked=0;
+      if(ck_state.locked>=200){ ck_state.won=true; }
+      ck_hud();
+    }
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    /* R sparkline */
+    ctx.strokeStyle=css['--line']; ctx.beginPath(); ctx.moveTo(10,30); ctx.lineTo(s.w-10,30); ctx.stroke();
+    ctx.strokeStyle=css['--accent']; ctx.lineWidth=1.5; ctx.beginPath();
+    for(var h=0;h<ck_state.hist.length;h++){ var x=10+(s.w-20)*h/119, y=30-26*ck_state.hist[h]; if(h===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    ctx.strokeStyle='rgba(62,142,76,0.6)'; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(10,30-26*0.85); ctx.lineTo(s.w-10,30-26*0.85); ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); ctx.translate(0,34);
+    for(var i=0;i<ck_n;i++){
+      var k=ck_nodes[i], amp=Math.hypot(ck_v[i]-2.5, ck_u[i]-1.0);
+      var th=ck_phase(i), hue=((th/Math.PI*180)+360)%360, sat=Math.min(1,amp/0.8);
+      hexPath(ctx,ck_geom.cx[k],ck_geom.cy[k],ck_geom.sz*0.95);
+      ctx.fillStyle= amp<0.08? '#B8B2A6' : 'hsl('+hue.toFixed(0)+','+(70*sat).toFixed(0)+'%,'+(58-15*sat).toFixed(0)+'%)';
+      ctx.fill();
+      if(ck_pure[i]){ ctx.strokeStyle= ck_pace[i]?'#E0B33C':'#FFFFFF'; ctx.lineWidth=ck_pace[i]?3:1.5; hexPath(ctx,ck_geom.cx[k],ck_geom.cy[k],ck_geom.sz*0.6); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+});
+Array.prototype.forEach.call(document.querySelectorAll('button.ck-tool'),function(b){
+  b.addEventListener('click',function(){ ck_state.tool=b.dataset.t;
+    Array.prototype.forEach.call(document.querySelectorAll('button.ck-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); });
+});
+document.getElementById('ck-new').addEventListener('click',function(){ ck_setup((ck_state.seed*13+5)%997); ck_sim.running=true; });
+document.getElementById('ck-D').addEventListener('input',ck_hud);
+ck_setup(ck_state.seed);
+
+/* ================= GAME 4: THE DESCENT ================= */
+var ds_floodLine=1.0, ds_w=null, ds_seed=3, ds_ag=-1, ds_hp=20, ds_exit=-1, ds_start=-1, ds_pick=[], ds_score=0, ds_over='', ds_portCell=null, ds_geomScale=0.9;
+function ds_isPortCell(g){ return ds_portCell&&ds_portCell[g]===1; }
+function ds_setup(seed){
+  var rnd=gbRng(seed), tries=0;
+  while(tries++<20){
+    var w=new World(); w.elemIdx=new Int16Array(w.nT);
+    var rim=[]; for(var i=0;i<w.nT;i++){ var qr=decode(worldGeom,w.wk[i]); if(hexDist(qr[0],qr[1])===WORLD_R) rim.push(i); }
+    ds_start=rim[Math.floor(rnd()*rim.length)];
+    var sq=decode(worldGeom,w.wk[ds_start]); ds_exit=rim[0]; var best=-1;
+    rim.forEach(function(r){ var q2=decode(worldGeom,w.wk[r]); var dd=hexDist(q2[0]-sq[0],q2[1]-sq[1]); if(dd>best){ best=dd; ds_exit=r; } });
+    for(i=0;i<w.nT;i++){
+      var u=rnd(); w.elemIdx[i]= u<0.55?GBE.open: u<0.65?GBE.v03: u<0.75?GBE.v14: u<0.85?GBE.v25: u<0.92?GBE.dam: GBE.open;
+    }
+    w.elemIdx[ds_start]=GBE.open; w.elemIdx[ds_exit]=GBE.open;
+    var pool=[]; for(i=0;i<w.nT;i++) if(i!==ds_start&&i!==ds_exit&&w.elemIdx[i]!==GBE.dam) pool.push(i);
+    var sA=pool.splice(Math.floor(rnd()*pool.length),1)[0], sB=pool.splice(Math.floor(rnd()*pool.length),1)[0];
+    var d1=pool.splice(Math.floor(rnd()*pool.length),1)[0], d2=pool.splice(Math.floor(rnd()*pool.length),1)[0];
+    w.srcA=sA; w.srcB=sB; w.drn=[d1,d2];
+    w.reset();
+    /* passability with all port cells openable: BFS over non-wall cells where port cells count as open */
+    ds_portCell=new Uint8Array(fineGeom.N); w.portCells.forEach(function(g){ ds_portCell[g]=1; });
+    var jC=0; for(var jj=0;jj<localOffsets.length;jj++) if(localOffsets[jj][0]===0&&localOffsets[jj][1]===0) jC=jj;
+    var startCell=w.tiles[ds_start][jC], exitCells={}; w.tiles[ds_exit].forEach(function(g){ exitCells[g]=1; });
+    var seen=new Uint8Array(fineGeom.N), q=[startCell]; seen[startCell]=1; var reach=false;
+    while(q.length){ var g=q.shift(); if(exitCells[g]){ reach=true; break; }
+      for(var d=0;d<6;d++){ var ng=g+fineGeom.shifts[d]; if(ng<0||ng>=fineGeom.N||!w.used[ng]||seen[ng]) continue; if(w.wall[ng]&&!ds_portCell[ng]) continue; if(w.wall[ng]&&ds_portCell[ng]&&w.rimFixed[ng]) continue; seen[ng]=1; q.push(ng); } }
+    if(!reach) continue;
+    ds_w=w; ds_ag=startCell; ds_hp=20; ds_score=0; ds_over='';
+    ds_pick=[]; var open=[]; for(var g2=0; g2<fineGeom.N; g2++) if(w.used[g2]&&!w.wall[g2]&&w.tileOf[g2]!==ds_start) open.push(g2);
+    for(i=0;i<5&&open.length;i++) ds_pick.push(open.splice(Math.floor(rnd()*open.length),1)[0]);
+    for(i=0;i<600;i++) w.step(0);      // the machine has been running a while
+    /* flood line = the machine's own 70th-percentile head; the start cell must be dry */
+    var hs=[]; for(var g4=0; g4<fineGeom.N; g4++) if(w.used[g4]&&!w.wall[g4]) hs.push(w.h[g4]);
+    hs.sort(function(a,b){return a-b;}); ds_floodLine=Math.max(0.6, hs[Math.floor(hs.length*0.7)]);
+    if(w.h[startCell]>ds_floodLine*0.6) continue;
+    break;
+  }
+  ds_hud();
+}
+function ds_hud(){
+  document.getElementById('ds-hp').textContent='hp '+Math.max(0,ds_hp).toFixed(0)+'/20';
+  document.getElementById('ds-score').textContent='castings '+ds_score+'/5';
+  document.getElementById('ds-seed').textContent='seed '+ds_seed;
+  if(ds_over) document.getElementById('ds-status').textContent=ds_over;
+}
+function ds_tryMove(ng){
+  if(!ds_w||ds_over) return;
+  if(ng<0||ng>=fineGeom.N||!ds_w.used[ng]) return;
+  var isNb=false; for(var d=0;d<6;d++) if(ds_ag+fineGeom.shifts[d]===ng) isNb=true;
+  if(!isNb) return;
+  if(ds_w.wall[ng]){
+    if(ds_isPortCell(ng)&&!ds_w.rimFixed[ng]){ ds_w.wall[ng]=0; document.getElementById('ds-status').textContent='valve opened'; }
+    else if(ds_isPortCell(ng)){ ds_w.wall[ng]=0; document.getElementById('ds-status').textContent='valve opened'; }
+    return;
+  }
+  ds_ag=ng;
+  var pi=ds_pick.indexOf(ng); if(pi>=0){ ds_pick.splice(pi,1); ds_score++; document.getElementById('ds-status').textContent='casting salvaged'; }
+  if(ds_w.tileOf[ng]===ds_exit){ ds_over='✔ ESCAPED — '+ds_score+' castings, '+Math.max(0,ds_hp).toFixed(0)+' hp left'; }
+  ds_hud();
+}
+function ds_closeValve(ng){
+  if(!ds_w||ds_over) return;
+  var isNb=false; for(var d=0;d<6;d++) if(ds_ag+fineGeom.shifts[d]===ng) isNb=true;
+  if(isNb&&ds_isPortCell(ng)&&!ds_w.wall[ng]){ ds_w.wall[ng]=1; ds_w.h[ng]=0; document.getElementById('ds-status').textContent='valve shut'; }
+}
+var ds_sim=new Sim('cv-descent', fineGeom.w*ds_geomScale, fineGeom.h*ds_geomScale, {
+  tick:function(s){
+    if(!ds_w) return;
+    if(s.pointer.down){
+      s.pointer.down=false;
+      var g=pixelToHex(fineGeom, s.pointer.x/ds_geomScale, s.pointer.y/ds_geomScale);
+      if(g>=0){ if(ds_w.wall[g]&&ds_isPortCell(g)) ds_tryMove(g); else if(!ds_w.wall[g]&&ds_isPortCell(g)&&g!==ds_ag&&ds_shiftHeld) ds_closeValve(g); else ds_tryMove(g); }
+    }
+    if(ds_over) return;
+    for(var r=0;r<3;r++) ds_w.step(0);
+    if(ds_w.h[ds_ag]>ds_floodLine){ ds_hp-=0.012*3; if(ds_hp<=0){ ds_over='✘ DROWNED in the works — '+ds_score+' castings'; } }
+    if(ds_w.t%20===0) ds_hud();
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    if(!ds_w) return;
+    ctx.save(); ctx.scale(ds_geomScale,ds_geomScale);
+    var m=fineGeom;
+    for(var i=0;i<ds_w.list.length;i++){
+      var g=ds_w.list[i];
+      if(ds_w.wall[g]){ ctx.fillStyle= ds_isPortCell(g)?'#8A6318':COL.wall; hexPath(ctx,m.cx[g],m.cy[g],m.sz*0.95); ctx.fill(); continue; }
+      var h=ds_w.h[g];
+      ctx.fillStyle= h>ds_floodLine? 'rgb(30,60,'+Math.min(255,120+h*40|0)+')' : gbHeadColor(h/ds_floodLine*0.5);
+      hexPath(ctx,m.cx[g],m.cy[g],m.sz*0.95); ctx.fill();
+    }
+    ds_w.tiles[ds_exit].forEach(function(g){ ctx.strokeStyle='#3E8E4C'; ctx.lineWidth=1.5; hexPath(ctx,m.cx[g],m.cy[g],m.sz*0.8); ctx.stroke(); });
+    ds_pick.forEach(function(g){ ctx.fillStyle='#E0B33C'; ctx.beginPath(); ctx.moveTo(m.cx[g],m.cy[g]-5); ctx.lineTo(m.cx[g]+5,m.cy[g]); ctx.lineTo(m.cx[g],m.cy[g]+5); ctx.lineTo(m.cx[g]-5,m.cy[g]); ctx.closePath(); ctx.fill(); });
+    ctx.fillStyle='#C4453C'; ctx.beginPath(); ctx.arc(m.cx[ds_ag],m.cy[ds_ag],m.sz*0.55,0,7); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore();
+  }
+});
+var ds_shiftHeld=false;
+document.addEventListener('keydown',function(e){
+  if(e.key==='Shift') ds_shiftHeld=true;
+  if(document.activeElement!==document.getElementById('cv-descent')) return;
+  var map={d:0,e:1,w:2,a:3,z:4,x:5};
+  var d=map[e.key.toLowerCase()];
+  if(d!==undefined){ e.preventDefault(); ds_tryMove(ds_ag+fineGeom.shifts[d]); }
+});
+document.addEventListener('keyup',function(e){ if(e.key==='Shift') ds_shiftHeld=false; });
+document.getElementById('cv-descent').setAttribute('tabindex','0');
+document.getElementById('ds-new').addEventListener('click',function(){ ds_seed=(ds_seed*17+11)%1009; ds_setup(ds_seed); document.getElementById('ds-status').textContent='new machine · find the green exit'; ds_sim.running=true; });
+
+/* ================= GAME 5: CREEP WARS ================= */
+var cw=new Net(6,22), cw_B=new Float64Array(cw.n), cw_hive=new Uint8Array(cw.n), cw_pump=new Uint8Array(cw.n);
+var cw_state={credits:12, tool:'pump', over:'', cover:0, seed:5, hivesAlive:0};
+var CW_SPREAD=0.0001, CW_KILL=0.10, CW_HIVE_EVERY=900, CW_MAX_HIVES=7;
+function cw_r(){ return +document.getElementById('cw-r').value/1000; }
+function cw_setup(seed){
+  var rnd=gbRng(seed), i;
+  cw.elem.fill(0); cw.src={}; cw.drn.fill(0); cw.reset(); cw.evap=0.003;
+  cw_B.fill(0); cw_hive.fill(0); cw_pump.fill(0);
+  cw_state={credits:12, tool:cw_state.tool, over:'', cover:0, seed:seed, hivesAlive:0};
+  var east=[]; for(i=0;i<cw.n;i++){ var qr=decode(cw.geom,cw.nodes[i]); if(qr[0]>=4) east.push(i); }
+  for(i=0;i<3&&east.length;i++){ var h=east.splice(Math.floor(rnd()*east.length),1)[0]; cw_hive[h]=1; cw_B[h]=1; }
+  cw_hud();
+}
+function cw_hud(){
+  document.getElementById('cw-credits').textContent='credits '+cw_state.credits;
+  document.getElementById('cw-cover').textContent='creep '+(cw_state.cover*100).toFixed(0)+'% · hives '+cw_state.hivesAlive;
+  if(cw_state.over) document.getElementById('cw-status').textContent=cw_state.over;
+}
+function cw_step(){
+  cw.step();
+  var r=cw_r(), dB=new Float64Array(cw.n), i;
+  for(i=0;i<cw.pairs.length;i++){
+    var p=cw.pairs[i];
+    var g=pairConductance(ELEM[cw.elem[p.a]]||ELEM[0], ELEM[cw.elem[p.b]]||ELEM[0], p.d);
+    if(g<=1e-9) continue;
+    dB[p.b]+=CW_SPREAD*cw_B[p.a]*(1-cw_B[p.b]); dB[p.a]+=CW_SPREAD*cw_B[p.b]*(1-cw_B[p.a]);
+  }
+  cw_state.hivesAlive=0;
+  for(i=0;i<cw.n;i++){
+    var head=cw.head(i);
+    var b=cw_B[i]+dB[i]+r*cw_B[i]*(1-cw_B[i])-CW_KILL*head*cw_B[i];
+    if(cw_hive[i]){ if(head>3.0){ cw_hive[i]=0; } else { b=1; cw_state.hivesAlive++; } }
+    cw_B[i]=Math.max(0,Math.min(1,b));
+  }
+  if(cw.t%150===0) cw_state.credits++;
+  if(cw.t%CW_HIVE_EVERY===0&&cw_state.hivesAlive<CW_MAX_HIVES&&cw_state.hivesAlive>0){
+    var best=-1, bestScore=-1;
+    for(i=0;i<cw.n;i++){
+      if(cw_B[i]<0.3||cw_hive[i]) continue;
+      var frontier=false; cw.nbr[i].forEach(function(j){ if(cw_B[j]<0.1) frontier=true; });
+      if(!frontier) continue;
+      var sc=cw_B[i]-cw.head(i);
+      if(sc>bestScore){ bestScore=sc; best=i; }
+    }
+    if(best>=0){ cw_hive[best]=1; cw_B[best]=1; }
+  }
+  var cov=0; for(i=0;i<cw.n;i++) if(cw_B[i]>0.5) cov++;
+  cw_state.cover=cov/cw.n;
+  if(cw_state.hivesAlive===0&&cw.t>200) cw_state.over='✔ HIVE DROWNED at t='+cw.t;
+  else if(cw_state.cover>0.65) cw_state.over='✘ OVERRUN — creep took '+(cw_state.cover*100).toFixed(0)+'% of the board';
+  else if(cw.t>30000) cw_state.over= cw_state.cover<0.05? '✔ CONTAINED':'— stalemate at '+(cw_state.cover*100).toFixed(0)+'%';
+}
+var cw_sim=new Sim('cv-creep', cw.geom.w, cw.geom.h, {
+  tick:function(s){
+    if(s.pointer.down){
+      s.pointer.down=false;
+      var i=cw.pick(s.pointer.x,s.pointer.y);
+      if(i>=0&&!cw_state.over&&!cw_hive[i]){
+        var cost=cw_state.tool==='pump'?5:cw_state.tool==='dam'?2:3;
+        if(cw_state.credits>=cost){
+          if(cw_state.tool==='pump'){ if(!cw_pump[i]){ cw_pump[i]=1; cw.src[i]=2.0; cw.elem[i]=GBE.open; cw_state.credits-=cost; } }
+          else if(cw_state.tool==='dam'){ if(cw.elem[i]!==GBE.dam){ cw.elem[i]=GBE.dam; delete cw.src[i]; cw_pump[i]=0; cw_state.credits-=cost; } }
+          else { if(cw.elem[i]!==GBE.res){ cw.elem[i]=GBE.res; cw_state.credits-=cost; } }
+          cw_hud();
+        }
+      }
+    }
+    if(cw_state.over) return;
+    for(var r=0;r<2;r++) cw_step();
+    if(cw.t%15===0) cw_hud();
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    var g=cw.geom;
+    cw.drawBase(ctx,function(i){
+      var wtr=Math.min(1,cw.head(i)/3), crp=cw_B[i];
+      var r=216+(23-216)*wtr*0.9, gg=207+(63-207)*wtr*0.9, b=190+(110-190)*wtr*0.7;
+      r=r*(1-crp)+120*crp; gg=gg*(1-crp)+40*crp; b=b*(1-crp)+140*crp;
+      return 'rgb('+(r|0)+','+(gg|0)+','+(b|0)+')';
+    });
+    for(var i=0;i<cw.n;i++){
+      var k=cw.nodes[i];
+      gbElemGlyph(ctx,g.cx[k],g.cy[k],g.sz,cw.elem[i]);
+      if(cw_pump[i]){ ctx.fillStyle='#2E6FB8'; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],6,0,7); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); }
+      if(cw_hive[i]){ ctx.fillStyle='#5A1E6E'; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],7,0,7); ctx.fill(); ctx.strokeStyle='#E7C6F5'; ctx.lineWidth=1.5; ctx.stroke(); }
     }
   }
 });
-document.getElementById('z-go').addEventListener('click',function(){
-  if(ZM.assembled){ ZM.running=!ZM.running;
-    document.getElementById('z-stat').textContent=ZM.running?'running · 3 levels lockstep':'paused';
-    return; }
-  zmAssemble();
+Array.prototype.forEach.call(document.querySelectorAll('button.cw-tool'),function(b){
+  b.addEventListener('click',function(){ cw_state.tool=b.dataset.t;
+    Array.prototype.forEach.call(document.querySelectorAll('button.cw-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); });
 });
-document.getElementById('z-alt').addEventListener('input',function(){});
+document.getElementById('cw-new').addEventListener('click',function(){ cw_setup((cw_state.seed*31+7)%1013); document.getElementById('cw-status').textContent='drown the hives before the creep takes 65%'; cw_sim.running=true; });
+cw_setup(cw_state.seed);
+
+/* ================= GAME 6: THE INSPECTOR ================= */
+var inT=new Net(6,22), inD=new Net(6,22);
+var in_state={budget:8, faults:[], found:0, marks:{}, over:'', seed:23, leak:null};
+function in_setup(seed){
+  var rnd=gbRng(seed), i, n=inT.n;
+  inT.elem.fill(0); inD.elem.fill(0); inT.src={}; inD.src={}; inT.drn.fill(0); inD.drn.fill(0); inT.reset(); inD.reset();
+  for(i=0;i<n;i++){ var u=rnd(); var e= u<0.72?GBE.open: u<0.82?GBE.v03: u<0.90?GBE.v14: u<0.96?GBE.v25: GBE.res; inT.elem[i]=e; inD.elem[i]=e; }
+  var west=[], east=[];
+  for(i=0;i<n;i++){ var qr=decode(inT.geom,inT.nodes[i]); if(hexDist(qr[0],qr[1])===6&&qr[0]<=-4) west.push(i); if(hexDist(qr[0],qr[1])===6&&qr[0]>=4) east.push(i); }
+  for(i=0;i<3&&west.length;i++){ var s=west.splice(Math.floor(rnd()*west.length),1)[0]; inT.src[s]=2.0; inD.src[s]=2.0; }
+  for(i=0;i<3&&east.length;i++){ var d=east.splice(Math.floor(rnd()*east.length),1)[0]; inT.drn[d]=1; inD.drn[d]=1; }
+  inT.gMul=new Float64Array(inT.pairs.length).fill(1);
+  in_state={budget:8, faults:[], found:0, marks:{}, over:'', seed:seed, leak:new Float64Array(n)};
+  /* settle the declared world first and pick faults among tiles that carry real flow —
+     a clog where nothing flows is undetectable, and that would be unfair */
+  for(i=0;i<1500;i++) inD.step();
+  var thru=new Float64Array(n);
+  for(i=0;i<inD.pairs.length;i++){ var pq=Math.abs(inD.lastQ[i]); thru[inD.pairs[i].a]+=pq; thru[inD.pairs[i].b]+=pq; }
+  var sorted=Array.from(thru).sort(function(a,b){return a-b;}), thrMed=sorted[Math.floor(n*0.6)];
+  var pool=[]; for(i=0;i<n;i++) if(!inT.drn[i]&&inT.src[i]===undefined&&inT.elem[i]===GBE.open&&thru[i]>thrMed) pool.push(i);
+  inD.reset();
+  for(i=0;i<4&&pool.length;i++){
+    var f=pool.splice(Math.floor(rnd()*pool.length),1)[0];
+    var type= rnd()<0.5?'clog':'leak';
+    in_state.faults.push({tile:f,type:type,found:false});
+    if(type==='clog'){ inT.pairs.forEach(function(p,pi){ if(p.a===f||p.b===f) inT.gMul[pi]=0.2; }); }
+    else in_state.leak[f]=0.965;
+  }
+  for(i=0;i<2500;i++){ in_stepBoth(); }   // let both worlds settle before the case opens
+  in_hud();
+}
+function in_stepBoth(){
+  inT.step(); inD.step();
+  for(var i=0;i<inT.n;i++) if(in_state.leak[i]) inT.H[i]*=in_state.leak[i];
+  /* uncaught clogs worsen */
+  if(inT.t%50===0) in_state.faults.forEach(function(f){ if(f.type==='clog'&&!f.found) inT.pairs.forEach(function(p,pi){ if(p.a===f.tile||p.b===f.tile) inT.gMul[pi]=Math.max(0.05,inT.gMul[pi]*0.97); }); });
+}
+function in_anomaly(i){ var d=inD.head(i), t=inT.head(i); return (t-d)/(d+0.5); }
+function in_hud(){
+  document.getElementById('in-budget').textContent='inspections left '+in_state.budget;
+  document.getElementById('in-found').textContent='faults found '+in_state.found+'/'+in_state.faults.length;
+  if(in_state.over) document.getElementById('in-status').textContent=in_state.over;
+}
+var in_sim=new Sim('cv-inspector', inT.geom.w, inT.geom.h, {
+  tick:function(s){
+    if(s.pointer.down){
+      s.pointer.down=false;
+      var i=inT.pick(s.pointer.x,s.pointer.y);
+      if(i>=0&&!in_state.over&&in_state.budget>0&&in_state.marks[i]===undefined){
+        in_state.budget--;
+        var f=null; in_state.faults.forEach(function(ff){ if(ff.tile===i&&!ff.found) f=ff; });
+        if(f){ f.found=true; in_state.found++; in_state.marks[i]=f.type;
+          if(f.type==='clog') inT.pairs.forEach(function(p,pi){ if(p.a===i||p.b===i) inT.gMul[pi]=1; }); else in_state.leak[i]=0;
+          document.getElementById('in-status').textContent='✔ tile '+i+': '+(f.type==='clog'?'CLOGGED — conductance was down to '+(20)+'%; repaired':'LEAKING — losing 3.5% of storage per tick; sealed');
+        } else { in_state.marks[i]='clear'; document.getElementById('in-status').textContent='tile '+i+' inspected: within spec'; }
+        if(in_state.found===in_state.faults.length) in_state.over='✔ CASE CLOSED — all '+in_state.faults.length+' faults found with '+(8-in_state.budget)+' inspections';
+        else if(in_state.budget===0) in_state.over='✘ budget spent — '+(in_state.faults.length-in_state.found)+' fault(s) still hidden';
+        in_hud();
+      }
+    }
+    for(var r=0;r<3;r++) in_stepBoth();
+  },
+  draw:function(s,ctx){
+    ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
+    var g=inT.geom;
+    inT.drawBase(ctx,function(i){
+      var a=in_anomaly(i), m=Math.min(1,Math.abs(a)*2.2);
+      if(a<0) return 'rgb('+(232-(232-180)*m*0.2|0)+','+(226-(226-70)*m|0)+','+(218-(218-60)*m|0)+')';
+      return 'rgb('+(232-(232-46)*m|0)+','+(226-(226-111)*m|0)+','+(218-(218-184)*m|0)+')';
+    });
+    for(var i=0;i<inT.n;i++){
+      var k=inT.nodes[i];
+      gbElemGlyph(ctx,g.cx[k],g.cy[k],g.sz,inT.elem[i]);
+      if(inT.src[i]!==undefined){ ctx.fillStyle='#2E6FB8'; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],5,0,7); ctx.fill(); }
+      if(inT.drn[i]){ ctx.fillStyle='#4E463A'; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],5,0,7); ctx.fill(); }
+      var mk=in_state.marks[i];
+      if(mk){ ctx.fillStyle= mk==='clear'?'#3E8E4C':'#C4453C'; ctx.font='bold 13px system-ui'; ctx.textAlign='center'; ctx.fillText(mk==='clear'?'✓':'✗', g.cx[k], g.cy[k]+5); }
+    }
+    ctx.fillStyle=css['--muted']; ctx.font='11px system-ui'; ctx.textAlign='left';
+    ctx.fillText('fill = gauge reading minus model prediction · red deficit, blue surplus', 10, s.h-8);
+  }
+});
+document.getElementById('in-new').addEventListener('click',function(){ in_setup((in_state.seed*19+3)%1021); document.getElementById('in-status').textContent='new case · 4 faults hidden somewhere in 127 components'; in_sim.running=true; });
+in_setup(in_state.seed);
+
+
 /* ---------- main loop ---------- */
+ws_setup(ws_seed);
 var fc=0;
 function loop(){
   if(++fc%30===0) refreshPalette();
@@ -2026,8 +1616,8 @@ function loop(){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-})();
-</script>
+
+})();</script>
 
 </body>
 </html>

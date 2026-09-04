@@ -50,3 +50,4 @@ skills; read by `/lint`.
 2026-08-22 zoom station shipped on ports.html: three altitudes lockstep (1177 cells / 61 nodes / 7 supers), altitude slider crossfade with true aperture rotations (25.3 deg, 19.1 deg), live err+cost chips; harness14 green (L2 7.7%, cost ladder 17x/5x)
 2026-08-23 replication + rung 3: L2<L1 in 8/8 random configs (median ratio 0.60); four-level chain 17353 cells -> 469 -> 21 -> 3 nodes at 1.0%/0.3%/1.0% — no compounding across three rungs
 2026-09-04 design: six game concepts scored against game-fun-rubric v0.5 prototype gate (docs/design/2026-09-04-six-games.md); recommend greyboxing Foundry Contracts + The Inspector
+2026-09-04 greyboxes shipped: docs/greybox.html — six playable core loops (Contracts, Watershed, Clockwork, Descent, Creep Wars, Inspector) on the shared ported engine; headless smoke suite green; tuned via random-search/curve sweeps

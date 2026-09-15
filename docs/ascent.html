@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hexphys Terrain</title>
+<title>Hexphys Ascent</title>
 </head>
 <body>
 <style>
@@ -84,51 +84,50 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap">
     <a class="wordmark" href="#top">
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L17 6 V14 L10 18 L3 14 V6 Z" fill="none" stroke="var(--accent)" stroke-width="1.7"/><circle cx="10" cy="10" r="2.4" fill="var(--accent2)"/></svg>
-      HEXPHYS TERRAIN
+      HEXPHYS ASCENT
     </a>
     <div class="spacer"></div>
-    <a class="nl keep" href="ascent.html">Ascent ↗</a>
-    <a class="nl keep" href="greybox.html">Greyboxes ↗</a>
-    <a class="nl" href="ports.html">↖ Ports</a>
+    <a class="nl keep" href="terrain.html">↖ Terrain</a>
+    <a class="nl" href="greybox.html">Greyboxes</a>
   </div>
 </nav>
 <header class="hero" id="top">
   <div class="wrap hero-copy">
-    <p class="eyebrow">terrain as a slow fluid · one octave per level · basins, not rules</p>
-    <h1>Does the world stay varied<br>when you fly up?</h1>
-    <p class="sub">Seven thousand six hundred and fifty-one tiles — 101 across — grouped exactly into five altitudes by recursive aperture-7 flowers. Richness is a fluid: it diffuses, it regenerates toward its natural level, and extractors are sinks. The natural level is built from <strong>one noise octave per altitude</strong>, five in all, and a contrast knob turns smooth hills into sparse ore. Two claims to check with your own eyes: the map reads as geography at every altitude (switch the field to a single octave and watch the top level go flat), and each extractor level carves a basin one altitude larger than the last — the draw radius is physics, not a rule.</p>
+    <p class="eyebrow">the transition · aperture 7,651 · your world becomes a tile</p>
+    <h1>Seal the world.<br>Then place it.</h1>
+    <p class="sub">A level-1 world of 7,651 tiles with a material economy: extractors cost material and yield it back from the richness under them. When you can afford it, <strong>Seal &amp; ascend</strong> characterizes the entire world through six gates — fifteen exact solves over 30,301 unknowns, watch the percentage climb — and reveals level 2: a world of 7,651 <em>worlds</em>, the same fractal field continuing across the seam, your sealed world standing at the centre as one tile whose spec sheet is what it earned. Then place copies of it where the level-2 field is richest, and see whether three worlds make you want a fourth.</p>
   </div>
 </header>
 <section>
   <div class="wrap">
     <div class="demo" style="margin-top:0">
       <div class="bar">
-        <span class="note">altitude:</span>
-        <span id="tr-alts" style="display:inline-flex;gap:.4rem;flex-wrap:wrap"></span>
-        <button class="btn" id="tr-view" type="button">render: aggregate</button>
+        <button class="btn as-alt" data-l="1" aria-pressed="true" type="button">L1 · the world</button>
+        <button class="btn as-alt" data-l="2" aria-pressed="false" type="button" disabled>L2 · world of worlds</button>
+        <output id="as-level">·</output>
         <span class="grow"></span>
-        <button class="btn" id="tr-oct" type="button">field: one octave per altitude</button>
-        <button class="btn" id="tr-gam" type="button">contrast: γ=1 (smooth)</button>
-        <button class="btn" id="tr-col" type="button">colour: stock</button>
+        <output id="as-mat">·</output>
+        <button class="btn primary" id="as-seal" type="button" disabled>⬆ Seal &amp; ascend · 1000</button>
       </div>
       <div class="bar" style="border-top:none">
-        <span class="note">place:</span>
-        <button class="btn tr-tool" data-t="x0" aria-pressed="true" type="button">L1 extractor (one tile)</button>
-        <button class="btn tr-tool" data-t="x1" aria-pressed="false" type="button">L2 extractor (7 tiles)</button>
-        <button class="btn tr-tool" data-t="x2" aria-pressed="false" type="button">L3 extractor (49 tiles)</button>
-        <button class="btn tr-tool" data-t="hive" aria-pressed="false" type="button">enemy hive (spreads)</button>
+        <span id="as-tools-l1">
+          <span class="note">build:</span>
+          <button class="btn as-tool" data-t="small" aria-pressed="true" type="button">small extractor · 20</button>
+          <button class="btn as-tool" data-t="large" aria-pressed="false" type="button">large extractor (7 tiles) · 200</button>
+        </span>
+        <span id="as-tools-l2" style="display:none"><span class="note">click a unit to place a copy of your world · 5000</span> <output id="as-l2stat">·</output></span>
         <span class="grow"></span>
-        <button class="btn" id="tr-new" type="button">new field</button>
-        <output id="tr-t">·</output>
+        <button class="btn" id="as-grant" type="button">+1000 (skip grind)</button>
+        <button class="btn" id="as-new" type="button">new world</button>
       </div>
-      <div class="stage"><canvas id="cv-terrain" aria-label="Richness field at three altitudes with extractor basins"></canvas></div>
-      <div class="bar"><output id="tr-var">·</output></div>
-      <div class="bar" style="border-top:none"><output id="tr-basins">·</output></div>
+      <div class="stage"><canvas id="cv-ascent" aria-label="Level 1 world and level 2 world of worlds"></canvas></div>
+      <div class="bar"><output id="as-spec">spec sheet: — (seal to characterize)</output></div>
+      <div class="bar" style="border-top:none"><output id="as-msg">place extractors on rich ground (dark), earn 1000, then seal</output></div>
     </div>
-    <p class="note" style="margin-top:1rem">What to try: go to <strong>L4</strong> or <strong>L5</strong>, toggle the field to a <strong>single fine octave</strong> — the variation collapses and the top is a flat sheet, which is the stripiness problem seen from the coarse model's side. Back to one octave per altitude and the continents return; turn the <strong>contrast</strong> up for sparse ore rather than rolling hills. Then at L1 drop an L1, an L2 and an L3 extractor, wait, and switch colour to <strong>depletion</strong>: cone, basin, region. Plant a hive and watch its scar grow.</p>
+    <p class="note" style="margin-top:1rem">Continuity check built in: the level-2 richness of your sealed world is the exact mean of its 7,651 tiles, while every wild unit around it samples the same field over its own footprint. A copy's yield is your world's yield scaled by local richness over origin richness — everything works anywhere, and pays off somewhere. Level-2 material is worth 40× level-1 material: a world's worth per unit.</p>
   </div>
 </section>
-<footer><div class="wrap">hexphys-rl · terrain · richness as a slow fluid with one octave per altitude · 7,651 tiles, five recursive aperture-7 levels</div></footer>
+<footer><div class="wrap">hexphys-rl · ascent · seal an r=50 world through six gates (15 CG solves, ~4 s) and place it as a template in a world of worlds</div></footer>
 
 <script>(function () {
 'use strict';
@@ -201,147 +200,190 @@ Sim.prototype.frame=function(){
 };
 
 
-/* ================= TERRAIN v2: any radius, recursive aperture-7 levels, one octave per altitude ================= */
-var TR=50, NLEV=5, tg=makeMap(TR, 4.6), tn=[], tidx=new Int32Array(tg.N).fill(-1);
-forEachValid(tg,function(k){ tidx[k]=tn.length; tn.push(k); });
-var N=tn.length, tpairs=[], tnbr=[];
-for(var i0=0;i0<N;i0++) tnbr.push([]);
-for(var i1=0;i1<N;i1++) for(var d1=0;d1<3;d1++){ var nk=tn[i1]+tg.shifts[d1]; if(nk<0||nk>=tg.N||tidx[nk]<0) continue; tpairs.push({a:i1,b:tidx[nk]}); tnbr[i1].push(tidx[nk]); tnbr[tidx[nk]].push(i1); }
-function axpx(q,r){ return [tg.ox+tg.sz*SQ3*(q+r/2), tg.oy+tg.sz*1.5*r]; }
-function eisMul(a,b){ return [a[0]*b[0]-a[1]*b[1], a[0]*b[1]+a[1]*b[0]+a[1]*b[1]]; }   // hex lattice as Eisenstein integers
+/* ================= ASCENT: seal an r=50 world, ascend to a world of worlds ================= */
+var AR=50, AB=[AR+1,AR];                         // aperture 3R^2+3R+1 basis (R+1,R)
 function ccw(v){ return [v[0]+v[1],-v[0]]; }
-/* levels[k]: units at level k (k=0 tiles). Each level partitions the one below into flowers of 7. */
-var levels=[{centers:tn.map(function(k){ return decode(tg,k); }), members:null, tiles:tn.map(function(k,i){ return [i]; }), key:{}}];
-levels[0].centers.forEach(function(c,i){ levels[0].key[c[0]+','+c[1]]=i; });
-(function(){
-  var basis=[1,0];
-  for(var k=1;k<NLEV;k++){
-    var prevBasis=basis; basis=eisMul(basis,[2,1]);
-    var b2=ccw(basis), petals=[[0,0]], rot=prevBasis;
-    for(var d=0;d<6;d++){ petals.push(rot); rot=ccw(rot); }
-    var prev=levels[k-1], lv={centers:[],members:[],tiles:[],key:{}}, parent=new Int32Array(prev.centers.length).fill(-1);
-    var span=Math.ceil((TR+8)/Math.sqrt(Math.pow(7,k)))+3;
-    for(var I=-span;I<=span;I++) for(var J=-span;J<=span;J++){
-      var C=[I*basis[0]+J*b2[0], I*basis[1]+J*b2[1]], mem=[];
-      petals.forEach(function(p){ var id=prev.key[(C[0]+p[0])+','+(C[1]+p[1])]; if(id!==undefined&&parent[id]<0) mem.push(id); });
-      if(!mem.length) continue;
-      var uid=lv.centers.length; lv.centers.push(C); lv.members.push(mem); lv.key[C[0]+','+C[1]]=uid;
-      var tl=[]; mem.forEach(function(id){ parent[id]=uid; tl=tl.concat(prev.tiles[id]); }); lv.tiles.push(tl);
-    }
-    prev.parent=parent; levels.push(lv);
-  }
-})();
-/* --- field --- */
-var TRS={ octaves:'all', gamma:1, view:'aggregate', color:'stock', alt:0, tool:'x0', seed:5, kappa:0.003, D:0.05, E:[0.05,0.8,12.8], EH:0.035, x:[[],[],[]], hive:[], hiveOn:false, t:0 };
-var B=new Float64Array(N), S=new Float64Array(N);
-var trRng=function(seed){ var s=seed>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; };
-var LAMS=[], AMPS=[];
-for(var lo=0;lo<NLEV;lo++){ LAMS.push(1.4*Math.pow(3.0,lo)); AMPS.push(lo<2?1:1+0.3*(lo-1)); }   // one octave per altitude, ×3 wavelength per level
-function tr_makeField(){
-  var rnd=trRng(TRS.seed), sp=SQ3*tg.sz, nOct=TRS.octaves==='single'?1:NLEV, waves=[], o, m, i;
-  for(o=0;o<NLEV;o++){ var ws=[]; for(m=0;m<6;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/(LAMS[o]*sp)*2*Math.PI, ky:Math.sin(th)/(LAMS[o]*sp)*2*Math.PI, ph:rnd()*Math.PI*2}); } waves.push(ws); }
-  var vals=new Float64Array(N), mn=1e9, mx=-1e9;
-  for(i=0;i<N;i++){
-    var k=tn[i], x=tg.cx[k], y=tg.cy[k], v=0;
-    for(o=0;o<nOct;o++){ var acc=0; for(m=0;m<6;m++){ var w=waves[o][m]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=AMPS[o]*acc/6; }
-    vals[i]=v; if(v<mn)mn=v; if(v>mx)mx=v;
-  }
-  for(i=0;i<N;i++){ var u=(vals[i]-mn)/(mx-mn); u=Math.pow(u,TRS.gamma); B[i]=0.06+0.94*u; S[i]=B[i]; }
-  TRS.x=[[],[],[]]; TRS.hive=[]; TRS.hiveOn=false; TRS.t=0;
+var AB2=ccw(AB);
+var A_SP=SQ3;                                     // fine-axial → planar
+function fineXY(q,r){ return [A_SP*(q+r/2), 1.5*r]; }
+/* --- one fractal field for both levels, octaves spanning tile → world-of-worlds --- */
+var AF={ waves:[], amps:[], sum:0, gamma:2, seed:5 };
+function af_make(seed){
+  var rnd=(function(s){ s=s>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; })(seed);
+  AF.waves=[]; AF.amps=[]; AF.sum=0;
+  var lam=1.4;
+  for(var o=0;o<8;o++){ var ws=[]; for(var m=0;m<6;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/lam*2*Math.PI, ky:Math.sin(th)/lam*2*Math.PI, ph:rnd()*Math.PI*2}); }
+    AF.waves.push(ws); var a= o<2?1: o<4?1+0.3*(o-1): 1.9+0.6*(o-3); AF.amps.push(a); AF.sum+=a; lam*=3; }   // top octaves weighted up so the world of worlds has continents
 }
-function tr_sinkTiles(level,uid){ return level===0? [uid] : levels[level].tiles[uid]; }
-function tr_step(){
-  var dS=new Float64Array(N), i;
-  for(i=0;i<tpairs.length;i++){ var p=tpairs[i], f=TRS.D*(S[p.a]-S[p.b]); dS[p.a]-=f; dS[p.b]+=f; }
-  for(i=0;i<N;i++) dS[i]+=TRS.kappa*(B[i]-S[i]);
-  for(var L=0;L<3;L++) TRS.x[L].forEach(function(uid){ var tl=tr_sinkTiles(L,uid), per=TRS.E[L]/tl.length; tl.forEach(function(x){ dS[x]-=Math.min(per,S[x]); }); });
-  TRS.hive.forEach(function(x){ dS[x]-=Math.min(TRS.EH,S[x]); });
-  for(i=0;i<N;i++){ S[i]=Math.max(0,S[i]+dS[i]); }
-  if(TRS.hiveOn&&TRS.t%60===0&&TRS.hive.length<40){
-    var best=-1,bv=-1;
-    TRS.hive.forEach(function(h){ tnbr[h].forEach(function(j){ if(TRS.hive.indexOf(j)<0&&S[j]>bv){ bv=S[j]; best=j; } }); });
-    if(best>=0) TRS.hive.push(best);
-  }
-  TRS.t++;
+function af_at(x,y){
+  var v=0;
+  for(var o=0;o<AF.waves.length;o++){ var acc=0, ws=AF.waves[o]; for(var m=0;m<6;m++){ var w=ws[m]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=AF.amps[o]*acc/6; }
+  var u=Math.max(0,Math.min(1,(v/AF.sum+1)/2));
+  return 0.06+0.94*Math.pow(u,AF.gamma);
 }
-function tr_levelMeans(level){
-  var tl=levels[level].tiles, vals=[], base=[];
-  for(var u=0;u<tl.length;u++){ var s2=0,b2=0; for(var j=0;j<tl[u].length;j++){ s2+=S[tl[u][j]]; b2+=B[tl[u][j]]; } vals.push(s2/tl[u].length); base.push(b2/tl[u].length); }
-  return {vals:vals, base:base};
+/* --- slow fluid on an r=50 hex board (used at both levels) --- */
+function SlowNet(R, sz){
+  var g=this.geom=makeMap(R,sz), self=this;
+  this.nodes=[]; this.idx=new Int32Array(g.N).fill(-1);
+  forEachValid(g,function(k){ self.idx[k]=self.nodes.length; self.nodes.push(k); });
+  this.n=this.nodes.length; this.pairs=[]; this.nbr=[];
+  for(var i=0;i<this.n;i++) this.nbr.push([]);
+  for(i=0;i<this.n;i++) for(var d=0;d<3;d++){ var nk=this.nodes[i]+g.shifts[d]; if(nk<0||nk>=g.N||this.idx[nk]<0) continue; this.pairs.push({a:i,b:this.idx[nk]}); this.nbr[i].push(this.idx[nk]); this.nbr[this.idx[nk]].push(i); }
+  this.B=new Float64Array(this.n); this.S=new Float64Array(this.n);
+  this.kappa=0.003; this.D=0.05; this.sinks=[]; this.t=0; this.taken=0;
 }
-function tr_cv(arr){ var m=arr.reduce(function(a,b){return a+b;},0)/arr.length; var v=arr.reduce(function(a,b){return a+(b-m)*(b-m);},0)/arr.length; return m>1e-9?Math.sqrt(v)/m:0; }
-function tr_basin(seedTiles, R){
-  var seen=new Uint8Array(N), q=[], n=0, dist=new Int32Array(N).fill(1e9);
-  seedTiles.forEach(function(x){ if(!seen[x]){ seen[x]=1; dist[x]=0; q.push(x); } });
-  while(q.length){ var x=q.shift(); if(S[x]/B[x]>=0.5) continue; n++; if(dist[x]>=R) continue;
-    tnbr[x].forEach(function(j){ if(!seen[j]){ seen[j]=1; dist[j]=dist[x]+1; q.push(j); } }); }
+SlowNet.prototype.step=function(){
+  var dS=new Float64Array(this.n), i, taken=0;
+  for(i=0;i<this.pairs.length;i++){ var p=this.pairs[i], f=this.D*(this.S[p.a]-this.S[p.b]); dS[p.a]-=f; dS[p.b]+=f; }
+  for(i=0;i<this.n;i++) dS[i]+=this.kappa*(this.B[i]-this.S[i]);
+  for(var s=0;s<this.sinks.length;s++){ var sk=this.sinks[s], per=sk.E/sk.tiles.length; for(var j=0;j<sk.tiles.length;j++){ var x=sk.tiles[j], q=Math.min(per,this.S[x]); dS[x]-=q; taken+=q; } }
+  for(i=0;i<this.n;i++) this.S[i]=Math.max(0,this.S[i]+dS[i]);
+  this.t++; this.taken=taken; return taken;
+}
+SlowNet.prototype.pick=function(x,y){ var k=pixelToHex(this.geom,x,y); return k<0?-1:this.idx[k]; };
+SlowNet.prototype.flower=function(i){ var out=[i], k=this.nodes[i]; for(var d=0;d<6;d++){ var nk=k+this.geom.shifts[d]; if(nk>=0&&nk<this.geom.N&&this.idx[nk]>=0) out.push(this.idx[nk]); } return out; };
+SlowNet.prototype.basin=function(seeds,R){
+  var seen=new Uint8Array(this.n), q=[], n=0, dist=new Int32Array(this.n).fill(1e9), self=this;
+  seeds.forEach(function(x){ if(!seen[x]){ seen[x]=1; dist[x]=0; q.push(x); } });
+  while(q.length){ var x=q.shift(); if(self.S[x]/self.B[x]>=0.5) continue; n++; if(dist[x]>=R) continue; self.nbr[x].forEach(function(j){ if(!seen[j]){ seen[j]=1; dist[j]=dist[x]+1; q.push(j); } }); }
   return n;
+};
+/* --- the two levels --- */
+var L1=new SlowNet(AR,4.6), L2=null;
+var AS={ level:1, material:0, rate:0, tool:'small', spec:null, sealing:false, sealProg:0, copies:[], seed:5, t:0, msg:'' };
+var COST={small:20, large:200, seal:1000, world:5000};
+var E_SMALL=0.05, E_LARGE=0.8;
+function as_l1Field(){
+  for(var i=0;i<L1.n;i++){ var qr=decode(L1.geom,L1.nodes[i]), p=fineXY(qr[0],qr[1]); L1.B[i]=af_at(p[0],p[1]); L1.S[i]=L1.B[i]; }
 }
-function tr_color(v, base){
-  var t= TRS.color==='depletion'? Math.max(0,Math.min(1, v/Math.max(base,1e-6))) : Math.max(0,Math.min(1,v));
-  var r=222+(34-222)*t, g=210+(120-210)*t, b=178+(78-178)*t;
-  return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
+function as_reset(seed){
+  AS={ level:1, material:120, rate:0, tool:'small', spec:null, sealing:false, sealProg:0, copies:[], seed:seed, t:0, msg:'' };
+  af_make(seed); as_l1Field(); L1.sinks=[]; L1.t=0; L2=null;
+  as_hud();
 }
-function tr_unitAt(level,i){ var u=i; for(var k=0;k<level;k++) u=levels[k].parent[u]; return u; }
-function tr_hud(){
-  var lm=tr_levelMeans(TRS.alt);
-  document.getElementById('tr-var').textContent='L'+(TRS.alt+1)+' · '+levels[TRS.alt].centers.length+' units · variation at this altitude: '+(tr_cv(lm.base)*100).toFixed(0)+'% (coefficient of variation of the natural field)';
-  var R=[5,10,25], parts=[];
-  for(var L=0;L<3;L++){ if(!TRS.x[L].length) continue; var seeds=[]; TRS.x[L].forEach(function(u){ seeds=seeds.concat(tr_sinkTiles(L,u)); }); parts.push('L'+(L+1)+' extractor'+(TRS.x[L].length>1?'s':'')+' '+tr_basin(seeds,R[L])+' tiles'); }
-  if(TRS.hive.length) parts.push('hive '+tr_basin(TRS.hive,14)+' tiles ('+TRS.hive.length+' cells)');
-  document.getElementById('tr-basins').textContent= parts.length? 'basins (tiles below half their natural level): '+parts.join(' · ') : 'place extractors to see basins';
-  document.getElementById('tr-t').textContent='t = '+TRS.t;
+/* level-2 unit (Q,R2) on the L2 board → fine axial centre */
+function as_unitCentre(Q,R2){ return [Q*AB[0]+R2*AB2[0], Q*AB[1]+R2*AB2[1]]; }
+function as_buildL2(){
+  L2=new SlowNet(AR,4.6);
+  /* sample 19 points of the fractal field over each unit's footprint (radius-2 flower scaled to the unit) */
+  var samp=[]; for(var dq=-2;dq<=2;dq++) for(var dr=-2;dr<=2;dr++) if(hexDist(dq,dr)<=2) samp.push([dq*AR/2.6, dr*AR/2.6]);
+  var meanL1=0; for(var i=0;i<L1.n;i++) meanL1+=L1.B[i]; meanL1/=L1.n;
+  for(i=0;i<L2.n;i++){
+    var qr=decode(L2.geom,L2.nodes[i]);
+    if(qr[0]===0&&qr[1]===0){ L2.B[i]=meanL1; }                    // the sealed world: exact mean of its tiles
+    else { var c=as_unitCentre(qr[0],qr[1]), s2=0; samp.forEach(function(o){ var p=fineXY(c[0]+o[0],c[1]+o[1]); s2+=af_at(p[0],p[1]); }); L2.B[i]=s2/samp.length; }
+    L2.S[i]=L2.B[i];
+  }
+  L2.kappa=0.0015; L2.D=0.05;
+  var origin=L2.idx[mapIdx(L2.geom,0,0)];
+  L2.sinks=[{tiles:[origin], E:AS.spec.yield, origin:true}];
+  AS.copies=[origin];
 }
-var TH7=Math.atan2(1.5, SQ3*2.5);
-var tr_sim=new Sim('cv-terrain', tg.w, tg.h, {
+/* --- sealing: characterize the world through six side-centre gates, 15 CG solves, chunked --- */
+function as_sealStart(){
+  if(AS.sealing||AS.material<COST.seal) return;
+  AS.material-=COST.seal; AS.sealing=true; AS.sealProg=0;
+  var n=L1.n, adj=L1.nbr, g=new Float64Array(n);
+  for(var i=0;i<n;i++) g[i]=0.3+0.7*L1.B[i];                        // richness as permeability
+  var gp=function(i,j){ return 2*g[i]*g[j]/(g[i]+g[j]); };
+  var diag0=new Float64Array(n); for(i=0;i<n;i++){ var s=0; for(var j2=0;j2<adj[i].length;j2++) s+=gp(i,adj[i][j2]); diag0[i]=s; }
+  var corners=[[AR,0],[0,AR],[-AR,AR],[-AR,0],[0,-AR],[AR,-AR]], ports=[];
+  for(var d=0;d<6;d++){ var a=corners[d], b=corners[(d+1)%6]; ports.push(L1.idx[mapIdx(L1.geom,Math.round((a[0]+b[0])/2),Math.round((a[1]+b[1])/2))]); }
+  var GD=2.0, pairsList=[]; for(var a2=0;a2<6;a2++) for(var b2=a2+1;b2<6;b2++) pairsList.push([a2,b2]);
+  var T=[]; for(i=0;i<6;i++) T.push([0,0,0,0,0,0]);
+  var pi=0;
+  function solveOne(pa,pb){
+    var diag=Float64Array.from(diag0); diag[pa]+=GD; diag[pb]+=GD;
+    var rhs=new Float64Array(n); rhs[pa]=GD*1.4; rhs[pb]=GD*0.6;
+    var x=new Float64Array(n).fill(1.0), r=new Float64Array(n), z=new Float64Array(n), p=new Float64Array(n), Ap=new Float64Array(n);
+    var matvec=function(v,out){ for(var i2=0;i2<n;i2++){ var s2=diag[i2]*v[i2], nb=adj[i2]; for(var k2=0;k2<nb.length;k2++) s2-=gp(i2,nb[k2])*v[nb[k2]]; out[i2]=s2; } };
+    matvec(x,Ap); var rz=0; for(var i3=0;i3<n;i3++){ r[i3]=rhs[i3]-Ap[i3]; z[i3]=r[i3]/diag[i3]; p[i3]=z[i3]; rz+=r[i3]*z[i3]; }
+    var r0=Math.sqrt(rz);
+    for(var it=0; it<3000; it++){
+      matvec(p,Ap); var pAp=0; for(i3=0;i3<n;i3++) pAp+=p[i3]*Ap[i3];
+      var al=rz/pAp; for(i3=0;i3<n;i3++){ x[i3]+=al*p[i3]; r[i3]-=al*Ap[i3]; }
+      var rz2=0; for(i3=0;i3<n;i3++){ z[i3]=r[i3]/diag[i3]; rz2+=r[i3]*z[i3]; }
+      if(Math.sqrt(rz2)<1e-7*r0){ rz=rz2; break; }
+      var be=rz2/rz; rz=rz2; for(i3=0;i3<n;i3++) p[i3]=z[i3]+be*p[i3];
+    }
+    return GD*(1.4-x[pa])/0.8;
+  }
+  function chunk(){
+    if(pi<pairsList.length){
+      var pr=pairsList[pi++]; T[pr[0]][pr[1]]=T[pr[1]][pr[0]]=solveOne(ports[pr[0]],ports[pr[1]]);
+      AS.sealProg=pi/pairsList.length; as_hud(); setTimeout(chunk,0); return;
+    }
+    var yield_=0; L1.sinks.forEach(function(s){ yield_+=s.E; });
+    var cap=0; for(var i4=0;i4<n;i4++) cap+=L1.B[i4];
+    var tAdj=(T[0][1]+T[1][2]+T[2][3]+T[3][4]+T[4][5]+T[5][0])/6, tOpp=(T[0][3]+T[1][4]+T[2][5])/3;
+    AS.spec={ yield:yield_, cap:cap, tAdj:tAdj, tOpp:tOpp, tiles:n, extractors:L1.sinks.length };
+    AS.sealing=false;
+    as_buildL2();
+    AS.level=2; AS.msg='Sealed. Your world is now one tile of a larger one.';
+    as_hud();
+  }
+  setTimeout(chunk,0);
+}
+function as_hud(){
+  document.getElementById('as-mat').textContent='material '+AS.material.toFixed(0)+'  (+'+(AS.rate*60).toFixed(1)+'/s)';
+  document.getElementById('as-level').textContent= AS.level===1? 'L1 · a world of 7,651 tiles' : 'L2 · a world of 7,651 worlds';
+  var sealBtn=document.getElementById('as-seal');
+  sealBtn.disabled= AS.level!==1 || AS.sealing || AS.material<COST.seal;
+  sealBtn.textContent= AS.sealing? 'characterizing… '+(AS.sealProg*100).toFixed(0)+'%' : AS.level===1? '⬆ Seal & ascend · '+COST.seal : 'sealed';
+  document.getElementById('as-spec').textContent= AS.spec? 'spec sheet: yield '+AS.spec.yield.toFixed(2)+'/tick · capacity '+AS.spec.cap.toFixed(0)+' · gate conductance '+AS.spec.tAdj.toFixed(3)+' adjacent / '+AS.spec.tOpp.toFixed(3)+' opposite · '+AS.spec.extractors+' extractors inside' : 'spec sheet: — (seal to characterize)';
+  var tools=document.getElementById('as-tools-l1'), tools2=document.getElementById('as-tools-l2');
+  tools.style.display= AS.level===1?'':'none'; tools2.style.display= AS.level===2?'':'none';
+  Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(b){ b.disabled= (+b.dataset.l===2&&!L2); });
+  if(AS.msg) document.getElementById('as-msg').textContent=AS.msg;
+  if(L2){ var copiesN=AS.copies.length; document.getElementById('as-l2stat').textContent='worlds placed '+copiesN+' · level-2 basin '+L2.basin(AS.copies,10)+' units · placing another costs '+COST.world; }
+}
+var as_view=1;
+var as_sim=new Sim('cv-ascent', L1.geom.w, L1.geom.h, {
   tick:function(s){
+    var net= as_view===1? L1 : L2;
     if(s.pointer.down){
       s.pointer.down=false;
-      var k=pixelToHex(tg,s.pointer.x,s.pointer.y), i=k>=0?tidx[k]:-1;
-      if(i>=0){
-        var L= TRS.tool==='x0'?0: TRS.tool==='x1'?1: TRS.tool==='x2'?2: -1;
-        if(L>=0){ var u=tr_unitAt(L,i); if(TRS.x[L].indexOf(u)<0) TRS.x[L].push(u); }
-        else if(TRS.tool==='hive'){ TRS.hive=[i]; TRS.hiveOn=true; }
+      if(net){
+        var i=net.pick(s.pointer.x,s.pointer.y);
+        if(i>=0){
+          if(as_view===1&&AS.level===1&&!AS.sealing){
+            if(AS.tool==='small'&&AS.material>=COST.small){ L1.sinks.push({tiles:[i],E:E_SMALL}); AS.material-=COST.small; }
+            else if(AS.tool==='large'&&AS.material>=COST.large){ L1.sinks.push({tiles:L1.flower(i),E:E_LARGE}); AS.material-=COST.large; }
+            else AS.msg='not enough material';
+          } else if(as_view===2&&L2){
+            if(AS.copies.indexOf(i)<0&&AS.material>=COST.world){
+              var origin=L2.idx[mapIdx(L2.geom,0,0)];
+              var yieldHere=AS.spec.yield*L2.B[i]/Math.max(L2.B[origin],1e-6);
+              L2.sinks.push({tiles:[i],E:yieldHere}); AS.copies.push(i); AS.material-=COST.world;
+              AS.msg='placed a copy of your world · local richness '+L2.B[i].toFixed(2)+' vs origin '+L2.B[origin].toFixed(2)+' → yield '+yieldHere.toFixed(2)+'/tick';
+              if(AS.copies.length===3) AS.msg+='  ·  three worlds. That was the loop.';
+            } else if(AS.copies.indexOf(i)>=0) AS.msg='already a world there';
+            else AS.msg='a world costs '+COST.world+' material';
+          }
+          as_hud();
+        }
       }
     }
-    for(var r=0;r<3;r++) tr_step();
-    if(TRS.t%30===0) tr_hud();
+    var taken=0;
+    for(var r=0;r<3;r++){ taken+=L1.step(); if(L2) taken+=L2.step()*40; }   // level-2 material is worth 40× (a world's worth per unit)
+    AS.material+=taken; AS.rate=0.9*AS.rate+0.1*(taken/3);
+    AS.t++; if(AS.t%20===0) as_hud();
   },
   draw:function(s,ctx){
     ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    var alt=TRS.alt, raw=TRS.view==='raw';
-    if(alt===0||raw){
-      for(var i=0;i<N;i++){ var k=tn[i]; hexPath(ctx,tg.cx[k],tg.cy[k],tg.sz*0.98); ctx.fillStyle=tr_color(S[i],B[i]); ctx.fill(); }
-    }
-    if(alt>=1){
-      var lm=tr_levelMeans(alt), lv=levels[alt], size=tg.sz*Math.pow(Math.sqrt(7),alt), rot=alt*TH7;
-      for(var j=0;j<lv.centers.length;j++){
-        var p=axpx(lv.centers[j][0],lv.centers[j][1]);
-        ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(rot);
-        hexPath(ctx,0,0,size*0.97);
-        if(!raw){ ctx.fillStyle=tr_color(lm.vals[j],lm.base[j]); ctx.fill(); }
-        ctx.strokeStyle= raw? 'rgba(27,36,34,0.6)' : 'rgba(27,36,34,0.22)'; ctx.lineWidth= raw?1.2:0.8; ctx.stroke();
-        ctx.restore();
-      }
-    }
-    var rad=[0.7,1.9,5.0];
-    for(var L=0;L<3;L++) TRS.x[L].forEach(function(u){ var c= L===0? decode(tg,tn[u]) : levels[L].centers[u]; var p=axpx(c[0],c[1]); ctx.strokeStyle='#1F6F7A'; ctx.lineWidth=L+1.5; ctx.beginPath(); ctx.arc(p[0],p[1],tg.sz*rad[L],0,7); ctx.stroke(); });
-    TRS.hive.forEach(function(i){ var k=tn[i]; ctx.fillStyle='rgba(90,30,110,0.85)'; ctx.beginPath(); ctx.arc(tg.cx[k],tg.cy[k],tg.sz*0.5,0,7); ctx.fill(); });
+    var net= as_view===1? L1 : L2; if(!net) return;
+    var g=net.geom;
+    for(var i=0;i<net.n;i++){ var k=net.nodes[i], t=Math.max(0,Math.min(1,net.S[i])); hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98); var rr=222+(34-222)*t, gg=210+(120-210)*t, bb=178+(78-178)*t; ctx.fillStyle='rgb('+(rr|0)+','+(gg|0)+','+(bb|0)+')'; ctx.fill(); }
+    net.sinks.forEach(function(sk){ var k=net.nodes[sk.tiles[0]]; var big=sk.tiles.length>1||sk.origin; ctx.strokeStyle= sk.origin?'#C28E2C':'#1F6F7A'; ctx.lineWidth= big?2.5:1.5; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],g.sz*(big?2.2:0.9),0,7); ctx.stroke(); });
+    if(as_view===2){ var o=net.idx[mapIdx(net.geom,0,0)], k2=net.nodes[o]; ctx.fillStyle='#C28E2C'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.fillText('your world', g.cx[k2], g.cy[k2]-g.sz*3); }
   }
 });
-function tr_bind(id,fn){ document.getElementById(id).addEventListener('click',fn); }
-(function(){
-  var host=document.getElementById('tr-alts');
-  for(var k=0;k<NLEV;k++){ var b=document.createElement('button'); b.className='btn tr-alt'; b.type='button'; b.dataset.a=String(k); b.setAttribute('aria-pressed',k===0?'true':'false'); b.textContent='L'+(k+1)+' · '+levels[k].centers.length; host.appendChild(b); }
-})();
-Array.prototype.forEach.call(document.querySelectorAll('button.tr-tool'),function(b){ b.addEventListener('click',function(){ TRS.tool=b.dataset.t; Array.prototype.forEach.call(document.querySelectorAll('button.tr-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
-Array.prototype.forEach.call(document.querySelectorAll('button.tr-alt'),function(b){ b.addEventListener('click',function(){ TRS.alt=+b.dataset.a; Array.prototype.forEach.call(document.querySelectorAll('button.tr-alt'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); tr_hud(); }); });
-tr_bind('tr-oct',function(){ TRS.octaves= TRS.octaves==='all'?'single':'all'; this.textContent= TRS.octaves==='all'?'field: one octave per altitude':'field: single fine octave'; tr_makeField(); tr_hud(); });
-tr_bind('tr-gam',function(){ TRS.gamma= TRS.gamma===1?2: TRS.gamma===2?3:1; this.textContent='contrast: γ='+TRS.gamma+(TRS.gamma===1?' (smooth)':TRS.gamma===2?' (patchy)':' (sparse ore)'); tr_makeField(); tr_hud(); });
-tr_bind('tr-view',function(){ TRS.view= TRS.view==='aggregate'?'raw':'aggregate'; this.textContent= TRS.view==='aggregate'?'render: aggregate':'render: raw fine tiles'; });
-tr_bind('tr-col',function(){ TRS.color= TRS.color==='stock'?'depletion':'stock'; this.textContent= TRS.color==='stock'?'colour: stock':'colour: depletion (stock ÷ natural)'; });
-tr_bind('tr-new',function(){ TRS.seed=(TRS.seed*7+13)%1009; tr_makeField(); tr_hud(); tr_sim.running=true; });
-tr_makeField(); tr_hud();
+Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(b){ b.addEventListener('click',function(){ AS.tool=b.dataset.t; Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
+Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(b){ b.addEventListener('click',function(){ if(+b.dataset.l===2&&!L2) return; as_view=+b.dataset.l; Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
+document.getElementById('as-seal').addEventListener('click',as_sealStart);
+document.getElementById('as-new').addEventListener('click',function(){ as_view=1; as_reset((AS.seed*7+13)%1009); as_sim.running=true; });
+document.getElementById('as-grant').addEventListener('click',function(){ AS.material+=1000; AS.msg='granted 1000 material (for testing the transition without the grind)'; as_hud(); });
+as_reset(AS.seed);
 
 
 var fc=0;

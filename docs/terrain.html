@@ -95,7 +95,7 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
   <div class="wrap hero-copy">
     <p class="eyebrow">terrain as a slow fluid · one octave per level · basins, not rules</p>
     <h1>Does the world stay varied<br>when you fly up?</h1>
-    <p class="sub">Four hundred and sixty-nine tiles, grouped exactly into aperture-7 supers and aperture-49 super-supers. Richness is a fluid: it diffuses, it regenerates toward its natural level, and extractors are sinks. The natural level is built from <strong>one noise octave per altitude</strong>. Two claims to check with your own eyes: the map reads as geography at every altitude (switch the field to a single octave and watch the top level go flat), and a level-2 extractor carves a basin the size of a region while level-1 extractors carve cones — the draw radius is physics, not a rule.</p>
+    <p class="sub">Seven thousand six hundred and fifty-one tiles — 101 across — grouped exactly into five altitudes by recursive aperture-7 flowers. Richness is a fluid: it diffuses, it regenerates toward its natural level, and extractors are sinks. The natural level is built from <strong>one noise octave per altitude</strong>, five in all, and a contrast knob turns smooth hills into sparse ore. Two claims to check with your own eyes: the map reads as geography at every altitude (switch the field to a single octave and watch the top level go flat), and each extractor level carves a basin one altitude larger than the last — the draw radius is physics, not a rule.</p>
   </div>
 </header>
 <section>
@@ -103,18 +103,18 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
     <div class="demo" style="margin-top:0">
       <div class="bar">
         <span class="note">altitude:</span>
-        <button class="btn tr-alt" data-a="1" aria-pressed="true" type="button">L1 tiles</button>
-        <button class="btn tr-alt" data-a="2" aria-pressed="false" type="button">L2 supers</button>
-        <button class="btn tr-alt" data-a="3" aria-pressed="false" type="button">L3 super-supers</button>
+        <span id="tr-alts" style="display:inline-flex;gap:.4rem;flex-wrap:wrap"></span>
         <button class="btn" id="tr-view" type="button">render: aggregate</button>
         <span class="grow"></span>
-        <button class="btn" id="tr-oct" type="button">field: three octaves</button>
+        <button class="btn" id="tr-oct" type="button">field: one octave per altitude</button>
+        <button class="btn" id="tr-gam" type="button">contrast: γ=1 (smooth)</button>
         <button class="btn" id="tr-col" type="button">colour: stock</button>
       </div>
       <div class="bar" style="border-top:none">
         <span class="note">place:</span>
-        <button class="btn tr-tool" data-t="x1" aria-pressed="true" type="button">L1 extractor (one tile)</button>
-        <button class="btn tr-tool" data-t="x2" aria-pressed="false" type="button">L2 extractor (whole super)</button>
+        <button class="btn tr-tool" data-t="x0" aria-pressed="true" type="button">L1 extractor (one tile)</button>
+        <button class="btn tr-tool" data-t="x1" aria-pressed="false" type="button">L2 extractor (7 tiles)</button>
+        <button class="btn tr-tool" data-t="x2" aria-pressed="false" type="button">L3 extractor (49 tiles)</button>
         <button class="btn tr-tool" data-t="hive" aria-pressed="false" type="button">enemy hive (spreads)</button>
         <span class="grow"></span>
         <button class="btn" id="tr-new" type="button">new field</button>
@@ -124,10 +124,10 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
       <div class="bar"><output id="tr-var">·</output></div>
       <div class="bar" style="border-top:none"><output id="tr-basins">·</output></div>
     </div>
-    <p class="note" style="margin-top:1rem">What to try: go to <strong>L3</strong>, toggle the field to a <strong>single octave</strong> — the variation collapses toward zero and the top level is a flat sheet, which is the stripiness problem seen from the coarse model's side. Back to three octaves, and the continents return. Then at L1 drop a few L1 extractors and one L2 extractor, wait, and switch colour to <strong>depletion</strong>: cones versus a basin. Plant a hive and watch its basin grow with its size.</p>
+    <p class="note" style="margin-top:1rem">What to try: go to <strong>L4</strong> or <strong>L5</strong>, toggle the field to a <strong>single fine octave</strong> — the variation collapses and the top is a flat sheet, which is the stripiness problem seen from the coarse model's side. Back to one octave per altitude and the continents return; turn the <strong>contrast</strong> up for sparse ore rather than rolling hills. Then at L1 drop an L1, an L2 and an L3 extractor, wait, and switch colour to <strong>depletion</strong>: cone, basin, region. Plant a hive and watch its scar grow.</p>
   </div>
 </section>
-<footer><div class="wrap">hexphys-rl · terrain · richness as a slow fluid with per-level octaves · 469 tiles / aperture-7 supers / aperture-49 super-supers</div></footer>
+<footer><div class="wrap">hexphys-rl · terrain · richness as a slow fluid with one octave per altitude · 7,651 tiles, five recursive aperture-7 levels</div></footer>
 
 <script>(function () {
 'use strict';
@@ -200,63 +200,60 @@ Sim.prototype.frame=function(){
 };
 
 
-/* ================= TERRAIN: a fractal richness field as a slow fluid, three altitudes ================= */
-var TR=12, tg=makeMap(TR,12), tn=[], tidx=new Int32Array(tg.N).fill(-1);
+/* ================= TERRAIN v2: any radius, recursive aperture-7 levels, one octave per altitude ================= */
+var TR=50, NLEV=5, tg=makeMap(TR, 4.6), tn=[], tidx=new Int32Array(tg.N).fill(-1);
 forEachValid(tg,function(k){ tidx[k]=tn.length; tn.push(k); });
 var N=tn.length, tpairs=[], tnbr=[];
 for(var i0=0;i0<N;i0++) tnbr.push([]);
 for(var i1=0;i1<N;i1++) for(var d1=0;d1<3;d1++){ var nk=tn[i1]+tg.shifts[d1]; if(nk<0||nk>=tg.N||tidx[nk]<0) continue; tpairs.push({a:i1,b:tidx[nk]}); tnbr[i1].push(tidx[nk]); tnbr[tidx[nk]].push(i1); }
 function axpx(q,r){ return [tg.ox+tg.sz*SQ3*(q+r/2), tg.oy+tg.sz*1.5*r]; }
-/* --- aperture-7 supers and aperture-49 super-supers, exact partitions --- */
-var SNV=[[2,1],[3,-2],[1,-3],[-2,-1],[-3,2],[-1,3]];
-var superOf=new Int32Array(N).fill(-1), supC=[], supMembers=[], supKey={};
+function eisMul(a,b){ return [a[0]*b[0]-a[1]*b[1], a[0]*b[1]+a[1]*b[0]+a[1]*b[1]]; }   // hex lattice as Eisenstein integers
+function ccw(v){ return [v[0]+v[1],-v[0]]; }
+/* levels[k]: units at level k (k=0 tiles). Each level partitions the one below into flowers of 7. */
+var levels=[{centers:tn.map(function(k){ return decode(tg,k); }), members:null, tiles:tn.map(function(k,i){ return [i]; }), key:{}}];
+levels[0].centers.forEach(function(c,i){ levels[0].key[c[0]+','+c[1]]=i; });
 (function(){
-  for(var I=-14;I<=14;I++) for(var J=-14;J<=14;J++){
-    var c=[I*2+J*3, I*1-J*2], mem=[];
-    var cands=[[c[0],c[1]]]; for(var d=0;d<6;d++) cands.push([c[0]+DIRS[d][0], c[1]+DIRS[d][1]]);   // petals = unit neighbours
-    cands.forEach(function(qr){ var k=mapIdx(tg,qr[0],qr[1]); if(k>=0&&tidx[k]>=0) mem.push(tidx[k]); });
-    if(!mem.length) continue;
-    var id=supC.length; supC.push(c); supMembers.push(mem); supKey[c[0]+','+c[1]]=id;
-    mem.forEach(function(i){ superOf[i]=id; });
-  }
-})();
-var ssOf=new Int32Array(supC.length).fill(-1), ssC=[], ssMembers=[];
-(function(){
-  for(var I=-6;I<=6;I++) for(var J=-6;J<=6;J++){
-    var c=[I*3+J*8, I*5-J*3], mem=[];
-    var cands=[[c[0],c[1]]]; for(var d=0;d<6;d++) cands.push([c[0]+SNV[d][0], c[1]+SNV[d][1]]);
-    cands.forEach(function(qr){ var id=supKey[qr[0]+','+qr[1]]; if(id!==undefined) mem.push(id); });
-    if(!mem.length) continue;
-    var sid=ssC.length; ssC.push(c); ssMembers.push(mem);
-    mem.forEach(function(id){ ssOf[id]=sid; });
+  var basis=[1,0];
+  for(var k=1;k<NLEV;k++){
+    var prevBasis=basis; basis=eisMul(basis,[2,1]);
+    var b2=ccw(basis), petals=[[0,0]], rot=prevBasis;
+    for(var d=0;d<6;d++){ petals.push(rot); rot=ccw(rot); }
+    var prev=levels[k-1], lv={centers:[],members:[],tiles:[],key:{}}, parent=new Int32Array(prev.centers.length).fill(-1);
+    var span=Math.ceil((TR+8)/Math.sqrt(Math.pow(7,k)))+3;
+    for(var I=-span;I<=span;I++) for(var J=-span;J<=span;J++){
+      var C=[I*basis[0]+J*b2[0], I*basis[1]+J*b2[1]], mem=[];
+      petals.forEach(function(p){ var id=prev.key[(C[0]+p[0])+','+(C[1]+p[1])]; if(id!==undefined&&parent[id]<0) mem.push(id); });
+      if(!mem.length) continue;
+      var uid=lv.centers.length; lv.centers.push(C); lv.members.push(mem); lv.key[C[0]+','+C[1]]=uid;
+      var tl=[]; mem.forEach(function(id){ parent[id]=uid; tl=tl.concat(prev.tiles[id]); }); lv.tiles.push(tl);
+    }
+    prev.parent=parent; levels.push(lv);
   }
 })();
 /* --- field --- */
-var TRS={ octaves:3, view:'aggregate', color:'stock', alt:1, tool:'x1', seed:5, kappa:0.003, D:0.05, E1:0.05, E2:0.8, EH:0.035,
-          x1:[], x2:[], hive:[], hiveOn:false, t:0 };
+var TRS={ octaves:'all', gamma:1, view:'aggregate', color:'stock', alt:0, tool:'x0', seed:5, kappa:0.003, D:0.05, E:[0.05,0.8,12.8], EH:0.035, x:[[],[],[]], hive:[], hiveOn:false, t:0 };
 var B=new Float64Array(N), S=new Float64Array(N);
 var trRng=function(seed){ var s=seed>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; };
+var LAMS=[], AMPS=[];
+for(var lo=0;lo<NLEV;lo++){ LAMS.push(1.4*Math.pow(3.0,lo)); AMPS.push(lo<2?1:1+0.3*(lo-1)); }   // one octave per altitude, ×3 wavelength per level
 function tr_makeField(){
-  var rnd=trRng(TRS.seed), sp=SQ3*tg.sz;
-  var lams=[1.4*sp, 4.5*sp, 22*sp], amps=[1,1,1.6];   // one octave per altitude: tile, super, super-super
-  var nOct=TRS.octaves===1?1:3;
-  var waves=[];
-  for(var o=0;o<3;o++){ var ws=[]; for(var m=0;m<5;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/lams[o]*2*Math.PI, ky:Math.sin(th)/lams[o]*2*Math.PI, ph:rnd()*Math.PI*2}); } waves.push(ws); }
+  var rnd=trRng(TRS.seed), sp=SQ3*tg.sz, nOct=TRS.octaves==='single'?1:NLEV, waves=[], o, m, i;
+  for(o=0;o<NLEV;o++){ var ws=[]; for(m=0;m<6;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/(LAMS[o]*sp)*2*Math.PI, ky:Math.sin(th)/(LAMS[o]*sp)*2*Math.PI, ph:rnd()*Math.PI*2}); } waves.push(ws); }
   var vals=new Float64Array(N), mn=1e9, mx=-1e9;
-  for(var i=0;i<N;i++){
+  for(i=0;i<N;i++){
     var k=tn[i], x=tg.cx[k], y=tg.cy[k], v=0;
-    for(var o2=0;o2<nOct;o2++){ var acc=0; for(var m2=0;m2<5;m2++){ var w=waves[o2][m2]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=amps[o2]*acc/5; }
+    for(o=0;o<nOct;o++){ var acc=0; for(m=0;m<6;m++){ var w=waves[o][m]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=AMPS[o]*acc/6; }
     vals[i]=v; if(v<mn)mn=v; if(v>mx)mx=v;
   }
-  for(i=0;i<N;i++){ B[i]=0.12+0.88*(vals[i]-mn)/(mx-mn); S[i]=B[i]; }
-  TRS.x1=[]; TRS.x2=[]; TRS.hive=[]; TRS.hiveOn=false; TRS.t=0;
+  for(i=0;i<N;i++){ var u=(vals[i]-mn)/(mx-mn); u=Math.pow(u,TRS.gamma); B[i]=0.06+0.94*u; S[i]=B[i]; }
+  TRS.x=[[],[],[]]; TRS.hive=[]; TRS.hiveOn=false; TRS.t=0;
 }
+function tr_sinkTiles(level,uid){ return level===0? [uid] : levels[level].tiles[uid]; }
 function tr_step(){
   var dS=new Float64Array(N), i;
   for(i=0;i<tpairs.length;i++){ var p=tpairs[i], f=TRS.D*(S[p.a]-S[p.b]); dS[p.a]-=f; dS[p.b]+=f; }
   for(i=0;i<N;i++) dS[i]+=TRS.kappa*(B[i]-S[i]);
-  TRS.x1.forEach(function(x){ dS[x]-=Math.min(TRS.E1,S[x]); });
-  TRS.x2.forEach(function(sid){ var mem=supMembers[sid], per=TRS.E2/mem.length; mem.forEach(function(x){ dS[x]-=Math.min(per,S[x]); }); });
+  for(var L=0;L<3;L++) TRS.x[L].forEach(function(uid){ var tl=tr_sinkTiles(L,uid), per=TRS.E[L]/tl.length; tl.forEach(function(x){ dS[x]-=Math.min(per,S[x]); }); });
   TRS.hive.forEach(function(x){ dS[x]-=Math.min(TRS.EH,S[x]); });
   for(i=0;i<N;i++){ S[i]=Math.max(0,S[i]+dS[i]); }
   if(TRS.hiveOn&&TRS.t%60===0&&TRS.hive.length<40){
@@ -267,14 +264,12 @@ function tr_step(){
   TRS.t++;
 }
 function tr_levelMeans(level){
-  if(level===1) return {vals:Array.from(S), base:Array.from(B)};
-  if(level===2) return {vals:supMembers.map(function(m){ return m.reduce(function(a,i){return a+S[i];},0)/m.length; }), base:supMembers.map(function(m){ return m.reduce(function(a,i){return a+B[i];},0)/m.length; })};
-  return {vals:ssMembers.map(function(ms){ var s2=0,c=0; ms.forEach(function(sid){ supMembers[sid].forEach(function(i){ s2+=S[i]; c++; }); }); return s2/c; }),
-          base:ssMembers.map(function(ms){ var s2=0,c=0; ms.forEach(function(sid){ supMembers[sid].forEach(function(i){ s2+=B[i]; c++; }); }); return s2/c; })};
+  var tl=levels[level].tiles, vals=[], base=[];
+  for(var u=0;u<tl.length;u++){ var s2=0,b2=0; for(var j=0;j<tl[u].length;j++){ s2+=S[tl[u][j]]; b2+=B[tl[u][j]]; } vals.push(s2/tl[u].length); base.push(b2/tl[u].length); }
+  return {vals:vals, base:base};
 }
 function tr_cv(arr){ var m=arr.reduce(function(a,b){return a+b;},0)/arr.length; var v=arr.reduce(function(a,b){return a+(b-m)*(b-m);},0)/arr.length; return m>1e-9?Math.sqrt(v)/m:0; }
 function tr_basin(seedTiles, R){
-  /* tiles below half their natural level, connected to the seeds, within hex radius R of a seed */
   var seen=new Uint8Array(N), q=[], n=0, dist=new Int32Array(N).fill(1e9);
   seedTiles.forEach(function(x){ if(!seen[x]){ seen[x]=1; dist[x]=0; q.push(x); } });
   while(q.length){ var x=q.shift(); if(S[x]/B[x]>=0.5) continue; n++; if(dist[x]>=R) continue;
@@ -286,54 +281,62 @@ function tr_color(v, base){
   var r=222+(34-222)*t, g=210+(120-210)*t, b=178+(78-178)*t;
   return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
 }
+function tr_unitAt(level,i){ var u=i; for(var k=0;k<level;k++) u=levels[k].parent[u]; return u; }
 function tr_hud(){
   var lm=tr_levelMeans(TRS.alt);
-  document.getElementById('tr-var').textContent='variation at this altitude: '+(tr_cv(lm.base)*100).toFixed(0)+'% (base field, coefficient of variation)';
-  var b1=TRS.x1.length?tr_basin(TRS.x1,5):0, b2=TRS.x2.length?tr_basin([].concat.apply([],TRS.x2.map(function(s){return supMembers[s];})),10):0, bh=TRS.hive.length?tr_basin(TRS.hive,14):0;
-  document.getElementById('tr-basins').textContent='basins (tiles below half their natural level): L1 extractors '+b1+' · L2 extractor '+b2+' · hive '+bh+' ('+TRS.hive.length+' cells)';
+  document.getElementById('tr-var').textContent='L'+(TRS.alt+1)+' · '+levels[TRS.alt].centers.length+' units · variation at this altitude: '+(tr_cv(lm.base)*100).toFixed(0)+'% (coefficient of variation of the natural field)';
+  var R=[5,10,25], parts=[];
+  for(var L=0;L<3;L++){ if(!TRS.x[L].length) continue; var seeds=[]; TRS.x[L].forEach(function(u){ seeds=seeds.concat(tr_sinkTiles(L,u)); }); parts.push('L'+(L+1)+' extractor'+(TRS.x[L].length>1?'s':'')+' '+tr_basin(seeds,R[L])+' tiles'); }
+  if(TRS.hive.length) parts.push('hive '+tr_basin(TRS.hive,14)+' tiles ('+TRS.hive.length+' cells)');
+  document.getElementById('tr-basins').textContent= parts.length? 'basins (tiles below half their natural level): '+parts.join(' · ') : 'place extractors to see basins';
   document.getElementById('tr-t').textContent='t = '+TRS.t;
 }
+var TH7=Math.atan2(1.5, SQ3*2.5);
 var tr_sim=new Sim('cv-terrain', tg.w, tg.h, {
   tick:function(s){
     if(s.pointer.down){
       s.pointer.down=false;
       var k=pixelToHex(tg,s.pointer.x,s.pointer.y), i=k>=0?tidx[k]:-1;
       if(i>=0){
-        if(TRS.tool==='x1'){ if(TRS.x1.indexOf(i)<0) TRS.x1.push(i); }
-        else if(TRS.tool==='x2'){ var sid=superOf[i]; if(TRS.x2.indexOf(sid)<0) TRS.x2.push(sid); }
+        var L= TRS.tool==='x0'?0: TRS.tool==='x1'?1: TRS.tool==='x2'?2: -1;
+        if(L>=0){ var u=tr_unitAt(L,i); if(TRS.x[L].indexOf(u)<0) TRS.x[L].push(u); }
         else if(TRS.tool==='hive'){ TRS.hive=[i]; TRS.hiveOn=true; }
       }
     }
-    for(var r=0;r<4;r++) tr_step();
-    if(TRS.t%24===0) tr_hud();
+    for(var r=0;r<3;r++) tr_step();
+    if(TRS.t%30===0) tr_hud();
   },
   draw:function(s,ctx){
     ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
     var alt=TRS.alt, raw=TRS.view==='raw';
-    if(alt===1||raw){
-      for(var i=0;i<N;i++){ var k=tn[i]; hexPath(ctx,tg.cx[k],tg.cy[k],tg.sz*0.96); ctx.fillStyle=tr_color(S[i],B[i]); ctx.fill(); }
+    if(alt===0||raw){
+      for(var i=0;i<N;i++){ var k=tn[i]; hexPath(ctx,tg.cx[k],tg.cy[k],tg.sz*0.98); ctx.fillStyle=tr_color(S[i],B[i]); ctx.fill(); }
     }
-    if(alt>=2){
-      var lm=tr_levelMeans(alt), centers= alt===2?supC:ssC, size= alt===2? tg.sz*Math.sqrt(7): tg.sz*7, rot= alt===2? Math.atan2(1.5*1,SQ3*(2+0.5)) : 2*Math.atan2(1.5*1,SQ3*(2+0.5));
-      for(var j=0;j<centers.length;j++){
-        var p=axpx(centers[j][0],centers[j][1]);
+    if(alt>=1){
+      var lm=tr_levelMeans(alt), lv=levels[alt], size=tg.sz*Math.pow(Math.sqrt(7),alt), rot=alt*TH7;
+      for(var j=0;j<lv.centers.length;j++){
+        var p=axpx(lv.centers[j][0],lv.centers[j][1]);
         ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(rot);
         hexPath(ctx,0,0,size*0.97);
         if(!raw){ ctx.fillStyle=tr_color(lm.vals[j],lm.base[j]); ctx.fill(); }
-        ctx.strokeStyle= raw? 'rgba(27,36,34,0.55)' : 'rgba(27,36,34,0.25)'; ctx.lineWidth= raw?1.5:1; ctx.stroke();
+        ctx.strokeStyle= raw? 'rgba(27,36,34,0.6)' : 'rgba(27,36,34,0.22)'; ctx.lineWidth= raw?1.2:0.8; ctx.stroke();
         ctx.restore();
       }
     }
-    /* markers */
-    TRS.x1.forEach(function(i){ var k=tn[i]; ctx.strokeStyle='#1F6F7A'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(tg.cx[k],tg.cy[k],tg.sz*0.55,0,7); ctx.stroke(); });
-    TRS.x2.forEach(function(sid){ var p=axpx(supC[sid][0],supC[sid][1]); ctx.strokeStyle='#1F6F7A'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],tg.sz*1.9,0,7); ctx.stroke(); });
-    TRS.hive.forEach(function(i){ var k=tn[i]; ctx.fillStyle='rgba(90,30,110,0.85)'; ctx.beginPath(); ctx.arc(tg.cx[k],tg.cy[k],tg.sz*0.42,0,7); ctx.fill(); });
+    var rad=[0.7,1.9,5.0];
+    for(var L=0;L<3;L++) TRS.x[L].forEach(function(u){ var c= L===0? decode(tg,tn[u]) : levels[L].centers[u]; var p=axpx(c[0],c[1]); ctx.strokeStyle='#1F6F7A'; ctx.lineWidth=L+1.5; ctx.beginPath(); ctx.arc(p[0],p[1],tg.sz*rad[L],0,7); ctx.stroke(); });
+    TRS.hive.forEach(function(i){ var k=tn[i]; ctx.fillStyle='rgba(90,30,110,0.85)'; ctx.beginPath(); ctx.arc(tg.cx[k],tg.cy[k],tg.sz*0.5,0,7); ctx.fill(); });
   }
 });
 function tr_bind(id,fn){ document.getElementById(id).addEventListener('click',fn); }
+(function(){
+  var host=document.getElementById('tr-alts');
+  for(var k=0;k<NLEV;k++){ var b=document.createElement('button'); b.className='btn tr-alt'; b.type='button'; b.dataset.a=String(k); b.setAttribute('aria-pressed',k===0?'true':'false'); b.textContent='L'+(k+1)+' · '+levels[k].centers.length; host.appendChild(b); }
+})();
 Array.prototype.forEach.call(document.querySelectorAll('button.tr-tool'),function(b){ b.addEventListener('click',function(){ TRS.tool=b.dataset.t; Array.prototype.forEach.call(document.querySelectorAll('button.tr-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
 Array.prototype.forEach.call(document.querySelectorAll('button.tr-alt'),function(b){ b.addEventListener('click',function(){ TRS.alt=+b.dataset.a; Array.prototype.forEach.call(document.querySelectorAll('button.tr-alt'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); tr_hud(); }); });
-tr_bind('tr-oct',function(){ TRS.octaves= TRS.octaves===3?1:3; this.textContent= TRS.octaves===3?'field: three octaves':'field: single octave'; tr_makeField(); tr_hud(); });
+tr_bind('tr-oct',function(){ TRS.octaves= TRS.octaves==='all'?'single':'all'; this.textContent= TRS.octaves==='all'?'field: one octave per altitude':'field: single fine octave'; tr_makeField(); tr_hud(); });
+tr_bind('tr-gam',function(){ TRS.gamma= TRS.gamma===1?2: TRS.gamma===2?3:1; this.textContent='contrast: γ='+TRS.gamma+(TRS.gamma===1?' (smooth)':TRS.gamma===2?' (patchy)':' (sparse ore)'); tr_makeField(); tr_hud(); });
 tr_bind('tr-view',function(){ TRS.view= TRS.view==='aggregate'?'raw':'aggregate'; this.textContent= TRS.view==='aggregate'?'render: aggregate':'render: raw fine tiles'; });
 tr_bind('tr-col',function(){ TRS.color= TRS.color==='stock'?'depletion':'stock'; this.textContent= TRS.color==='stock'?'colour: stock':'colour: depletion (stock ÷ natural)'; });
 tr_bind('tr-new',function(){ TRS.seed=(TRS.seed*7+13)%1009; tr_makeField(); tr_hud(); tr_sim.running=true; });

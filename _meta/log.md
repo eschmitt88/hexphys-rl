@@ -51,3 +51,4 @@ skills; read by `/lint`.
 2026-08-23 replication + rung 3: L2<L1 in 8/8 random configs (median ratio 0.60); four-level chain 17353 cells -> 469 -> 21 -> 3 nodes at 1.0%/0.3%/1.0% — no compounding across three rungs
 2026-09-04 design: six game concepts scored against game-fun-rubric v0.5 prototype gate (docs/design/2026-09-04-six-games.md); recommend greyboxing Foundry Contracts + The Inspector
 2026-09-04 greyboxes shipped: docs/greybox.html — six playable core loops (Contracts, Watershed, Clockwork, Descent, Creep Wars, Inspector) on the shared ported engine; headless smoke suite green; tuned via random-search/curve sweeps
+2026-09-15 terrain test shipped: docs/terrain.html — richness as a slow depletable fluid on 469 tiles with exact aperture-7/49 partitions, one noise octave per altitude (L3 variation 24% three-octave vs 11% single), basins scale with extractor level (L1 cones ~4-13 tiles, L2 basin ~51, 6x), spreading hive scars ~340 tiles

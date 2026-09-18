@@ -93,9 +93,9 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
 </nav>
 <header class="hero" id="top">
   <div class="wrap hero-copy">
-    <p class="eyebrow">the transition · aperture 7,651 · your world becomes a tile</p>
-    <h1>Seal the world.<br>Then place it.</h1>
-    <p class="sub">A level-1 world of 7,651 tiles with a material economy: extractors cost material and yield it back from the richness under them. When you can afford it, <strong>Seal &amp; ascend</strong> characterizes the entire world through six gates — fifteen exact solves over 30,301 unknowns, watch the percentage climb — and reveals level 2: a world of 7,651 <em>worlds</em>, the same fractal field continuing across the seam, your sealed world standing at the centre as one tile whose spec sheet is what it earned. Then place copies of it where the level-2 field is richest, and see whether three worlds make you want a fourth.</p>
+    <p class="eyebrow">tier 2 · two elements, one compound · water is the conveyor</p>
+    <h1>Where A-water meets B-water,<br>put a reactor.</h1>
+    <p class="sub">Two richness fields now — <span style="color:#1F6F7A;font-weight:600">A</span> is local and forgiving, <span style="color:#D2691E;font-weight:600">B</span> is regional and scarce — and four springs on the high rim whose water runs down to a central lake. Extractors leach what they mine into the water; unreacted A and B that reach the lake are collected as raw material. Compound <span style="color:#8A6318;font-weight:600">C</span> is made only at a reactor (a seven-tile device) where both streams pass through it, at a conversion set by the reactor's grade — the mixer designs from the Contracts page, now as a price list. Conduits and dams steer the streams. Sealing costs C: you cannot leave a world until you've made it react, and your world's compound yield becomes the spec its copies carry upward.</p>
   </div>
 </header>
 <section>
@@ -106,31 +106,43 @@ footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--m
         <button class="btn as-alt" data-l="2" aria-pressed="false" type="button" disabled>L2 · world of worlds</button>
         <output id="as-level">·</output>
         <span class="grow"></span>
-        <output id="as-mat">·</output>
-        <button class="btn primary" id="as-seal" type="button" disabled>⬆ Seal &amp; ascend · 1000</button>
+        <output id="as-pools">·</output>
+        <button class="btn primary" id="as-seal" type="button" disabled>⬆ Seal &amp; ascend · 80 C</button>
       </div>
       <div class="bar" style="border-top:none">
         <span id="as-tools-l1">
-          <span class="note">build:</span>
-          <button class="btn as-tool" data-t="small" aria-pressed="true" type="button">small extractor · 20</button>
-          <button class="btn as-tool" data-t="large" aria-pressed="false" type="button">large extractor (7 tiles) · 200</button>
+          <button class="btn as-tool" data-t="extA" aria-pressed="true" type="button">A extractor · 20 A</button>
+          <button class="btn as-tool" data-t="extB" aria-pressed="false" type="button">B extractor · 20 A</button>
+          <button class="btn as-tool" data-t="react" data-g="0" aria-pressed="false" type="button">reactor · poor 18% · 150A+50B</button>
+          <button class="btn as-tool" data-t="react" data-g="1" aria-pressed="false" type="button">mixer 35% · 300A+150B</button>
+          <button class="btn as-tool" data-t="react" data-g="2" aria-pressed="false" type="button">fine 60% · 600A+300B</button>
+          <button class="btn as-tool" data-t="conduit" aria-pressed="false" type="button">conduit · 30 A</button>
+          <button class="btn as-tool" data-t="dam" aria-pressed="false" type="button">dam · 30 A</button>
+          <button class="btn as-tool" data-t="erase" aria-pressed="false" type="button">remove</button>
         </span>
-        <span id="as-tools-l2" style="display:none"><span class="note">click a unit to place a copy of your world · 5000</span> <output id="as-l2stat">·</output></span>
+        <span id="as-tools-l2" style="display:none"><span class="note">click a unit to place a copy of your world · 3000 C</span> <output id="as-l2stat">·</output></span>
+      </div>
+      <div class="bar" style="border-top:none">
+        <span class="note">view:</span>
+        <button class="btn as-view" data-v="species" aria-pressed="true" type="button">what's in the water</button>
+        <button class="btn as-view" data-v="terrain" aria-pressed="false" type="button">richness A / B</button>
+        <button class="btn as-view" data-v="flow" aria-pressed="false" type="button">water heads</button>
         <span class="grow"></span>
-        <button class="btn" id="as-grant" type="button">+1000 (skip grind)</button>
+        <button class="btn" id="as-grant" type="button">+1000 A · 500 B · 300 C</button>
         <button class="btn" id="as-new" type="button">new world</button>
       </div>
-      <div class="stage"><canvas id="cv-ascent" aria-label="Level 1 world and level 2 world of worlds"></canvas></div>
+      <div class="stage"><canvas id="cv-ascent" aria-label="Two-element world with water, extractors and reactors"></canvas></div>
       <div class="bar"><output id="as-spec">spec sheet: — (seal to characterize)</output></div>
-      <div class="bar" style="border-top:none"><output id="as-msg">place extractors on rich ground (dark), earn 1000, then seal</output></div>
+      <div class="bar" style="border-top:none"><output id="as-msg">put A extractors upstream on A-rich ground, B extractors on B-rich ground, and a reactor where the two colours overlap on the way to the lake</output></div>
     </div>
-    <p class="note" style="margin-top:1rem">Continuity check built in: the level-2 richness of your sealed world is the exact mean of its 7,651 tiles, while every wild unit around it samples the same field over its own footprint. A copy's yield is your world's yield scaled by local richness over origin richness — everything works anywhere, and pays off somewhere. Level-2 material is worth 40× level-1 material: a world's worth per unit.</p>
+    <p class="note" style="margin-top:1rem">The decision this page exists to test: build the reactor in A-country and pipe B in, in B-country and pipe A in, or dam a confluence — three routes with different costs. If that choice feels like a trade-off rather than a lookup, the tier works. Reactor grades are the measured conversions of an empty chamber, a decent mixer and a good one from the Contracts greybox.</p>
   </div>
 </section>
-<footer><div class="wrap">hexphys-rl · ascent · seal an r=50 world through six gates (15 CG solves, ~4 s) and place it as a template in a world of worlds</div></footer>
+<footer><div class="wrap">hexphys-rl · ascent II · two richness fluids, four springs and a lake, streamline advection of A and B, bilinear reaction at graded reactors, seal priced in compound</div></footer>
 
 <script>(function () {
 'use strict';
+
 var css = {};
 function refreshPalette() {
   var s = getComputedStyle(document.documentElement);
@@ -200,95 +212,141 @@ Sim.prototype.frame=function(){
 };
 
 
-/* ================= ASCENT: seal an r=50 world, ascend to a world of worlds ================= */
-var AR=50, AB=[AR+1,AR];                         // aperture 3R^2+3R+1 basis (R+1,R)
+
+/* ================= ASCENT II: two elements, one compound, water as the conveyor ================= */
+var AR=50, AB=[AR+1,AR];
 function ccw(v){ return [v[0]+v[1],-v[0]]; }
 var AB2=ccw(AB);
-var A_SP=SQ3;                                     // fine-axial → planar
-function fineXY(q,r){ return [A_SP*(q+r/2), 1.5*r]; }
-/* --- one fractal field for both levels, octaves spanning tile → world-of-worlds --- */
-var AF={ waves:[], amps:[], sum:0, gamma:2, seed:5 };
-function af_make(seed){
-  var rnd=(function(s){ s=s>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; })(seed);
-  AF.waves=[]; AF.amps=[]; AF.sum=0;
-  var lam=1.4;
-  for(var o=0;o<8;o++){ var ws=[]; for(var m=0;m<6;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/lam*2*Math.PI, ky:Math.sin(th)/lam*2*Math.PI, ph:rnd()*Math.PI*2}); }
-    AF.waves.push(ws); var a= o<2?1: o<4?1+0.3*(o-1): 1.9+0.6*(o-3); AF.amps.push(a); AF.sum+=a; lam*=3; }   // top octaves weighted up so the world of worlds has continents
-}
-function af_at(x,y){
-  var v=0;
-  for(var o=0;o<AF.waves.length;o++){ var acc=0, ws=AF.waves[o]; for(var m=0;m<6;m++){ var w=ws[m]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=AF.amps[o]*acc/6; }
-  var u=Math.max(0,Math.min(1,(v/AF.sum+1)/2));
-  return 0.06+0.94*Math.pow(u,AF.gamma);
-}
-/* --- slow fluid on an r=50 hex board (used at both levels) --- */
-function SlowNet(R, sz){
+function fineXY(q,r){ return [SQ3*(q+r/2), 1.5*r]; }
+/* ---- board ---- */
+function Board(R, sz){
   var g=this.geom=makeMap(R,sz), self=this;
   this.nodes=[]; this.idx=new Int32Array(g.N).fill(-1);
   forEachValid(g,function(k){ self.idx[k]=self.nodes.length; self.nodes.push(k); });
-  this.n=this.nodes.length; this.pairs=[]; this.nbr=[];
-  for(var i=0;i<this.n;i++) this.nbr.push([]);
+  this.n=this.nodes.length; this.pairs=[]; this.nbr=[]; this.rim=new Uint8Array(this.n); this.lake=new Uint8Array(this.n);
+  for(var i=0;i<this.n;i++){ this.nbr.push([]); var qr=decode(g,this.nodes[i]); if(hexDist(qr[0],qr[1])===R) this.rim[i]=1; if(hexDist(qr[0],qr[1])<=2) this.lake[i]=1; }
   for(i=0;i<this.n;i++) for(var d=0;d<3;d++){ var nk=this.nodes[i]+g.shifts[d]; if(nk<0||nk>=g.N||this.idx[nk]<0) continue; this.pairs.push({a:i,b:this.idx[nk]}); this.nbr[i].push(this.idx[nk]); this.nbr[this.idx[nk]].push(i); }
-  this.B=new Float64Array(this.n); this.S=new Float64Array(this.n);
-  this.kappa=0.003; this.D=0.05; this.sinks=[]; this.t=0; this.taken=0;
 }
-SlowNet.prototype.step=function(){
-  var dS=new Float64Array(this.n), i, taken=0;
-  for(i=0;i<this.pairs.length;i++){ var p=this.pairs[i], f=this.D*(this.S[p.a]-this.S[p.b]); dS[p.a]-=f; dS[p.b]+=f; }
-  for(i=0;i<this.n;i++) dS[i]+=this.kappa*(this.B[i]-this.S[i]);
-  for(var s=0;s<this.sinks.length;s++){ var sk=this.sinks[s], per=sk.E/sk.tiles.length; for(var j=0;j<sk.tiles.length;j++){ var x=sk.tiles[j], q=Math.min(per,this.S[x]); dS[x]-=q; taken+=q; } }
-  for(i=0;i<this.n;i++) this.S[i]=Math.max(0,this.S[i]+dS[i]);
-  this.t++; this.taken=taken; return taken;
-}
-SlowNet.prototype.pick=function(x,y){ var k=pixelToHex(this.geom,x,y); return k<0?-1:this.idx[k]; };
-SlowNet.prototype.flower=function(i){ var out=[i], k=this.nodes[i]; for(var d=0;d<6;d++){ var nk=k+this.geom.shifts[d]; if(nk>=0&&nk<this.geom.N&&this.idx[nk]>=0) out.push(this.idx[nk]); } return out; };
-SlowNet.prototype.basin=function(seeds,R){
-  var seen=new Uint8Array(this.n), q=[], n=0, dist=new Int32Array(this.n).fill(1e9), self=this;
+Board.prototype.pick=function(x,y){ var k=pixelToHex(this.geom,x,y); return k<0?-1:this.idx[k]; };
+Board.prototype.flower=function(i){ var out=[i], k=this.nodes[i]; for(var d=0;d<6;d++){ var nk=k+this.geom.shifts[d]; if(nk>=0&&nk<this.geom.N&&this.idx[nk]>=0) out.push(this.idx[nk]); } return out; };
+/* ---- slow richness fluid ---- */
+function Field(bd, kappa, D){ this.bd=bd; this.B=new Float64Array(bd.n); this.S=new Float64Array(bd.n); this.kappa=kappa; this.D=D; this.sinks=[]; }
+Field.prototype.step=function(){
+  var bd=this.bd, dS=new Float64Array(bd.n), i, out=new Float64Array(bd.n);
+  for(i=0;i<bd.pairs.length;i++){ var p=bd.pairs[i], f=this.D*(this.S[p.a]-this.S[p.b]); dS[p.a]-=f; dS[p.b]+=f; }
+  for(i=0;i<bd.n;i++) dS[i]+=this.kappa*(this.B[i]-this.S[i]);
+  for(var s=0;s<this.sinks.length;s++){ var sk=this.sinks[s], per=sk.E/sk.tiles.length; for(var j=0;j<sk.tiles.length;j++){ var x=sk.tiles[j], q=Math.min(per,this.S[x]); dS[x]-=q; out[x]+=q; } }
+  for(i=0;i<bd.n;i++) this.S[i]=Math.max(0,this.S[i]+dS[i]);
+  return out;                                    // what each tile yielded this tick
+};
+Field.prototype.basin=function(seeds,R){
+  var bd=this.bd, seen=new Uint8Array(bd.n), q=[], n=0, dist=new Int32Array(bd.n).fill(1e9), self=this;
   seeds.forEach(function(x){ if(!seen[x]){ seen[x]=1; dist[x]=0; q.push(x); } });
-  while(q.length){ var x=q.shift(); if(self.S[x]/self.B[x]>=0.5) continue; n++; if(dist[x]>=R) continue; self.nbr[x].forEach(function(j){ if(!seen[j]){ seen[j]=1; dist[j]=dist[x]+1; q.push(j); } }); }
+  while(q.length){ var x=q.shift(); if(self.S[x]/self.B[x]>=0.5) continue; n++; if(dist[x]>=R) continue; bd.nbr[x].forEach(function(j){ if(!seen[j]){ seen[j]=1; dist[j]=dist[x]+1; q.push(j); } }); }
   return n;
 };
-/* --- the two levels --- */
-var L1=new SlowNet(AR,4.6), L2=null;
-var AS={ level:1, material:0, rate:0, tool:'small', spec:null, sealing:false, sealProg:0, copies:[], seed:5, t:0, msg:'' };
-var COST={small:20, large:200, seal:1000, world:5000};
-var E_SMALL=0.05, E_LARGE=0.8;
-function as_l1Field(){
-  for(var i=0;i<L1.n;i++){ var qr=decode(L1.geom,L1.nodes[i]), p=fineXY(qr[0],qr[1]); L1.B[i]=af_at(p[0],p[1]); L1.S[i]=L1.B[i]; }
+/* ---- fractal fields (two seeds) ---- */
+function makeWaves(seed){
+  var rnd=(function(s){ s=s>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; })(seed);
+  var F={waves:[],amps:[],sum:0}, lam=1.4;
+  for(var o=0;o<8;o++){ var ws=[]; for(var m=0;m<6;m++){ var th=rnd()*Math.PI*2; ws.push({kx:Math.cos(th)/lam*2*Math.PI, ky:Math.sin(th)/lam*2*Math.PI, ph:rnd()*Math.PI*2}); }
+    F.waves.push(ws); var a= o<2?1: o<4?1+0.3*(o-1): 1.9+0.6*(o-3); F.amps.push(a); F.sum+=a; lam*=3; }
+  return F;
+}
+function fieldAt(F,x,y,gamma){
+  var v=0;
+  for(var o=0;o<F.waves.length;o++){ var acc=0, ws=F.waves[o]; for(var m=0;m<6;m++){ var w=ws[m]; acc+=Math.cos(w.kx*x+w.ky*y+w.ph); } v+=F.amps[o]*acc/6; }
+  var u=Math.max(0,Math.min(1,(v/F.sum+1)/2));
+  return 0.06+0.94*Math.pow(u,gamma);
+}
+/* ---- level 1 ---- */
+var bd=new Board(AR,4.6);
+var FA=new Field(bd,0.004,0.03), FB=new Field(bd,0.001,0.08);      // A local & forgiving, B regional & scarce
+var WA=null, WB=null;
+var h=new Float64Array(bd.n), gPair=new Float64Array(bd.pairs.length), springs=[];
+var sa=new Float64Array(bd.n), sb=new Float64Array(bd.n), cGlow=new Float64Array(bd.n);
+var elem=new Uint8Array(bd.n), grade=new Uint8Array(bd.n);        // 0 none 1 conduit 2 dam 3 extA 4 extB 5 reactor
+var E_NONE=0,E_CONDUIT=1,E_DAM=2,E_EXTA=3,E_EXTB=4,E_REACT=5;
+var GRADES=[{name:'poor',eta:0.18,cA:150,cB:50},{name:'mixer',eta:0.35,cA:300,cB:150},{name:'fine',eta:0.60,cA:600,cB:300}];
+var COST={ext:20, conduit:30, dam:30, seal:80, world:3000};
+var E_EXT=0.25, PHI=0.35, DELTA=0.02, K_RX=1.0;
+var AS={ level:1, A:250, B:0, C:0, rA:0, rB:0, rC:0, tool:'extA', grade:1, view:'species', spec:null, sealing:false, sealProg:0, copies:[], seed:5, t:0, msg:'' };
+var L2=null;
+function wallOf(i){ return elem[i]===E_DAM; }
+function rebuildG(){
+  for(var i=0;i<bd.pairs.length;i++){ var p=bd.pairs[i], base=1.0;
+    if(wallOf(p.a)||wallOf(p.b)) base=0; else if(elem[p.a]===E_CONDUIT||elem[p.b]===E_CONDUIT) base=6.0;
+    gPair[i]=base; }
+}
+function relaxHeads(sweeps){
+  for(var s=0;s<sweeps;s++){
+    var num=new Float64Array(bd.n), den=new Float64Array(bd.n);
+    for(var i=0;i<bd.pairs.length;i++){ var p=bd.pairs[i], g=gPair[i]; num[p.a]+=g*h[p.b]; num[p.b]+=g*h[p.a]; den[p.a]+=g; den[p.b]+=g; }
+    for(var j=0;j<springs.length;j++) num[springs[j].i]+=springs[j].q;
+    for(i=0;i<bd.n;i++){ if(bd.lake[i]){ h[i]=0; continue; } h[i]= den[i]>1e-9? (num[i]/den[i]) : h[i]; }
+  }
 }
 function as_reset(seed){
-  AS={ level:1, material:120, rate:0, tool:'small', spec:null, sealing:false, sealProg:0, copies:[], seed:seed, t:0, msg:'' };
-  af_make(seed); as_l1Field(); L1.sinks=[]; L1.t=0; L2=null;
-  as_hud();
+  AS={ level:1, A:250, B:0, C:0, rA:0, rB:0, rC:0, tool:'extA', grade:1, view:'species', spec:null, sealing:false, sealProg:0, copies:[], seed:seed, t:0, msg:'' };
+  WA=makeWaves(seed); WB=makeWaves(seed*31+7);
+  for(var i=0;i<bd.n;i++){ var qr=decode(bd.geom,bd.nodes[i]), p=fineXY(qr[0],qr[1]); FA.B[i]=fieldAt(WA,p[0],p[1],2); FA.S[i]=FA.B[i]; FB.B[i]=fieldAt(WB,p[0],p[1],2.4); FB.S[i]=FB.B[i]; }
+  FA.sinks=[]; FB.sinks=[]; elem.fill(0); grade.fill(0); sa.fill(0); sb.fill(0); cGlow.fill(0); h.fill(0);
+  /* four springs on the high ground near the rim, evenly spaced with a seeded twist; all water runs down to the central lake */
+  var rnd=(function(s){ s=(s*17+3)>>>0||1; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; })(seed);
+  springs=[]; var a0=rnd()*Math.PI*2;
+  for(var si=0;si<4;si++){ var ang=a0+si*Math.PI/2+(rnd()-0.5)*0.5, rr=AR-3;
+    var x=rr*Math.cos(ang), y=rr*Math.sin(ang);            // planar → axial (pointy-top)
+    var q=Math.round((x*SQ3/3 - y/3)), r=Math.round(y*2/3);
+    var kk=mapIdx(bd.geom,q,r); if(kk<0){ si--; continue; }
+    springs.push({i:bd.idx[kk],q:1.0}); }
+  rebuildG(); relaxHeads(400);
+  L2=null; as_hud();
 }
-/* level-2 unit (Q,R2) on the L2 board → fine axial centre */
-function as_unitCentre(Q,R2){ return [Q*AB[0]+R2*AB2[0], Q*AB[1]+R2*AB2[1]]; }
-function as_buildL2(){
-  L2=new SlowNet(AR,4.6);
-  /* sample 19 points of the fractal field over each unit's footprint (radius-2 flower scaled to the unit) */
-  var samp=[]; for(var dq=-2;dq<=2;dq++) for(var dr=-2;dr<=2;dr++) if(hexDist(dq,dr)<=2) samp.push([dq*AR/2.6, dr*AR/2.6]);
-  var meanL1=0; for(var i=0;i<L1.n;i++) meanL1+=L1.B[i]; meanL1/=L1.n;
-  for(i=0;i<L2.n;i++){
-    var qr=decode(L2.geom,L2.nodes[i]);
-    if(qr[0]===0&&qr[1]===0){ L2.B[i]=meanL1; }                    // the sealed world: exact mean of its tiles
-    else { var c=as_unitCentre(qr[0],qr[1]), s2=0; samp.forEach(function(o){ var p=fineXY(c[0]+o[0],c[1]+o[1]); s2+=af_at(p[0],p[1]); }); L2.B[i]=s2/samp.length; }
-    L2.S[i]=L2.B[i];
+function as_step(){
+  relaxHeads(2);
+  var outA=FA.step(), outB=FB.step(), i;
+  for(i=0;i<bd.n;i++){ sa[i]+=outA[i]; sb[i]+=outB[i]; }
+  /* advection: a fraction PHI of each tile's mass leaves along outgoing flux shares */
+  var outSum=new Float64Array(bd.n);
+  for(i=0;i<bd.pairs.length;i++){ var p=bd.pairs[i], q=gPair[i]*(h[p.a]-h[p.b]); if(q>0) outSum[p.a]+=q; else outSum[p.b]-=q; }
+  var da=new Float64Array(bd.n), db=new Float64Array(bd.n);
+  for(i=0;i<bd.pairs.length;i++){ p=bd.pairs[i]; q=gPair[i]*(h[p.a]-h[p.b]); var don= q>0?p.a:p.b, rec= q>0?p.b:p.a, share=Math.abs(q)/Math.max(outSum[don],1e-9);
+    if(outSum[don]<=1e-9) continue; var ma=PHI*sa[don]*share, mb=PHI*sb[don]*share; da[don]-=ma; da[rec]+=ma; db[don]-=mb; db[rec]+=mb; }
+  for(i=0;i<bd.pairs.length;i++){ p=bd.pairs[i]; if(gPair[i]<=0) continue; var fa=DELTA*(sa[p.a]-sa[p.b])/2, fb=DELTA*(sb[p.a]-sb[p.b])/2; da[p.a]-=fa; da[p.b]+=fa; db[p.a]-=fb; db[p.b]+=fb; }
+  var collA=0, collB=0, madeC=0;
+  for(i=0;i<bd.n;i++){
+    sa[i]=Math.max(0,sa[i]+da[i]); sb[i]=Math.max(0,sb[i]+db[i]);
+    if(elem[i]===E_REACT){ var eta=GRADES[grade[i]].eta, fl=bd.flower(i), rsum=0;   // a reactor is a 7-tile device
+      for(var f7=0;f7<fl.length;f7++){ var x7=fl[f7], rr=eta*K_RX*sa[x7]*sb[x7]/(sa[x7]+sb[x7]+0.01); rr=Math.min(rr, sa[x7]*0.5, sb[x7]*0.5); sa[x7]-=rr; sb[x7]-=rr; rsum+=rr; }
+      madeC+=rsum; cGlow[i]=0.95*cGlow[i]+0.05*rsum; }
+    if(bd.lake[i]){ collA+=sa[i]; collB+=sb[i]; sa[i]=0; sb[i]=0; }
   }
-  L2.kappa=0.0015; L2.D=0.05;
-  var origin=L2.idx[mapIdx(L2.geom,0,0)];
-  L2.sinks=[{tiles:[origin], E:AS.spec.yield, origin:true}];
-  AS.copies=[origin];
+  AS.A+=collA; AS.B+=collB; AS.C+=madeC;
+  AS.rA=0.98*AS.rA+0.02*collA; AS.rB=0.98*AS.rB+0.02*collB; AS.rC=0.98*AS.rC+0.02*madeC;
+  AS.t++;
 }
-/* --- sealing: characterize the world through six side-centre gates, 15 CG solves, chunked --- */
+function as_place(i){
+  if(AS.sealing||AS.level!==1) return;
+  var t=AS.tool;
+  if(t==='extA'||t==='extB'){ if(elem[i]) { AS.msg='occupied'; return; } if(AS.A<COST.ext){ AS.msg='need '+COST.ext+' A'; return; }
+    AS.A-=COST.ext; elem[i]= t==='extA'?E_EXTA:E_EXTB; (t==='extA'?FA:FB).sinks.push({tiles:[i],E:E_EXT}); AS.msg='extractor placed — it leaches into the water'; }
+  else if(t==='react'){ if(elem[i]) { AS.msg='occupied'; return; } var gr=GRADES[AS.grade]; if(AS.A<gr.cA||AS.B<gr.cB){ AS.msg='a '+gr.name+' reactor costs '+gr.cA+' A + '+gr.cB+' B'; return; }
+    AS.A-=gr.cA; AS.B-=gr.cB; elem[i]=E_REACT; grade[i]=AS.grade; AS.msg=gr.name+' reactor placed ('+(gr.eta*100).toFixed(0)+'% conversion where A and B overlap)'; }
+  else if(t==='conduit'||t==='dam'){ if(elem[i]&&elem[i]!==E_CONDUIT&&elem[i]!==E_DAM){ AS.msg='occupied'; return; } if(AS.A<COST.conduit){ AS.msg='need '+COST.conduit+' A'; return; }
+    AS.A-=COST.conduit; elem[i]= t==='conduit'?E_CONDUIT:E_DAM; rebuildG(); AS.msg= t==='conduit'?'conduit: 6× conductance':'dam: blocks water and everything in it'; }
+  else if(t==='erase'){ if(!elem[i]) return; if(elem[i]===E_EXTA) FA.sinks=FA.sinks.filter(function(s){return s.tiles[0]!==i;}); if(elem[i]===E_EXTB) FB.sinks=FB.sinks.filter(function(s){return s.tiles[0]!==i;}); elem[i]=0; grade[i]=0; rebuildG(); AS.msg='removed'; }
+}
+/* ---- seal (through six gates on the A-permeability network) ---- */
 function as_sealStart(){
-  if(AS.sealing||AS.material<COST.seal) return;
-  AS.material-=COST.seal; AS.sealing=true; AS.sealProg=0;
-  var n=L1.n, adj=L1.nbr, g=new Float64Array(n);
-  for(var i=0;i<n;i++) g[i]=0.3+0.7*L1.B[i];                        // richness as permeability
+  if(AS.sealing||AS.material<0) return;
+  if(AS.C<COST.seal){ AS.msg='sealing costs '+COST.seal+' C — make compound first'; as_hud(); return; }
+  AS.C-=COST.seal; AS.sealing=true; AS.sealProg=0;
+  var n=bd.n, adj=bd.nbr, g=new Float64Array(n);
+  for(var i=0;i<n;i++) g[i]=0.3+0.7*FA.B[i];
   var gp=function(i,j){ return 2*g[i]*g[j]/(g[i]+g[j]); };
   var diag0=new Float64Array(n); for(i=0;i<n;i++){ var s=0; for(var j2=0;j2<adj[i].length;j2++) s+=gp(i,adj[i][j2]); diag0[i]=s; }
   var corners=[[AR,0],[0,AR],[-AR,AR],[-AR,0],[0,-AR],[AR,-AR]], ports=[];
-  for(var d=0;d<6;d++){ var a=corners[d], b=corners[(d+1)%6]; ports.push(L1.idx[mapIdx(L1.geom,Math.round((a[0]+b[0])/2),Math.round((a[1]+b[1])/2))]); }
+  for(var d=0;d<6;d++){ var a=corners[d], b=corners[(d+1)%6]; ports.push(bd.idx[mapIdx(bd.geom,Math.round((a[0]+b[0])/2),Math.round((a[1]+b[1])/2))]); }
   var GD=2.0, pairsList=[]; for(var a2=0;a2<6;a2++) for(var b2=a2+1;b2<6;b2++) pairsList.push([a2,b2]);
   var T=[]; for(i=0;i<6;i++) T.push([0,0,0,0,0,0]);
   var pi=0;
@@ -309,80 +367,109 @@ function as_sealStart(){
     return GD*(1.4-x[pa])/0.8;
   }
   function chunk(){
-    if(pi<pairsList.length){
-      var pr=pairsList[pi++]; T[pr[0]][pr[1]]=T[pr[1]][pr[0]]=solveOne(ports[pr[0]],ports[pr[1]]);
-      AS.sealProg=pi/pairsList.length; as_hud(); setTimeout(chunk,0); return;
-    }
-    var yield_=0; L1.sinks.forEach(function(s){ yield_+=s.E; });
-    var cap=0; for(var i4=0;i4<n;i4++) cap+=L1.B[i4];
+    if(pi<pairsList.length){ var pr=pairsList[pi++]; T[pr[0]][pr[1]]=T[pr[1]][pr[0]]=solveOne(ports[pr[0]],ports[pr[1]]); AS.sealProg=pi/pairsList.length; as_hud(); setTimeout(chunk,0); return; }
+    var cap=0; for(var i4=0;i4<n;i4++) cap+=FA.B[i4]+FB.B[i4];
     var tAdj=(T[0][1]+T[1][2]+T[2][3]+T[3][4]+T[4][5]+T[5][0])/6, tOpp=(T[0][3]+T[1][4]+T[2][5])/3;
-    AS.spec={ yield:yield_, cap:cap, tAdj:tAdj, tOpp:tOpp, tiles:n, extractors:L1.sinks.length };
-    AS.sealing=false;
-    as_buildL2();
-    AS.level=2; AS.msg='Sealed. Your world is now one tile of a larger one.';
-    as_hud();
+    var nR=0,nX=0; for(i4=0;i4<n;i4++){ if(elem[i4]===E_REACT) nR++; if(elem[i4]===E_EXTA||elem[i4]===E_EXTB) nX++; }
+    AS.spec={ yA:AS.rA, yB:AS.rB, yC:AS.rC, cap:cap, tAdj:tAdj, tOpp:tOpp, reactors:nR, extractors:nX };
+    AS.sealing=false; as_buildL2(); AS.level=2; AS.msg='Sealed. Your world — extractors, reactors, conduits and all — is now one tile.'; as_hud();
   }
   setTimeout(chunk,0);
 }
+/* ---- level 2 ---- */
+function unitCentre(Q,R2){ return [Q*AB[0]+R2*AB2[0], Q*AB[1]+R2*AB2[1]]; }
+function as_buildL2(){
+  var b2=new Board(AR,4.6), fa=new Field(b2,0.002,0.05), fb=new Field(b2,0.0006,0.08);
+  var samp=[]; for(var dq=-2;dq<=2;dq++) for(var dr=-2;dr<=2;dr++) if(hexDist(dq,dr)<=2) samp.push([dq*AR/2.6, dr*AR/2.6]);
+  var mA=0,mB=0; for(var i=0;i<bd.n;i++){ mA+=FA.B[i]; mB+=FB.B[i]; } mA/=bd.n; mB/=bd.n;
+  for(i=0;i<b2.n;i++){
+    var qr=decode(b2.geom,b2.nodes[i]);
+    if(qr[0]===0&&qr[1]===0){ fa.B[i]=mA; fb.B[i]=mB; }
+    else { var c=unitCentre(qr[0],qr[1]), s1=0,s2=0; samp.forEach(function(o){ var p=fineXY(c[0]+o[0],c[1]+o[1]); s1+=fieldAt(WA,p[0],p[1],2); s2+=fieldAt(WB,p[0],p[1],2.4); }); fa.B[i]=s1/samp.length; fb.B[i]=s2/samp.length; }
+    fa.S[i]=fa.B[i]; fb.S[i]=fb.B[i];
+  }
+  var origin=b2.idx[mapIdx(b2.geom,0,0)];
+  L2={bd:b2, fa:fa, fb:fb, origin:origin, worlds:[]};
+  as_placeWorld(origin,true);
+}
+function as_placeWorld(i,free){
+  if(!L2) return; if(L2.worlds.some(function(w){return w.i===i;})){ AS.msg='already a world there'; return; }
+  if(!free&&AS.C<COST.world){ AS.msg='a copy of your world costs '+COST.world+' C'; return; }
+  if(!free) AS.C-=COST.world;
+  var ra=L2.fa.B[i]/Math.max(L2.fa.B[L2.origin],1e-6), rb=L2.fb.B[i]/Math.max(L2.fb.B[L2.origin],1e-6);
+  var w={i:i, yA:AS.spec.yA*ra, yB:AS.spec.yB*rb, yC:AS.spec.yC*Math.sqrt(ra*rb)};
+  L2.worlds.push(w); L2.fa.sinks.push({tiles:[i],E:w.yA+w.yC}); L2.fb.sinks.push({tiles:[i],E:w.yB+w.yC});
+  AS.copies=L2.worlds.map(function(x){return x.i;});
+  if(!free){ AS.msg='placed a copy · local A '+ra.toFixed(2)+'×, B '+rb.toFixed(2)+'× → compound '+w.yC.toFixed(3)+'/tick'+(L2.worlds.length===3?'  ·  three worlds. That was the loop.':''); }
+}
+function as_stepL2(){
+  var oa=L2.fa.step(), ob=L2.fb.step(), ga=0,gb=0,gc=0;
+  L2.worlds.forEach(function(w){ var scale=Math.min(1, (oa[w.i]+ob[w.i])/Math.max(w.yA+w.yB+2*w.yC,1e-9)); ga+=w.yA*scale; gb+=w.yB*scale; gc+=w.yC*scale; });
+  AS.A+=ga*40; AS.B+=gb*40; AS.C+=gc*40; AS.rA=0.98*AS.rA+0.02*ga*40; AS.rB=0.98*AS.rB+0.02*gb*40; AS.rC=0.98*AS.rC+0.02*gc*40;
+}
+/* ---- HUD + rendering ---- */
 function as_hud(){
-  document.getElementById('as-mat').textContent='material '+AS.material.toFixed(0)+'  (+'+(AS.rate*60).toFixed(1)+'/s)';
-  document.getElementById('as-level').textContent= AS.level===1? 'L1 · a world of 7,651 tiles' : 'L2 · a world of 7,651 worlds';
+  document.getElementById('as-pools').textContent='A '+AS.A.toFixed(0)+' (+'+(AS.rA*180).toFixed(1)+'/s) · B '+AS.B.toFixed(0)+' (+'+(AS.rB*180).toFixed(1)+'/s) · C '+AS.C.toFixed(0)+' (+'+(AS.rC*180).toFixed(2)+'/s)';
+  document.getElementById('as-level').textContent= AS.level===1? 'L1 · 7,651 tiles · '+springs.length+' springs' : 'L2 · 7,651 worlds';
   var sealBtn=document.getElementById('as-seal');
-  sealBtn.disabled= AS.level!==1 || AS.sealing || AS.material<COST.seal;
-  sealBtn.textContent= AS.sealing? 'characterizing… '+(AS.sealProg*100).toFixed(0)+'%' : AS.level===1? '⬆ Seal & ascend · '+COST.seal : 'sealed';
-  document.getElementById('as-spec').textContent= AS.spec? 'spec sheet: yield '+AS.spec.yield.toFixed(2)+'/tick · capacity '+AS.spec.cap.toFixed(0)+' · gate conductance '+AS.spec.tAdj.toFixed(3)+' adjacent / '+AS.spec.tOpp.toFixed(3)+' opposite · '+AS.spec.extractors+' extractors inside' : 'spec sheet: — (seal to characterize)';
-  var tools=document.getElementById('as-tools-l1'), tools2=document.getElementById('as-tools-l2');
-  tools.style.display= AS.level===1?'':'none'; tools2.style.display= AS.level===2?'':'none';
+  sealBtn.disabled= AS.level!==1 || AS.sealing || AS.C<COST.seal;
+  sealBtn.textContent= AS.sealing? 'characterizing… '+(AS.sealProg*100).toFixed(0)+'%' : AS.level===1? '⬆ Seal & ascend · '+COST.seal+' C' : 'sealed';
+  document.getElementById('as-spec').textContent= AS.spec? 'spec sheet: A '+AS.spec.yA.toFixed(3)+'/tick · B '+AS.spec.yB.toFixed(3)+' · compound '+AS.spec.yC.toFixed(3)+' · gates '+AS.spec.tAdj.toFixed(3)+'/'+AS.spec.tOpp.toFixed(3)+' · '+AS.spec.extractors+' extractors, '+AS.spec.reactors+' reactors inside' : 'spec sheet: — (seal to characterize)';
+  document.getElementById('as-tools-l1').style.display= AS.level===1?'':'none';
+  document.getElementById('as-tools-l2').style.display= AS.level===2?'':'none';
   Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(b){ b.disabled= (+b.dataset.l===2&&!L2); });
   if(AS.msg) document.getElementById('as-msg').textContent=AS.msg;
-  if(L2){ var copiesN=AS.copies.length; document.getElementById('as-l2stat').textContent='worlds placed '+copiesN+' · level-2 basin '+L2.basin(AS.copies,10)+' units · placing another costs '+COST.world; }
+  if(L2) document.getElementById('as-l2stat').textContent='worlds '+L2.worlds.length+' · level-2 basins A '+L2.fa.basin(AS.copies,10)+' / B '+L2.fb.basin(AS.copies,10)+' units';
 }
 var as_view=1;
-var as_sim=new Sim('cv-ascent', L1.geom.w, L1.geom.h, {
+function terrainColor(a,b){ var r=222-90*a-20*b, g=210-60*a-110*b, bl=178-110*a-140*b; return 'rgb('+(r|0)+','+(g|0)+','+(bl|0)+')'; }
+var as_sim=new Sim('cv-ascent', bd.geom.w, bd.geom.h, {
   tick:function(s){
-    var net= as_view===1? L1 : L2;
     if(s.pointer.down){
       s.pointer.down=false;
-      if(net){
-        var i=net.pick(s.pointer.x,s.pointer.y);
-        if(i>=0){
-          if(as_view===1&&AS.level===1&&!AS.sealing){
-            if(AS.tool==='small'&&AS.material>=COST.small){ L1.sinks.push({tiles:[i],E:E_SMALL}); AS.material-=COST.small; }
-            else if(AS.tool==='large'&&AS.material>=COST.large){ L1.sinks.push({tiles:L1.flower(i),E:E_LARGE}); AS.material-=COST.large; }
-            else AS.msg='not enough material';
-          } else if(as_view===2&&L2){
-            if(AS.copies.indexOf(i)<0&&AS.material>=COST.world){
-              var origin=L2.idx[mapIdx(L2.geom,0,0)];
-              var yieldHere=AS.spec.yield*L2.B[i]/Math.max(L2.B[origin],1e-6);
-              L2.sinks.push({tiles:[i],E:yieldHere}); AS.copies.push(i); AS.material-=COST.world;
-              AS.msg='placed a copy of your world · local richness '+L2.B[i].toFixed(2)+' vs origin '+L2.B[origin].toFixed(2)+' → yield '+yieldHere.toFixed(2)+'/tick';
-              if(AS.copies.length===3) AS.msg+='  ·  three worlds. That was the loop.';
-            } else if(AS.copies.indexOf(i)>=0) AS.msg='already a world there';
-            else AS.msg='a world costs '+COST.world+' material';
-          }
-          as_hud();
-        }
-      }
+      if(as_view===1){ var i=bd.pick(s.pointer.x,s.pointer.y); if(i>=0) as_place(i); }
+      else if(L2){ var j=L2.bd.pick(s.pointer.x,s.pointer.y); if(j>=0) as_placeWorld(j,false); }
+      as_hud();
     }
-    var taken=0;
-    for(var r=0;r<3;r++){ taken+=L1.step(); if(L2) taken+=L2.step()*40; }   // level-2 material is worth 40× (a world's worth per unit)
-    AS.material+=taken; AS.rate=0.9*AS.rate+0.1*(taken/3);
-    AS.t++; if(AS.t%20===0) as_hud();
+    for(var r=0;r<3;r++){ if(AS.level===1) as_step(); else as_stepL2(); }
+    if(++AS.t%20===0) as_hud();
   },
   draw:function(s,ctx){
     ctx.fillStyle=css['--panel']; ctx.fillRect(0,0,s.w,s.h);
-    var net= as_view===1? L1 : L2; if(!net) return;
-    var g=net.geom;
-    for(var i=0;i<net.n;i++){ var k=net.nodes[i], t=Math.max(0,Math.min(1,net.S[i])); hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98); var rr=222+(34-222)*t, gg=210+(120-210)*t, bb=178+(78-178)*t; ctx.fillStyle='rgb('+(rr|0)+','+(gg|0)+','+(bb|0)+')'; ctx.fill(); }
-    net.sinks.forEach(function(sk){ var k=net.nodes[sk.tiles[0]]; var big=sk.tiles.length>1||sk.origin; ctx.strokeStyle= sk.origin?'#C28E2C':'#1F6F7A'; ctx.lineWidth= big?2.5:1.5; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],g.sz*(big?2.2:0.9),0,7); ctx.stroke(); });
-    if(as_view===2){ var o=net.idx[mapIdx(net.geom,0,0)], k2=net.nodes[o]; ctx.fillStyle='#C28E2C'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.fillText('your world', g.cx[k2], g.cy[k2]-g.sz*3); }
+    if(as_view===2&&L2){
+      var b2=L2.bd, g2=b2.geom;
+      for(var i=0;i<b2.n;i++){ var k=b2.nodes[i]; hexPath(ctx,g2.cx[k],g2.cy[k],g2.sz*0.98); ctx.fillStyle=terrainColor(L2.fa.S[i],L2.fb.S[i]); ctx.fill(); }
+      L2.worlds.forEach(function(w){ var k2=b2.nodes[w.i]; ctx.strokeStyle= w.i===L2.origin?'#C28E2C':'#1F6F7A'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(g2.cx[k2],g2.cy[k2],g2.sz*2.2,0,7); ctx.stroke(); });
+      var ko=b2.nodes[L2.origin]; ctx.fillStyle='#C28E2C'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.fillText('your world', g2.cx[ko], g2.cy[ko]-g2.sz*3);
+      return;
+    }
+    var g=bd.geom, view=AS.view;
+    for(i=0;i<bd.n;i++){
+      k=bd.nodes[i]; hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98);
+      if(view==='terrain'){ ctx.fillStyle=terrainColor(FA.S[i],FB.S[i]); }
+      else if(view==='flow'){ var t=Math.min(1,h[i]/8); ctx.fillStyle='rgb('+(222-190*t|0)+','+(210-140*t|0)+','+(178-40*t|0)+')'; }
+      else { var a=Math.min(1,sa[i]*2.2), b=Math.min(1,sb[i]*2.2); var base=terrainColor(FA.S[i]*0.35,FB.S[i]*0.35);
+        ctx.fillStyle=base; ctx.fill(); hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98);
+        ctx.fillStyle='rgba(31,111,122,'+(0.85*a).toFixed(3)+')'; ctx.fill(); hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98);
+        ctx.fillStyle='rgba(210,105,30,'+(0.75*b).toFixed(3)+')'; }
+      ctx.fill();
+      if(elem[i]){ var e=elem[i];
+        if(e===E_DAM){ ctx.fillStyle='#2A2622'; hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.98); ctx.fill(); }
+        else if(e===E_CONDUIT){ ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.5; hexPath(ctx,g.cx[k],g.cy[k],g.sz*0.5); ctx.stroke(); }
+        else if(e===E_EXTA||e===E_EXTB){ ctx.strokeStyle= e===E_EXTA?'#1F6F7A':'#D2691E'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(g.cx[k],g.cy[k],g.sz*1.1,0,7); ctx.stroke(); }
+        else if(e===E_REACT){ var gl=Math.min(1,cGlow[i]*40); ctx.fillStyle='rgba(224,179,60,'+(0.35+0.65*gl).toFixed(2)+')'; ctx.beginPath(); ctx.moveTo(g.cx[k],g.cy[k]-g.sz*1.3); ctx.lineTo(g.cx[k]+g.sz*1.3,g.cy[k]); ctx.lineTo(g.cx[k],g.cy[k]+g.sz*1.3); ctx.lineTo(g.cx[k]-g.sz*1.3,g.cy[k]); ctx.closePath(); ctx.fill(); ctx.strokeStyle='#8A6318'; ctx.lineWidth=1+grade[i]; ctx.stroke(); }
+      }
+    }
+    for(var li=0;li<bd.n;li++) if(bd.lake[li]){ var kl=bd.nodes[li]; ctx.fillStyle='#173F6E'; hexPath(ctx,g.cx[kl],g.cy[kl],g.sz*0.98); ctx.fill(); }
+    springs.forEach(function(sp){ var k3=bd.nodes[sp.i]; ctx.fillStyle='#2E6FB8'; ctx.beginPath(); ctx.arc(g.cx[k3],g.cy[k3],g.sz*1.2,0,7); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); });
   }
 });
-Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(b){ b.addEventListener('click',function(){ AS.tool=b.dataset.t; Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
+Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(b){ b.addEventListener('click',function(){ AS.tool=b.dataset.t; if(b.dataset.g!==undefined) AS.grade=+b.dataset.g; Array.prototype.forEach.call(document.querySelectorAll('button.as-tool'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
+Array.prototype.forEach.call(document.querySelectorAll('button.as-view'),function(b){ b.addEventListener('click',function(){ AS.view=b.dataset.v; Array.prototype.forEach.call(document.querySelectorAll('button.as-view'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
 Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(b){ b.addEventListener('click',function(){ if(+b.dataset.l===2&&!L2) return; as_view=+b.dataset.l; Array.prototype.forEach.call(document.querySelectorAll('button.as-alt'),function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); }); });
 document.getElementById('as-seal').addEventListener('click',as_sealStart);
 document.getElementById('as-new').addEventListener('click',function(){ as_view=1; as_reset((AS.seed*7+13)%1009); as_sim.running=true; });
-document.getElementById('as-grant').addEventListener('click',function(){ AS.material+=1000; AS.msg='granted 1000 material (for testing the transition without the grind)'; as_hud(); });
+document.getElementById('as-grant').addEventListener('click',function(){ AS.A+=1000; AS.B+=500; AS.C+=300; AS.msg='granted 1000 A, 500 B, 300 C (skip the grind)'; as_hud(); });
 as_reset(AS.seed);
 
 

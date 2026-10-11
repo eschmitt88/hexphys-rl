@@ -42,11 +42,10 @@ touch matching paths:
 @.claude/rules/notebooks.md
 @.claude/rules/data.md
 
-Framework rules load here (per-project, not globally — they only cost
-context where they can apply):
-
-@~/claude-system/claude/rules/evaluation.md
-@~/claude-system/claude/rules/agency.md
+Framework rules in `~/claude-system/claude/rules/` can't be `@`-imported
+(imports resolve only in-tree): read `evaluation.md` before designing or
+judging an evaluation, `agency.md` before an autonomous run. Skills with
+`respects:` do this automatically.
 
 ## Budget & compute
 

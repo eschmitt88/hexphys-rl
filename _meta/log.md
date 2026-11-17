@@ -57,3 +57,4 @@ skills; read by `/lint`.
 2026-09-18 ascent II shipped: two richness fluids (A local, B regional), four rim springs draining to a central lake, streamline advection of leached A/B, 7-tile graded reactors (18/35/60% from the Contracts greybox) making C only where both streams pass, conduits/dams for routing, raw A/B collected at the lake, seal priced in C, L2 copies yield A/B/C scaled by local richness
 2026-11-17 17:38 design: physics ladder — 6-level multiscale map (BOND→MATTER→DEVICE→LAND→WORLD→SYSTEM), 5-kernel catalogue, engine survey, bridge-memory rule
 2026-11-17 18:02 ADR 0003 physics-ladder scope: top-down everywhere, physics spine first (life later on L2-L4), one game, cards up only, lives in hexphys-rl
+2026-11-17 18:41 ladder shipped: docs/ladder.html — Forge (lattice MC, cards) → Flood Works (top-down MLS-MPM); 3 contracts each favour a different card property (stiff/cost, cheapness, toughness); headless play-through green, ~7ms/frame

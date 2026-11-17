@@ -1,7 +1,7 @@
 ---
 kind: design
 name: "physics-ladder"
-status: proposal
+status: accepted-scope (ADR 0003)
 added: "2026-11-17"
 related_concepts: ["tile-homogenization", "hierarchical-spice-scaling", "adaptive-surrogate-fallback", "oscillatory-closure-limits", "reaction-closure-damkohler", "bond-affinity-chemistry", "differentiable-physics-vs-rl-signal"]
 ---
@@ -113,7 +113,7 @@ flowchart BT
 ```
 
 Solid arrows go **up**: sealed boards become cards (parameters). Dotted
-arrows go **down**: the level above imposes boundary conditions (forcing)
+arrows (**deferred by ADR 0003**: cards go up only for now) would go **down**: the level above imposes boundary conditions (forcing)
 on a lower board when it is re-entered. Coupling crosses levels *only*
 through cards and boundary conditions, which keeps every level a
 fixed-shape environment.
@@ -191,8 +191,10 @@ fixed-shape environment.
 - **Gradients.** Yes. DiffTaichi proved MPM differentiable. This is the
   best level for SHAC/AHAC-style training and for inverse design of
   components.
-- **Open choice.** Mechanics wants gravity, so this may be the one level
-  where a side view earns its way back (see ADR 0001).
+- **Top-down (ADR 0003).** No gravity in the plane. Devices are driven
+  by pressure and pumps, actuation, thermal expansion, and material that
+  agents push. Validate early that MPM without gravity still produces
+  legible, interesting devices.
 
 ### L4 · LAND: landscape (exists)
 
@@ -399,20 +401,14 @@ each single-scale. Run a proper search before claiming novelty.
 
 ---
 
-## 6. Open questions for the user
+## 6. Decisions (2026-11-17, ADR 0003)
 
-1. **Perspective.** Top-down everywhere (ADR 0001), or does L3 earn a
-   side view with gravity?
-2. **Spine.** A physics spine up to planet and orbit, a life spine (cell,
-   organism, ecosystem), or a fork after L4?
-3. **Product.** One game that traverses the whole ladder, or a family of
-   RL environments sharing the ladder as a research instrument? These
-   choose different curricula.
-4. **Coupling depth.** Is up-only enough (cards up, a frozen world
-   below), or should live downward forcing exist, with climate change
-   rewriting land that the player then has to revisit?
-5. **Home.** New project or this one? Recommendation: **extend
-   hexphys-rl.** L3 and L4 and the whole bridge machinery (ports, SPICE,
-   seal & ascend, adaptive fallback) already live here; the ladder
-   extends downward (L1–L2, partly the Lagrangian track) and upward
-   (L5–L6). Record the choice as ADR 0003 once decided.
+1. **Top-down at every level.**
+2. **Physics spine first.** The life spine is deferred and will merge
+   later on L2–L4, so the card schema reserves an open "biological"
+   block.
+3. **One game.**
+4. **Cards go up only for now.** With no downward coupling, each level is
+   a stand-alone environment that can train under domain randomization
+   over the cards it receives.
+5. **Home: hexphys-rl.**

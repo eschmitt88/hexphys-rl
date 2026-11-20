@@ -58,3 +58,4 @@ skills; read by `/lint`.
 2026-11-17 17:38 design: physics ladder — 6-level multiscale map (BOND→MATTER→DEVICE→LAND→WORLD→SYSTEM), 5-kernel catalogue, engine survey, bridge-memory rule
 2026-11-17 18:02 ADR 0003 physics-ladder scope: top-down everywhere, physics spine first (life later on L2-L4), one game, cards up only, lives in hexphys-rl
 2026-11-17 18:41 ladder shipped: docs/ladder.html — Forge (lattice MC, cards) → Flood Works (top-down MLS-MPM); 3 contracts each favour a different card property (stiff/cost, cheapness, toughness); headless play-through green, ~7ms/frame
+2026-11-20 05:46 frontier shipped: docs/frontier.html — open-world god's-eye settlement on a ~609k-hex continent (100x Forge&Flood); worker sim: virtual-pipe water + seasons, soil moisture, vegetation spread + wildfire, raised-bank breach; fog + ragged reveal + rumoured map; outposts/scouts/prospecting, buried ferrite + river silica; forge reused for bank materials; 17 ms/step, 60 fps headless

@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hexphys Frontier</title>
+<style>
+:root{--bg:#0b0e12;--panel:rgba(18,22,28,.92);--ink:#e7e9ec;--dim:#8d96a2;--line:#2a313b;--acc:#7cc4ff;--acc2:#ffb86b;--good:#6fd38b;--bad:#ff7b6b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#map{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.pn{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;backdrop-filter:blur(4px)}
+#top{left:10px;right:10px;top:8px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 12px}
+#top .res{display:flex;gap:12px;flex-wrap:wrap}
+#top .r{white-space:nowrap}
+#top .r b{font-weight:650}
+#top .sp{display:flex;gap:4px;margin-left:auto;align-items:center}
+.b{background:#1d232c;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
+.b:hover{border-color:#4a5563}.b.on{border-color:var(--acc);background:#1b2a3a}.b:disabled{opacity:.4;cursor:default}
+#tools{left:10px;top:60px;width:208px;display:flex;flex-direction:column;gap:4px;max-height:calc(100% - 70px);overflow:auto}
+#tools h4{margin:6px 0 2px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+.tool{display:flex;justify-content:space-between;gap:6px;text-align:left;width:100%}
+.tool .c{color:var(--dim);font-size:11px}
+#info{right:10px;bottom:10px;width:300px;font-size:12px}
+#log{right:10px;top:60px;width:300px;max-height:30vh;overflow:auto;font-size:12px}
+#log .e{padding:2px 0;border-bottom:1px solid #20262e}
+#log .t{color:var(--dim);margin-right:5px}
+#goals{right:10px;top:calc(70px + 30vh);width:300px;font-size:12px}
+#goals .g{display:flex;gap:6px}
+#goals .g.done{color:var(--good)}
+.dim{color:var(--dim)}
+#help{left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);padding:18px 22px;z-index:20}
+#help h2{margin:0 0 8px;font-size:20px}
+#help li{margin:3px 0}
+#loading{left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 22px;z-index:30;font-size:15px}
+#forge{left:50%;top:50%;transform:translate(-50%,-50%);width:min(920px,96vw);z-index:25;display:flex;gap:14px;flex-wrap:wrap;padding:14px}
+#forge canvas{border-radius:10px;background:#0a0d11;touch-action:none}
+#forge .side{flex:1;min-width:280px;display:flex;flex-direction:column;gap:6px}
+label.sl{display:grid;grid-template-columns:62px 1fr 64px;gap:6px;align-items:center}
+.stat{display:grid;grid-template-columns:80px 1fr 40px;gap:6px;align-items:center}
+.bar{height:7px;background:#0c0f13;border-radius:5px;overflow:hidden;border:1px solid #232a33}.bar>i{display:block;height:100%}
+.hidden{display:none!important}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+#zoom{left:226px;bottom:10px;display:flex;gap:4px;padding:5px}
+kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;font-size:11px}
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+<div class="pn" id="loading">Generating a continent of ~600,000 hexes…</div>
+
+<div class="pn hidden" id="top">
+  <b>⬡ Frontier</b>
+  <div class="res" id="res"></div>
+  <span id="date" class="dim"></span>
+  <div class="sp">
+    <button class="b" data-rate="0">pause</button><button class="b on" data-rate="8">1×</button><button class="b" data-rate="20">2.5×</button><button class="b" data-rate="48">6×</button>
+    <button class="b" id="btnGeo" title="show known ore deposits">geology</button>
+    <button class="b" id="btnHelp">?</button>
+  </div>
+</div>
+
+<div class="pn hidden" id="tools"></div>
+<div class="pn hidden" id="log"></div>
+<div class="pn hidden" id="goals"></div>
+<div class="pn hidden" id="info"><span class="dim">Hover the map.</span></div>
+<div class="pn hidden" id="zoom"><button class="b" id="zin">+</button><button class="b" id="zout">-</button><button class="b" id="zhome" title="back to your settlement">home</button><button class="b" id="zall" title="whole continent">map</button></div>
+
+<div class="pn hidden" id="help">
+  <h2>⬡ Hexphys Frontier</h2>
+  <div class="dim" style="margin-bottom:8px">An open continent of ~600,000 hexes. Rain falls, rivers run, lakes fill and drain with the seasons,
+    forests spread where the soil is wet and burn when it is dry. Nothing is scripted. You found a settlement in the fog and grow it.</div>
+  <ul>
+    <li><b>Explore</b>: outposts claim land and reveal the fog; scouts reveal far patches; prospect to find buried <span style="color:#d2694a">ferrite</span> and river <span style="color:#3fb3a8">silica sand</span>.</li>
+    <li><b>Feed</b> your settlers: farms yield by <i>soil moisture</i>. Dig channels from rivers to irrigate — but floods drown farms.</li>
+    <li><b>Shape water</b>: there are no pipes or dams as objects. <i>Dig</i> lowers land, <i>Raise</i> builds it up. A raised bank holds water up to its material's strength; stone holds ~2.5 m. Forge stronger materials for bigger reservoirs.</li>
+    <li><b>Forge</b>: mined ferrite, silica and forest resin go into the lattice forge; how you heat and cool it decides the strength of what you build.</li>
+  </ul>
+  <div class="dim">Pan: drag (Inspect tool), right-drag, or <kbd>WASD</kbd>/arrows · Zoom: wheel or ＋/－ · <kbd>Space</kbd> pause · <kbd>Esc</kbd> back to Inspect</div>
+  <div style="margin-top:10px;text-align:right"><button class="b on" id="helpOk">Begin</button></div>
+</div>
+
+<div class="pn hidden" id="forge">
+  <canvas id="fc" width="420" height="420"></canvas>
+  <div class="side">
+    <b>Forge — lattice chemistry</b>
+    <div class="dim small">Atoms swap places at temperature T; bonds lower energy. Anneal (cool slowly) for strong, ordered material; quench for fast, porous, weak. Silica bonds hardest to ferrite; resin is soft and tough.</div>
+    <label class="sl"><span><span class="sw" style="background:#d2694a"></span>Ferrite</span><input type="range" id="rF" min="0" max="10" value="4"><span id="vF"></span></label>
+    <label class="sl"><span><span class="sw" style="background:#3fb3a8"></span>Silica</span><input type="range" id="rS" min="0" max="10" value="4"><span id="vS"></span></label>
+    <label class="sl"><span><span class="sw" style="background:#e8c25a"></span>Resin</span><input type="range" id="rW" min="0" max="10" value="1"><span id="vW"></span></label>
+    <label class="sl"><span>Fill</span><input type="range" id="rFill" min="30" max="100" value="70"><span id="vFill"></span></label>
+    <div id="fcost" class="dim"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="b on" id="fMix">Load &amp; melt</button><button class="b" id="fAnneal">Anneal</button><button class="b" id="fQuench">Quench</button>
+    </div>
+    <div id="fprobe"></div>
+    <div style="display:flex;gap:6px"><button class="b on" id="fSeal">⬆ Seal batch</button><button class="b" id="fClose">Close</button></div>
+    <div id="fmsg" class="dim"></div>
+  </div>
+</div>
+
+<script id="simsrc" type="text/plain">
+'use strict';
+// ===================== FRONTIER SIM CORE (runs in a Web Worker) =====================
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function makeNoise(seed){
+  const rnd=mulberry32(seed), perm=[]; for(let i=0;i<256;i++)perm[i]=i;
+  for(let i=255;i>0;i--){const j=(rnd()*(i+1))|0;const t=perm[i];perm[i]=perm[j];perm[j]=t;}
+  const p=new Uint8Array(512); for(let i=0;i<512;i++)p[i]=perm[i&255];
+  const GX=[1,-1,1,-1,1,-1,0,0], GY=[1,1,-1,-1,0,0,1,-1];
+  const F2=0.5*(Math.sqrt(3)-1), G2=(3-Math.sqrt(3))/6;
+  return function(x,y){
+    const s=(x+y)*F2, i=Math.floor(x+s), j=Math.floor(y+s), t=(i+j)*G2;
+    const x0=x-(i-t), y0=y-(j-t); const i1=x0>y0?1:0, j1=1-i1;
+    const x1=x0-i1+G2, y1=y0-j1+G2, x2=x0-1+2*G2, y2=y0-1+2*G2, ii=i&255, jj=j&255;
+    let n=0, a;
+    a=0.5-x0*x0-y0*y0; if(a>0){a*=a;const g=p[ii+p[jj]]&7; n+=a*a*(GX[g]*x0+GY[g]*y0);}
+    a=0.5-x1*x1-y1*y1; if(a>0){a*=a;const g=p[ii+i1+p[jj+j1]]&7; n+=a*a*(GX[g]*x1+GY[g]*y1);}
+    a=0.5-x2*x2-y2*y2; if(a>0){a*=a;const g=p[ii+1+p[jj+1]]&7; n+=a*a*(GX[g]*x2+GY[g]*y2);}
+    return 70*n;
+  };
+}
+function makeSim(R, seed){
+  const W=2*R+5, N=W*W, OFF=R+2, SQ3=Math.sqrt(3);
+  const idx=(q,r)=>(r+OFF)*W+(q+OFF);
+  const NB=[1,1-W,-W,-1,-1+W,W];
+  const valid=new Uint8Array(N);
+  const qOf=new Int16Array(N), rOf=new Int16Array(N);
+  for(let i=0;i<N;i++){ qOf[i]=i%W-OFF; rOf[i]=((i/W)|0)-OFF; }
+  for(let r=-R;r<=R;r++) for(let q=-R;q<=R;q++) if(Math.abs(q+r)<=R) valid[idx(q,r)]=1;
+  // active = valid cells + sea cells touching a valid cell (edge loop domain)
+  const act=[]; const sea=[];
+  for(let i=0;i<N;i++){
+    const row=(i/W)|0, col=i%W; if(row<1||row>W-2||col<1||col>W-2) continue;
+    if(valid[i]){act.push(i);continue;}
+    for(let d=0;d<6;d++) if(valid[i+NB[d]]){act.push(i);sea.push(i);break;}
+  }
+  const ACT=Int32Array.from(act), SEA=Int32Array.from(sea);
+  const VAL=Int32Array.from(act.filter(i=>valid[i]));
+  const h=new Float32Array(N), w=new Float32Array(N), m=new Float32Array(N), b=new Float32Array(N);
+  const fire=new Uint8Array(N), wallS=new Float32Array(N), tmp=new Float32Array(N);
+  const F0=new Float32Array(N),F1=new Float32Array(N),F2=new Float32Array(N), out=new Float32Array(N);
+  const FF=[F0,F1,F2];
+  const ferrite=new Float32Array(N), sand=new Float32Array(N), acc=new Float32Array(N);
+  const P={ KP:0.15, DAMP:0.985, rain:1.6e-5, evap:1.2e-5, season:1, yearSteps:2400, step:0, rnd:mulberry32(seed^0x9e37) };
+
+  function cellXY(i){ const q=qOf[i], r=rOf[i]; return [SQ3*(q+r/2), 1.5*r]; }
+  function hexDist(i){ const q=qOf[i], r=rOf[i]; return (Math.abs(q)+Math.abs(r)+Math.abs(q+r))/2; }
+
+  // ---------------- world generation ----------------
+  function generate(){
+    const n1=makeNoise(seed), n2=makeNoise(seed+1), n3=makeNoise(seed+2), n4=makeNoise(seed+3), n5=makeNoise(seed+4);
+    const fbm=(nz,x,y,o)=>{let s=0,a=1,f=1,t=0;for(let k=0;k<o;k++){s+=a*nz(x*f,y*f);t+=a;a*=0.5;f*=2.03;}return s/t;};
+    const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
+    const S=R/450;
+    for(let i=0;i<N;i++){
+      if(!valid[i]){ h[i]=-40; continue; }
+      const [x,y]=cellXY(i), d=hexDist(i)/R;
+      const c=fbm(n1,x/(420*S),y/(420*S),5);
+      const base=0.42+0.85*c-1.3*ss(0.6,0.97,d);
+      const rg=1-Math.abs(fbm(n2,x/(150*S),y/(150*S),5)); const ridge=rg*rg*rg;
+      const mm=ss(0.0,0.4,fbm(n3,x/(520*S)+11,y/(520*S)-7,3));
+      const hills=fbm(n4,x/(45*S),y/(45*S),4);
+      let hh=110*base + 330*mm*ridge*Math.max(0,Math.min(1,base*2.5)) + 14*hills;
+      if(hh>0) hh=hh*0.55+Math.pow(hh,1.25)*0.06; // flatten lowlands a little
+      h[i]=hh;
+    }
+    // priority flood from the ocean boundary -> filled surface + drainage tree
+    const Fs=new Float32Array(N), parent=new Int32Array(N).fill(-1), seen=new Uint8Array(N), order=new Int32Array(VAL.length); let on=0;
+    const heapI=new Int32Array(N), heapV=new Float32Array(N); let hn=0;
+    const push=(i,v)=>{let k=hn++; while(k>0){const pk=(k-1)>>1; if(heapV[pk]<=v)break; heapI[k]=heapI[pk];heapV[k]=heapV[pk];k=pk;} heapI[k]=i;heapV[k]=v;};
+    const pop=()=>{const top=heapI[0]; const li=heapI[--hn], lv=heapV[hn]; let k=0; for(;;){let c=2*k+1; if(c>=hn)break; if(c+1<hn&&heapV[c+1]<heapV[c])c++; if(heapV[c]>=lv)break; heapI[k]=heapI[c];heapV[k]=heapV[c];k=c;} heapI[k]=li;heapV[k]=lv; return top;};
+    for(const s of SEA){ seen[s]=1; for(let d=0;d<6;d++){const j=s+NB[d]; if(valid[j]&&!seen[j]){seen[j]=1; Fs[j]=Math.max(h[j],0); parent[j]=-1; push(j,Fs[j]);}} }
+    while(hn>0){ const c=pop(); order[on++]=c;
+      for(let d=0;d<6;d++){ const j=c+NB[d]; if(!valid[j]||seen[j]) continue; seen[j]=1; Fs[j]=Math.max(h[j],Fs[c]+(Fs[c]>0?0.04:0)); parent[j]=c; push(j,Fs[j]); } }
+    for(let k=0;k<on;k++) acc[order[k]]=1;
+    for(let k=on-1;k>=0;k--){ const c=order[k], p=parent[c]; if(p>=0) acc[p]+=acc[c]; }
+    // prune lakes: connected depressions; keep the biggest few, fill the rest flat
+    { const lab=new Int32Array(N).fill(-1); const comps=[]; const stack=[];
+      for(const i of VAL){ if(lab[i]>=0||Fs[i]-h[i]<0.05||Fs[i]<=0.001) continue;
+        const id=comps.length; let area=0, depth=0; lab[i]=id; stack.push(i);
+        while(stack.length){ const c=stack.pop(); area++; depth=Math.max(depth,Fs[c]-h[c]);
+          for(let d=0;d<6;d++){ const j=c+NB[d]; if(valid[j]&&lab[j]<0&&Fs[j]-h[j]>=0.05&&Fs[j]>0.001){ lab[j]=id; stack.push(j);} } }
+        comps.push({id,area,depth}); }
+      const keep=new Uint8Array(comps.length); const landN=VAL.length;
+      comps.sort((a,b)=>b.area*Math.min(b.depth,20)-a.area*Math.min(a.depth,20)); let tot=0;
+      for(const c of comps){ if(c.depth<4||c.area<40) continue; if(tot+c.area>0.025*landN) continue; keep[c.id]=1; tot+=c.area; }
+      for(const i of VAL){ const l=lab[i]; if(l>=0 && !keep[l]) h[i]=Fs[i]; }
+      P.lakes=comps.filter(c=>keep[c.id]).length; }
+    // initial water: ocean + lakes + river channels
+    for(const i of VAL){
+      let d=Fs[i]-h[i]; if(d<0.02) d=0;
+      if(h[i]>0 && acc[i]>400) d=Math.max(d, 0.02*Math.pow(acc[i]*P.rain*3/0.02,0.5)*0.5);
+      w[i]=d;
+    }
+    for(const s of SEA) w[s]=-h[s];
+    // geology: ferrite veins in uplands, silica sand on river flats & beaches
+    for(const i of VAL){
+      const [x,y]=cellXY(i);
+      if(h[i]>55){ const v=n5(x/(28*S),y/(28*S)); const v2=n1(x/(9*S)+40,y/(9*S)); if(v>0.42&&v2>-0.2) ferrite[i]=Math.min(1,(v-0.42)*3)*(0.6+0.4*Math.min(1,(h[i]-55)/120)); }
+      if(h[i]>0.2&&h[i]<40){
+        let s2=0; if(acc[i]>1500) s2=Math.min(1,Math.log(acc[i]/1500)/3);
+        if(h[i]<3 && w[i]===0) s2=Math.max(s2,0.5);
+        const pat=n4(x/(14*S)+5,y/(14*S)); if(s2>0&&pat>-0.1) sand[i]=s2*(0.5+0.5*pat);
+      }
+    }
+    // moisture + vegetation spin-up
+    for(let k=0;k<80;k++) moistureStep();
+    for(const i of VAL){ const [x,y]=cellXY(i); b[i]=suit(i)*(0.55+0.45*n2(x/(30*S)+3,y/(30*S))); }
+    for(let k=0;k<30;k++) vegStep(true);
+  }
+
+  // ---------------- dynamics ----------------
+  function seasonFactor(){ const ph=(P.step%P.yearSteps)/P.yearSteps; return 1+1.6*Math.sin(2*Math.PI*ph); } // wet peak at 1/4, dry at 3/4
+  function waterStep(){
+    const KP=P.KP, DAMP=P.DAMP;
+    out.fill(0);
+    for(let k=0;k<ACT.length;k++){
+      const i=ACT[k], Hi=h[i]+w[i];
+      for(let d=0;d<3;d++){
+        const j=i+NB[d]; const Fd=FF[d];
+        if(!valid[i]&&!valid[j]){ Fd[i]=0; continue; }
+        let f=Fd[i]*DAMP + KP*(Hi-(h[j]+w[j]));
+        if(f>0){ if(w[i]<=0) f=0; else out[i]+=f; }
+        else if(f<0){ if(w[j]<=0) f=0; else out[j]-=f; }
+        Fd[i]=f;
+      }
+    }
+    for(let k=0;k<ACT.length;k++){ const i=ACT[k], o=out[i]; out[i]= o>w[i] ? w[i]/o : 1; }
+    for(let k=0;k<ACT.length;k++){
+      const i=ACT[k];
+      for(let d=0;d<3;d++){
+        const j=i+NB[d], Fd=FF[d]; let f=Fd[i];
+        if(f===0) continue;
+        f*= f>0 ? out[i] : out[j];
+        Fd[i]=f; w[i]-=f; w[j]+=f;
+      }
+    }
+    for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
+    const rain=P.rain*seasonFactor()*P.season, ev=P.evap;
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; let x=w[i]+rain*(h[i]>120?1.4:1); x-=ev; w[i]=x>0?x:0; }
+    P.step++;
+  }
+  function suit(i){
+    const mo=m[i]; let s=Math.min(1,Math.max(0,(mo-0.12)/0.35));
+    if(h[i]>170) s*=Math.max(0,1-(h[i]-170)/70);
+    if(w[i]>0.15||h[i]<0.3) s=0;
+    return s;
+  }
+  function moistureStep(){
+    const wetSeason=Math.max(0,seasonFactor()-0.6)*0.004;
+    for(let k=0;k<VAL.length;k++){
+      const i=VAL[k]; let s=0; for(let d=0;d<6;d++) s+=m[i+NB[d]];
+      const wet=w[i]>0.03?1:0;
+      let x=m[i]+0.12*(s-6*m[i]) + 0.25*wet*(1-m[i]) + wetSeason - 0.012*m[i];
+      tmp[i]=x<0?0:x>1?1:x;
+    }
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; m[i]=tmp[i]; }
+  }
+  let burning=0;
+  function vegStep(init){
+    const rnd=P.rnd, dry=seasonFactor()<0.2;
+    burning=0;
+    for(let k=0;k<VAL.length;k++){
+      const i=VAL[k]; let bi=b[i];
+      if(fire[i]){ bi-=0.18; fire[i]--; burning++;
+        if(bi<=0.05||m[i]>0.45){ fire[i]=0; if(bi<0) bi=0; }
+        else for(let d=0;d<6;d++){ const j=i+NB[d]; if(!fire[j]&&b[j]>0.35&&m[j]<0.3&&rnd()<0.22) fire[j]=7; }
+        b[i]=bi; continue; }
+      const su=suit(i); let s=0; for(let d=0;d<6;d++) s+=b[i+NB[d]];
+      bi += 0.05*bi*(1-bi)*su + 0.03*(s/6-bi)*su + 0.0004*su - 0.03*bi*(1-su) - (w[i]>0.3?0.08*bi:0);
+      b[i]=bi<0?0:bi>1?1:bi;
+    }
+    if(!init && dry){ for(let t=0;t<3;t++){ const i=VAL[(rnd()*VAL.length)|0]; if(b[i]>0.5&&m[i]<0.22) fire[i]=7; } }
+  }
+  function wallStep(){
+    for(let k=0;k<VAL.length;k++){
+      const i=VAL[k]; const S=wallS[i]; if(S<=0) continue;
+      let hi=-1e9, lo=1e9;
+      for(let d=0;d<6;d++){ const j=i+NB[d]; const H=h[j]+w[j]; if(w[j]>0.05&&H>hi) hi=H; if(H<lo) lo=H; }
+      if(hi>-1e9 && hi-lo>S){ h[i]-=0.25; P.hChanged=true; P.breaches=(P.breaches||0)+1; if(h[i]<=lo+0.05){ wallS[i]=0; } }
+    }
+  }
+  function step(){
+    waterStep();
+    if(P.step%4===0) moistureStep();
+    if(P.step%8===0){ vegStep(false); wallStep(); }
+  }
+  return { R, W, N, OFF, NB, valid, qOf, rOf, idx, h, w, m, b, fire, wallS, ferrite, sand, acc, P, VAL, ACT, SEA,
+           generate, step, waterStep, seasonFactor, cellXY, get burning(){return burning;} };
+}
+
+
+// ===================== worker glue =====================
+if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope) {
+  let S=null, rate=8, hDirty=false, acc=0, last=0, lastPost=0;
+  function post(){
+    const N=S.N, w8=new Uint8Array(N), b8=new Uint8ClampedArray(N), m8=new Uint8ClampedArray(N), f8=new Uint8Array(N);
+    const w=S.w, b=S.b, m=S.m, f=S.fire;
+    for(let i=0;i<N;i++){ const x=w[i]; w8[i]= x<=0?0: x>=6?255: Math.round(Math.sqrt(x/6)*255); b8[i]=b[i]*255; m8[i]=m[i]*255; f8[i]=f[i]; }
+    const msg={type:'state', step:S.P.step, season:S.seasonFactor(), burning:S.burning, breaches:S.P.breaches||0, w8, b8, m8, f8};
+    const tr=[w8.buffer,b8.buffer,m8.buffer,f8.buffer];
+    if(hDirty||S.P.hChanged){ msg.h=S.h.slice(); msg.wallS=S.wallS.slice(); tr.push(msg.h.buffer,msg.wallS.buffer); hDirty=false; S.P.hChanged=false; }
+    postMessage(msg, tr);
+  }
+  function tick(){
+    const now=performance.now(); let dt=(now-last)/1000; last=now; if(dt>0.25) dt=0.25;
+    acc+=rate*dt; const t0=performance.now();
+    while(acc>=1 && performance.now()-t0<45){ S.step(); acc-=1; }
+    if(acc>2) acc=2;
+    if(now-lastPost>90){ post(); lastPost=now; }
+    setTimeout(tick, 4);
+  }
+  onmessage=(e)=>{ const m=e.data;
+    if(m.type==='init'){
+      S=makeSim(m.R,m.seed); S.generate();
+      postMessage({type:'world', R:S.R, W:S.W, OFF:S.OFF, N:S.N, h:S.h.slice(), valid:S.valid, ferrite:S.ferrite, sand:S.sand, acc:S.acc, lakes:S.P.lakes, yearSteps:S.P.yearSteps});
+      post(); last=performance.now(); tick();
+    } else if(m.type==='rate'){ rate=m.rate; }
+    else if(m.type==='edit'){
+      for(const op of m.ops){
+        if(op.op==='dig'){ for(const i of op.cells){ S.h[i]-=op.dh; if(S.h[i]<-6) S.h[i]=-6; S.wallS[i]=0; } hDirty=true; }
+        else if(op.op==='raise'){ for(const i of op.cells){ S.h[i]+=op.dh; S.wallS[i]=Math.max(S.wallS[i],op.S); } hDirty=true; }
+        else if(op.op==='harvest'){ for(let k=0;k<op.cells.length;k++){ const i=op.cells[k]; S.b[i]=Math.max(0,S.b[i]-op.amt[k]); } }
+        else if(op.op==='douse'){ for(const i of op.cells){ S.fire[i]=0; } }
+      }
+    }
+  };
+}
+
+</script>
+<script>
+"use strict";
+// ======================================================================
+// Hexphys Frontier — main thread: rendering, camera, economy, UI
+// ======================================================================
+const $ = s => document.querySelector(s);
+const clamp = (x,a,b) => x<a?a:x>b?b:x;
+const SQ3 = Math.sqrt(3);
+const SIMSRC = document.getElementById('simsrc').textContent;
+const LIB = new Function(SIMSRC + '\n;return {makeNoise, mulberry32};')();
+const R = 450, SEED = (Number(new URLSearchParams(location.search).get('seed')) || (Date.now() % 100000));
+const rnd = LIB.mulberry32(SEED ^ 0x51ed);
+
+// ---------------- world state (filled when the worker reports) ----------------
+const G = {
+  ready:false, W:0, OFF:0, N:0, valid:null, h:null, wallS:null, ferrite:null, sand:null, acc:null,
+  w8:null, b8:null, m8:null, f8:null, step:0, season:1, yearSteps:2400, burning:0,
+  revealed:null, terr:null, border:null, known:null, dug:null, occ:null, qOf:null, rOf:null, tex:null, base:null,
+  rate:8, geo:false,
+};
+const NB = () => [1, 1-G.W, -G.W, -1, -1+G.W, G.W];
+let NBa = null;
+
+const worker = new Worker(URL.createObjectURL(new Blob([SIMSRC], {type:'text/javascript'})));
+worker.onmessage = e => {
+  const m = e.data;
+  if (m.type === 'world') onWorld(m);
+  else if (m.type === 'state') onState(m);
+};
+worker.postMessage({type:'init', R, seed:SEED});
+const pendingOps = [];
+function sendOps(){ if (pendingOps.length) { worker.postMessage({type:'edit', ops:pendingOps.splice(0)}); } }
+
+function idx(q,r){ return (r+G.OFF)*G.W + (q+G.OFF); }
+function inArr(q,r){ return Math.abs(q)<=G.OFF-1 && Math.abs(r)<=G.OFF-1; }
+function hexDist(i,j){ const dq=G.qOf[i]-G.qOf[j], dr=G.rOf[i]-G.rOf[j]; return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2; }
+function cellXY(i){ const q=G.qOf[i], r=G.rOf[i]; return [SQ3*(q+r/2), 1.5*r]; }
+function disk(i, rad, fn){ const q0=G.qOf[i], r0=G.rOf[i];
+  for (let dq=-rad; dq<=rad; dq++) for (let dr=Math.max(-rad,-dq-rad); dr<=Math.min(rad,-dq+rad); dr++) {
+    const q=q0+dq, r=r0+dr; if (!inArr(q,r)) continue; const j=idx(q,r); if (G.valid[j]) fn(j, (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2); } }
+const wOf = i => { const v=G.w8[i]/255; return v*v*6; };
+
+function onWorld(m){
+  Object.assign(G, {W:m.W, OFF:m.OFF, N:m.N, valid:m.valid, h:m.h, ferrite:m.ferrite, sand:m.sand, acc:m.acc, yearSteps:m.yearSteps});
+  G.wallS = new Float32Array(G.N);
+  NBa = NB();
+  G.qOf = new Int16Array(G.N); G.rOf = new Int16Array(G.N);
+  for (let i=0;i<G.N;i++){ G.qOf[i]=i%G.W-G.OFF; G.rOf[i]=((i/G.W)|0)-G.OFF; }
+  G.revealed=new Uint8Array(G.N); G.terr=new Uint8Array(G.N); G.border=new Uint8Array(G.N); G.known=new Uint8Array(G.N);
+  G.dug=new Uint8Array(G.N); G.occ=new Int32Array(G.N).fill(-1);
+  // visual-only micro relief so filled plains still read as land
+  const nz = LIB.makeNoise(SEED+77), nz2 = LIB.makeNoise(SEED+78);
+  G.tex = new Float32Array(G.N);
+  for (let i=0;i<G.N;i++){ if(!G.valid[i]) continue; const [x,y]=cellXY(i); G.tex[i]=3.2*nz(x/9,y/9)+1.6*nz2(x/3.5,y/3.5); }
+  G.fogNz = LIB.makeNoise(SEED+79);
+  // rumoured map: coarse land/sea silhouette visible through the fog
+  G.fog = new Uint8Array(G.N);
+  for (let i=0;i<G.N;i++){ if(!G.valid[i]) { G.fog[i]=0; continue; } const q=Math.round(G.qOf[i]/9)*9, r=Math.round(G.rOf[i]/9)*9;
+    const j = inArr(q,r)? idx(q,r) : -1; const hh = (j>=0 && G.valid[j])? G.h[j] : -1; G.fog[i] = hh>0 ? (hh>140? 3 : 2) : 1; }
+  G.base = new Uint8ClampedArray(G.N*3);
+  for (let i=0;i<G.N;i++) baseColor(i);
+  G.landCells = 0; G.validCount=0; for (let i=0;i<G.N;i++) if (G.valid[i]){ G.validCount++; if (G.h[i]>0) G.landCells++; }
+  G.lakes = m.lakes;
+}
+function onState(m){
+  G.w8=m.w8; G.b8=m.b8; G.m8=m.m8; G.f8=m.f8; G.step=m.step; G.season=m.season; G.burning=m.burning;
+  if (m.h){ const old=G.h; G.h=m.h; G.wallS=m.wallS;
+    for (let i=0;i<G.N;i++) if (old[i]!==G.h[i]) { baseColor(i); for (const d of NBa) baseColor(i+d); } }
+  rasterDirty = true;
+  if (!G.ready) { G.ready = true; startGame(); }
+  else economyCatchUp();
+}
+
+// ---------------- colours ----------------
+function baseColor(i){
+  if (i<0||i>=G.N) return;
+  const h=G.h[i]; let r,g,b;
+  if (!G.valid[i] || h<0){ r=30;g=52;b=86; }
+  else if (h<2.5){ r=214;g=200;b=150; }
+  else if (h<110){ const t=h/110; r=118+28*t; g=146-14*t; b=74+18*t; }
+  else if (h<210){ const t=(h-110)/100; r=146-12*t; g=132-12*t; b=92+18*t; }
+  else { const t=Math.min(1,(h-210)/80); r=134+100*t; g=120+112*t; b=110+128*t; }
+  const W=G.W, hs = (k)=> (G.valid[k]? G.h[k]+G.tex[k] : -40);
+  const s = clamp(1+0.03*((hs(i-1)-hs(i+1)) + 0.75*(hs(i-W)-hs(i+W))), 0.55, 1.45);
+  if (G.wallS && G.wallS[i] > 0){ r=r*0.6+150*0.4; g=g*0.6+140*0.4; b=b*0.6+130*0.4; }
+  G.base[i*3]=r*s; G.base[i*3+1]=g*s; G.base[i*3+2]=b*s;
+}
+const WLUT_A = new Float32Array(256), WLUT_R=new Float32Array(256), WLUT_G=new Float32Array(256), WLUT_B=new Float32Array(256);
+for (let k=0;k<256;k++){ const d=(k/255)**2*6; const a = d<0.025?0:1-Math.exp(-d*2.4); const deep=Math.min(1,d/3.5);
+  WLUT_A[k]=a; WLUT_R[k]=70-48*deep; WLUT_G[k]=152-92*deep; WLUT_B[k]=206-70*deep; }
+
+// ---------------- camera + raster ----------------
+const cv = $('#map'); let ctx, CW=0, CH=0;
+const cam = { x:0, y:0, s:6 };
+const B = 2; let off, octx, img, blockIdx = null, BW=0, BH=0, camDirty=true, rasterDirty=true;
+function resize(){
+  CW = window.innerWidth; CH = window.innerHeight;
+  cv.width = CW; cv.height = CH; ctx = cv.getContext('2d');
+  BW = Math.ceil(CW/B); BH = Math.ceil(CH/B);
+  off = document.createElement('canvas'); off.width=BW; off.height=BH; octx=off.getContext('2d');
+  img = octx.createImageData(BW, BH); blockIdx = new Int32Array(BW*BH);
+  camDirty = true;
+}
+window.addEventListener('resize', resize); resize();
+function screenToWorld(sx,sy){ return [cam.x + (sx-CW/2)/cam.s, cam.y + (sy-CH/2)/cam.s]; }
+function worldToScreen(x,y){ return [(x-cam.x)*cam.s + CW/2, (y-cam.y)*cam.s + CH/2]; }
+function worldToCell(x,y){
+  const q=(SQ3/3*x - y/3), r=2/3*y, s=-q-r; let Q=Math.round(q), Rr=Math.round(r), S=Math.round(s);
+  const dq=Math.abs(Q-q), dr=Math.abs(Rr-r), ds=Math.abs(S-s);
+  if (dq>dr && dq>ds) Q=-Rr-S; else if (dr>ds) Rr=-Q-S;
+  if (!inArr(Q,Rr)) return -1; return idx(Q,Rr);
+}
+function rebuildBlocks(){
+  for (let by=0; by<BH; by++){ const wy = cam.y + ((by+0.5)*B - CH/2)/cam.s;
+    for (let bx=0; bx<BW; bx++){ const wx = cam.x + ((bx+0.5)*B - CW/2)/cam.s; blockIdx[by*BW+bx] = worldToCell(wx, wy); } }
+  camDirty = false;
+}
+function renderRaster(){
+  if (camDirty) rebuildBlocks();
+  const d = img.data, n = blockIdx.length, base=G.base, w8=G.w8, b8=G.b8, m8=G.m8, f8=G.f8, rev=G.revealed, h=G.h;
+  const flick = (performance.now()/90)|0;
+  for (let k=0;k<n;k++){
+    const i = blockIdx[k], o = k*4;
+    if (i < 0){ d[o]=9; d[o+1]=11; d[o+2]=15; d[o+3]=255; continue; }
+    if (!rev[i]){ const t = ((i*2654435761)>>>28)&3, f=G.fog[i]; if (f===1){ d[o]=14+t; d[o+1]=19+t; d[o+2]=30+t; } else if (f===3){ d[o]=34+t; d[o+1]=33+t; d[o+2]=34+t; } else { d[o]=25+t; d[o+1]=28+t; d[o+2]=24+t; } d[o+3]=255; continue; }
+    let r=base[i*3], g=base[i*3+1], b=base[i*3+2];
+    if (G.valid[i] && h[i]>0){
+      const veg=b8[i]/255, mo=m8[i]/255;
+      const dry=Math.max(0,0.35-mo)*1.4*(1-veg);
+      r+=(176-r)*dry*0.55; g+=(160-g)*dry*0.55; b+=(96-b)*dry*0.55;
+      const v=veg*0.78; r+=(34-r)*v; g+=(84-g)*v; b+=(40-b)*v;
+    }
+    const wv = w8[i];
+    if (wv){ const a=WLUT_A[wv]; r=r*(1-a)+WLUT_R[wv]*a; g=g*(1-a)+WLUT_G[wv]*a; b=b*(1-a)+WLUT_B[wv]*a; }
+    if (f8[i]){ const fl=((i+flick)&3)*18; r=255; g=70+fl; b=20; }
+    if (G.border[i]){ r=r*0.55+255*0.45; g=g*0.55+225*0.45; b=b*0.55+150*0.45; }
+    if (G.geo && G.known[i]){
+      if (G.ferrite[i]>0){ const a=0.35+0.5*G.ferrite[i]; r=r*(1-a)+215*a; g=g*(1-a)+95*a; b=b*(1-a)+60*a; }
+      else if (G.sand[i]>0){ const a=0.35+0.5*G.sand[i]; r=r*(1-a)+70*a; g=g*(1-a)+205*a; b=b*(1-a)+190*a; }
+    }
+    d[o]=r; d[o+1]=g; d[o+2]=b; d[o+3]=255;
+  }
+  octx.putImageData(img, 0, 0);
+  rasterDirty = false;
+}
+const HEXV = [0,1,2,3,4,5].map(k => { const a=Math.PI/180*(60*k-30); return [Math.cos(a), Math.sin(a)]; });
+function hexPath(path, i, scale){ const [x,y]=cellXY(i); const [sx,sy]=worldToScreen(x,y); const s=cam.s*scale;
+  path.moveTo(sx+s*HEXV[0][0], sy+s*HEXV[0][1]); for (let k=1;k<6;k++) path.lineTo(sx+s*HEXV[k][0], sy+s*HEXV[k][1]); path.closePath(); }
+function visibleCells(fn){
+  const [x0,y0]=screenToWorld(0,0), [x1,y1]=screenToWorld(CW,CH);
+  const r0=Math.floor(y0/1.5)-1, r1=Math.ceil(y1/1.5)+1;
+  for (let r=r0;r<=r1;r++){ const q0=Math.floor(x0/SQ3 - r/2)-1, q1=Math.ceil(x1/SQ3 - r/2)+1;
+    for (let q=q0;q<=q1;q++){ if (!inArr(q,r)) continue; const i=idx(q,r); if (G.valid[i]) fn(i); } }
+}
+
+// ---------------- buildings + economy ----------------
+const BT = {
+  camp:    { name:'Camp', cost:{}, housing:12, terr:18, reveal:34, workers:0, col:'#f2d29b', glyph:'⌂' },
+  outpost: { name:'Outpost', cost:{wood:40, stone:30, food:10}, housing:4, terr:16, reveal:30, workers:1, col:'#ffe08a', glyph:'▲',
+             tip:'Claims land (r16) and reveals fog (r30). Place inside your territory, ≥10 hexes from other outposts.' },
+  house:   { name:'House', cost:{wood:30}, housing:6, workers:0, col:'#e8b878', glyph:'■', tip:'+6 housing.' },
+  farm:    { name:'Farm', cost:{wood:20}, workers:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture (r2). Drowns if flooded.' },
+  lumber:  { name:'Lumber camp', cost:{wood:15, stone:10}, workers:2, col:'#5fae5f', glyph:'♣', tip:'Fells forest within r6: wood + resin. Forest regrows.' },
+  quarry:  { name:'Quarry', cost:{wood:25}, workers:2, col:'#a8a8b0', glyph:'◆', tip:'Stone. Needs high ground (height ≥ 30).' },
+  mine:    { name:'Mine', cost:{wood:30, stone:25}, workers:3, col:'#c86a4a', glyph:'⚒', tip:'Extracts known ferrite or silica within r2. Deposits deplete.' },
+  forge:   { name:'Forge', cost:{wood:30, stone:60}, workers:2, col:'#ff8a3c', glyph:'♨', tip:'Opens the lattice forge: ores → building materials.' },
+};
+const ACTIONS = {
+  prospect: { name:'Prospect', cost:{food:6}, tip:'Reveals buried ore within r9 of a revealed hex.' },
+  scout:    { name:'Scout', cost:{food:20}, tip:'Reveals fog within r22, up to 70 hexes beyond your territory.' },
+  dig:      { name:'Dig', tip:'Lowers land 0.6 m per stroke (inside territory). Costs 0.3 food/hex, yields stone.' },
+  raise:    { name:'Raise', tip:'Builds land up 0.6 m per stroke with the chosen material. Holds water up to its strength.' },
+};
+const ST = { food:90, wood:90, stone:40, ferrite:0, silica:0, resin:0, pop:8, popAcc:0, housing:0 };
+const MATS = [ { id:'stone', name:'Stone', strength:2.5, units:Infinity, col:'#9a948a' } ];
+let matSel = 0;
+const buildings = [];
+let tool = 'inspect', brush = 1;
+let lastEcoStep = 0, ecoTicks = 0;
+const goalsDone = {};
+
+function canAfford(c){ for (const k in c) if ((ST[k]||0) < c[k]) return false; return true; }
+function pay(c){ for (const k in c) ST[k] -= c[k]; }
+function costStr(c){ return Object.entries(c).map(([k,v])=>`${v} ${k}`).join(', ') || 'free'; }
+function log(msg, cls){ const el=document.createElement('div'); el.className='e'; el.innerHTML=`<span class="t">${dateShort()}</span>${msg}`; const L=$('#log'); L.prepend(el); while (L.children.length>60) L.lastChild.remove(); }
+
+function placeBuilding(type, i, free){
+  const bt = BT[type];
+  const b = { id:buildings.length, type, i, hp:100, active:false, alive:true };
+  buildings.push(b); G.occ[i] = b.id;
+  if (!free) pay(bt.cost);
+  if (bt.housing) ST.housing += bt.housing;
+  if (bt.terr) disk(i, bt.terr, j => { G.terr[j]=1; });
+  if (bt.reveal) reveal(i, bt.reveal);
+  recomputeBorder();
+  return b;
+}
+function reveal(i, rad){ let n=0; disk(i, rad+5, (j,dd) => { const [x,y]=cellXY(j); if (dd > rad + 4.5*G.fogNz(x/11,y/11)) return; if(!G.revealed[j]){ G.revealed[j]=1; n++; } }); G.revealedCount=(G.revealedCount||0)+n; rasterDirty=true; }
+function recomputeBorder(){
+  G.border.fill(0);
+  for (let i=0;i<G.N;i++){ if(!G.terr[i]) continue; for (const d of NBa){ const j=i+d; if (G.valid[j] && !G.terr[j]) { G.border[i]=1; break; } } }
+  rasterDirty = true;
+}
+function validPlacement(type, i){
+  if (i<0 || !G.valid[i]) return 'off the map';
+  if (!G.revealed[i]) return 'unexplored';
+  if (G.h[i] <= 0.3 || wOf(i) > 0.08) return 'needs dry land';
+  if (G.occ[i] >= 0) return 'occupied';
+  if (!G.terr[i]) return 'outside your territory';
+  if (type==='outpost'){ for (const b of buildings) if (b.alive && (b.type==='outpost'||b.type==='camp') && hexDist(b.i,i) < 10) return 'too close to another outpost'; }
+  if (type==='quarry' && G.h[i] < 30) return 'needs high ground (≥30)';
+  if (type==='mine'){ let ok=false; disk(i,2,j=>{ if (G.known[j] && (G.ferrite[j]>0||G.sand[j]>0)) ok=true; }); if(!ok) return 'no known ore within 2 hexes'; }
+  if (type==='forge' && buildings.some(b=>b.alive&&b.type==='forge')) return 'you already have a forge';
+  if (!canAfford(BT[type].cost)) return 'cannot afford ('+costStr(BT[type].cost)+')';
+  return null;
+}
+function nearTerritory(i, maxD){
+  for (const b of buildings) if (b.alive && BT[b.type].terr && hexDist(b.i,i) <= BT[b.type].terr + maxD) return true; return false; }
+
+function act(i, dragging){
+  if (tool==='inspect' || i<0) return;
+  if (BT[tool]){ if (dragging) return; const why=validPlacement(tool,i); if (why){ flash(why); return; } placeBuilding(tool,i); log(`Built ${BT[tool].name}.`); refreshTools(); return; }
+  if (tool==='prospect'){ if (dragging) return; if (!G.revealed[i]) return flash('prospect only on explored land');
+    if (!canAfford(ACTIONS.prospect.cost)) return flash('need 6 food'); pay(ACTIONS.prospect.cost);
+    let fe=0, sa=0; disk(i, 9, j => { if (!G.known[j]){ G.known[j]=1; if (G.ferrite[j]>0) fe++; else if (G.sand[j]>0) sa++; } });
+    if (fe||sa){ log(`Prospectors found ${fe?`<b style="color:#e08a6a">ferrite</b> (${fe} hexes) `:''}${sa?`<b style="color:#5fd0c0">silica sand</b> (${sa} hexes)`:''}.`); G.geo=true; $('#btnGeo').classList.add('on'); if(fe) goal('ferrite'); if(sa) goal('silica'); }
+    else log('Prospectors found nothing here.');
+    rasterDirty=true; return; }
+  if (tool==='scout'){ if (dragging) return; if (!nearTerritory(i,70)) return flash('too far: within 70 hexes of your territory');
+    if (!canAfford(ACTIONS.scout.cost)) return flash('need 20 food'); pay(ACTIONS.scout.cost); reveal(i,22); log('Scouts mapped a distant region.'); checkExplore(); return; }
+  if (tool==='dig' || tool==='raise'){
+    const cells=[]; disk(i, brush, j => { if (G.terr[j] && !strokeSeen[j] && G.occ[j]<0) { strokeSeen[j]=1; strokeList.push(j); cells.push(j); } });
+    if (!cells.length) return;
+    if (tool==='dig'){
+      const need = 0.3*cells.length; if (ST.food < need) return flash('not enough food to pay the diggers');
+      ST.food -= need; ST.stone += 0.15*cells.length; for (const j of cells){ G.dug[j]=1; G.h[j]-=0.6; baseColor(j); }
+      pendingOps.push({op:'dig', cells, dh:0.6});
+    } else {
+      const M = MATS[matSel]; const need = cells.length;
+      if (M.id==='stone'){ if (ST.stone < need) return flash('not enough stone'); ST.stone -= need; }
+      else { if (M.units < need) return flash(`not enough ${M.name}`); M.units -= need; }
+      for (const j of cells){ G.h[j]+=0.6; G.wallS[j]=Math.max(G.wallS[j],M.strength); baseColor(j); }
+      pendingOps.push({op:'raise', cells, dh:0.6, S:M.strength});
+    }
+    sendOps(); rasterDirty=true; refreshTools();
+  }
+}
+let strokeSeen = null, strokeList = [];
+function strokeStart(){ if (!strokeSeen) strokeSeen = new Uint8Array(G.N); for (const j of strokeList) strokeSeen[j]=0; strokeList=[]; }
+
+function economyCatchUp(){
+  // one economy tick per 8 simulation steps
+  while (G.step - lastEcoStep >= 8){ lastEcoStep += 8; economyTick(); }
+}
+function economyTick(){
+  ecoTicks++;
+  let free = ST.pop;
+  const harvestCells=[], harvestAmt=[];
+  for (const b of buildings){ if (!b.alive) continue; const bt=BT[b.type];
+    b.active = free >= bt.workers; if (b.active) free -= bt.workers;
+    const wHere = wOf(b.i);
+    if (wHere > 0.15){ b.hp -= b.type==='farm'?6:3; b.flooded=true; } else b.flooded=false;
+    let fireNear=G.f8[b.i]>0; for (const d of NBa) if (G.f8[b.i+d]) fireNear=true; if (fireNear){ b.hp -= 15; if (!b.burnt){ log(`<b style="color:#ff8b5b">Fire</b> reached your ${bt.name}!`); b.burnt=true; } } else b.burnt=false;
+    if (b.hp <= 0){ destroy(b); continue; }
+    if (b.hp < 100 && !b.flooded) b.hp = Math.min(100, b.hp+0.5);
+    if (!b.active || b.flooded) continue;
+    if (b.type==='camp'){ ST.food += 0.35; ST.wood += 0.15; }
+    else if (b.type==='farm'){ let s=0,n=0; disk(b.i,2,j=>{ s+=G.m8[j]/255; n++; }); const mo=s/n; b.yield = 1.6*Math.max(0,mo-0.15)/0.85; ST.food += b.yield;
+      if (mo>=0.7){ let ch=false; disk(b.i,5,j=>{ if(G.dug[j] && wOf(j)>0.05) ch=true; }); if (ch) goal('irrigate'); } }
+    else if (b.type==='lumber'){ let got=0; disk(b.i,6,j=>{ const v=G.b8[j]/255; if (v>0.25 && got<0.9){ const t=Math.min(0.04, v-0.2); got+=t; harvestCells.push(j); harvestAmt.push(t); } });
+      ST.wood += got*1.1; ST.resin += got*0.12; b.yield=got; }
+    else if (b.type==='quarry'){ ST.stone += 0.7; }
+    else if (b.type==='mine'){ let got=0; disk(b.i,2,j=>{ if (got>=0.6||!G.known[j]) return;
+        if (G.ferrite[j]>0){ const t=Math.min(0.6-got, G.ferrite[j]*40); G.ferrite[j]=Math.max(0,G.ferrite[j]-t/40); ST.ferrite+=t; got+=t; }
+        else if (G.sand[j]>0){ const t=Math.min(0.6-got, G.sand[j]*40); G.sand[j]=Math.max(0,G.sand[j]-t/40); ST.silica+=t; got+=t; } });
+      b.yield=got; if (got===0 && !b.dry){ log('A mine has run dry.'); b.dry=true; } }
+  }
+  if (harvestCells.length) pendingOps.push({op:'harvest', cells:harvestCells, amt:harvestAmt});
+  ST.food -= 0.06*ST.pop;
+  if (ST.food < 0){ ST.food = 0; ST.popAcc -= 0.1; }
+  else if (ST.food > 15 && ST.pop < ST.housing) ST.popAcc += 0.07;
+  if (ST.popAcc >= 1){ ST.pop++; ST.popAcc=0; } if (ST.popAcc <= -1){ ST.pop=Math.max(0,ST.pop-1); ST.popAcc=0; log('A settler starved.'); }
+  if (ST.pop >= 40) goal('town');
+  if (ecoTicks % 4 === 0) checkWaterworks();
+  if (ecoTicks % 2 === 0) watchEvents();
+  sendOps();
+}
+function destroy(b){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.type];
+  if (bt.housing) ST.housing -= bt.housing;
+  log(`<b style="color:#ff8b7b">Your ${bt.name} was destroyed${b.flooded?' by flooding':' by fire'}.</b>`);
+  if (bt.terr){ G.terr.fill(0); for (const o of buildings) if (o.alive && BT[o.type].terr) disk(o.i, BT[o.type].terr, j=>{G.terr[j]=1;}); recomputeBorder(); }
+}
+let lastBurning=0, lastSeasonName='';
+function watchEvents(){
+  let seen=0; if (G.burning>0){ for (const b of buildings) if (b.alive){ disk(b.i, 30, j=>{ if (G.f8[j]) seen++; }); if (seen) break; } }
+  if (seen && !lastBurning) log('<b style="color:#ff8b5b">Wildfire</b> sighted near your lands.');
+  lastBurning = seen;
+  const sn = seasonName(); if (sn !== lastSeasonName){ if (lastSeasonName) log(`<span class="dim">${sn} begins.</span>`); lastSeasonName = sn; }
+}
+function checkWaterworks(){
+  if (goalsDone.waterworks) return;
+  for (let i=0;i<G.N;i++){ if (!(G.wallS[i]>0)) continue; let hi=-1e9, lo=1e9;
+    for (const d of NBa){ const j=i+d; const H=G.h[j]+wOf(j); if (wOf(j)>0.3 && H>hi) hi=H; if (wOf(j)<0.03 && G.h[j]<lo) lo=G.h[j]; }
+    if (hi>-1e9 && lo<1e9 && hi-lo>=1.5){ goal('waterworks'); return; } }
+}
+function checkExplore(){ if ((G.revealedCount||0) >= 0.05*G.validCount) goal('explore'); }
+
+// ---------------- goals ----------------
+const GOALS = [
+  ['outpost','Claim new land: build an outpost'],
+  ['ferrite','Prospector: find ferrite ore'],
+  ['silica','River sand: find silica sand'],
+  ['forge','Smith: forge and seal a material batch'],
+  ['irrigate','Irrigation: a farm at ≥70% moisture beside a channel you dug'],
+  ['waterworks','Waterworks: hold back ≥1.5 m of water with a raised bank'],
+  ['town','Town: 40 settlers'],
+  ['explore','Explorer: reveal 5% of the continent'],
+];
+function goal(k){ if (goalsDone[k]) return; goalsDone[k]=true; const g=GOALS.find(x=>x[0]===k); log(`<b style="color:#6fd38b">✓ ${g[1]}</b>`); renderGoals(); }
+function renderGoals(){ $('#goals').innerHTML = '<b>Milestones</b>' + GOALS.map(([k,t])=>`<div class="g ${goalsDone[k]?'done':''}">${goalsDone[k]?'✓':'○'} ${t}</div>`).join(''); positionGoals(); }
+function positionGoals(){}
+
+// ---------------- dates ----------------
+function yearPhase(){ return (G.step % G.yearSteps)/G.yearSteps; }
+function seasonName(){ const p=yearPhase(); return p<0.12?'Spring rains': p<0.38?'Monsoon': p<0.55?'Late rains': p<0.92?'Dry season':'Spring rains'; }
+function dateShort(){ return `Y${1+Math.floor(G.step/G.yearSteps)}`; }
+
+// ---------------- UI ----------------
+function fmt(x){ return x>=1000? (x/1000).toFixed(1)+'k' : x>=100? x.toFixed(0) : x.toFixed(x<10?1:0); }
+function renderTop(){
+  const mats = MATS.filter(m=>m.id!=='stone').reduce((a,m)=>a+m.units,0);
+  $('#res').innerHTML = [
+    ['<span class="dim">settlers</span>', `${ST.pop}/${ST.housing}`], ['<span class="dim">food</span>', fmt(ST.food)], ['<span class="dim">wood</span>', fmt(ST.wood)], ['<span class="dim">stone</span>', fmt(ST.stone)],
+    ['<span style="color:#e08a6a">Fe</span>', fmt(ST.ferrite)], ['<span style="color:#5fd0c0">Si</span>', fmt(ST.silica)], ['<span style="color:#e8c25a">Rs</span>', fmt(ST.resin)],
+    mats? ['<span class="dim">forged</span>', fmt(mats)] : null,
+  ].filter(Boolean).map(([k,v])=>`<span class="r">${k} <b>${v}</b></span>`).join('');
+  const p = yearPhase(), wet = G.season;
+  const explored = G.validCount ? (100*(G.revealedCount||0)/G.validCount).toFixed(1) : 0;
+  $('#date').innerHTML = `Year ${1+Math.floor(G.step/G.yearSteps)} · ${seasonName()} <span style="color:${wet>1.5?'#7cc4ff':wet<0.3?'#ffb86b':'#c8d0d8'}">(rain ×${Math.max(0,wet).toFixed(1)})</span> · explored ${explored}%${G.burning? ` · <span style="color:#ff8b5b">fires: ${G.burning}</span>`:''}`;
+}
+function refreshTools(){
+  const sec = (t, items) => `<h4>${t}</h4>` + items.join('');
+  const btn = (k, label, cost, tip) => `<button class="b tool ${tool===k?'on':''}" data-tool="${k}" title="${tip||''}"><span>${label}</span><span class="c">${cost}</span></button>`;
+  let html = btn('inspect','Inspect / pan','');
+  html += sec('Build', ['outpost','house','farm','lumber','quarry','mine','forge'].map(k=>btn(k, BT[k].glyph+' '+BT[k].name, costStr(BT[k].cost), BT[k].tip)));
+  html += sec('Explore', [btn('prospect','Prospect','6 food',ACTIONS.prospect.tip), btn('scout','Scout','20 food',ACTIONS.scout.tip)]);
+  html += sec('Shape land', [btn('dig','⤓ Dig','0.3 food/hex',ACTIONS.dig.tip), btn('raise','⤒ Raise','1 mat/hex',ACTIONS.raise.tip)]);
+  html += `<label class="sl" style="grid-template-columns:44px 1fr 20px"><span class="dim">brush</span><input type="range" id="rBrush" min="0" max="4" value="${brush}"><span>${brush}</span></label>`;
+  html += `<div class="dim" style="font-size:11px">Raise with:</div>` + MATS.map((m,k)=>`<button class="b tool ${k===matSel?'on':''}" data-mat="${k}"><span><span class="sw" style="background:${m.col}"></span>${m.name}</span><span class="c">holds ${m.strength.toFixed(1)} m${m.units===Infinity?'':' · '+Math.floor(m.units)}</span></button>`).join('');
+  if (buildings.some(b=>b.alive&&b.type==='forge')) html += `<button class="b tool" id="openForge" style="margin-top:6px"><span>♨ Open forge</span><span class="c">Fe/Si/Rs</span></button>`;
+  $('#tools').innerHTML = html;
+  document.querySelectorAll('[data-tool]').forEach(el => el.onclick = () => { tool = el.dataset.tool; refreshTools(); });
+  document.querySelectorAll('[data-mat]').forEach(el => el.onclick = () => { matSel = +el.dataset.mat; refreshTools(); });
+  const rb=$('#rBrush'); if (rb) rb.oninput = () => { brush=+rb.value; refreshTools(); };
+  const of=$('#openForge'); if (of) of.onclick = openForge;
+}
+let flashT=0, flashMsg='';
+function flash(m){ flashMsg=m; flashT=performance.now(); }
+let hover=-1;
+function renderInfo(){
+  if (hover<0 || !G.valid[hover]){ $('#info').innerHTML='<span class="dim">Hover the map.</span>'; return; }
+  const i=hover;
+  if (!G.revealed[i]){ $('#info').innerHTML='<span class="dim">Unexplored. Expand with outposts or send scouts.</span>'; return; }
+  const h=G.h[i], w=wOf(i), m=G.m8[i]/255, v=G.b8[i]/255;
+  let s = `<b>${G.qOf[i]}, ${G.rOf[i]}</b> · ${h<=0?'sea / lake bed':h<2.5?'shore':h<110?'lowland':h<210?'highland':'mountain'} · height ${h.toFixed(1)} m<br>`;
+  s += `water ${w<0.01?'—':w.toFixed(2)+' m'} · soil moisture ${(m*100).toFixed(0)}% · forest ${(v*100).toFixed(0)}%`;
+  if (G.f8[i]) s += ' · <b style="color:#ff8b5b">burning</b>';
+  if (G.wallS[i]>0) s += `<br>raised bank · holds ${G.wallS[i].toFixed(1)} m`;
+  if (G.known[i]) s += G.ferrite[i]>0? `<br><span style="color:#e08a6a">ferrite deposit ${(G.ferrite[i]*100).toFixed(0)}%</span>` : G.sand[i]>0? `<br><span style="color:#5fd0c0">silica sand ${(G.sand[i]*100).toFixed(0)}%</span>` : '<br><span class="dim">prospected: no ore</span>';
+  else s += '<br><span class="dim">not prospected</span>';
+  if (G.terr[i]) s += ' · <span style="color:#f2d29b">your territory</span>';
+  if (G.occ[i]>=0){ const b=buildings[G.occ[i]], bt=BT[b.type]; s += `<br><b>${bt.name}</b> · ${b.active?'working':(bt.workers?'<span style="color:#ff8b7b">no workers</span>':'')}${b.flooded?' · <span style="color:#7cc4ff">FLOODED</span>':''} · hp ${b.hp.toFixed(0)}${b.yield!==undefined?` · yield ${b.yield.toFixed(2)}`:''}`; }
+  if (tool!=='inspect' && BT[tool]){ const why=validPlacement(tool,i); s += `<br>${why? '<span style="color:#ff8b7b">✗ '+why+'</span>' : '<span style="color:#6fd38b">✓ click to build '+BT[tool].name+'</span>'}`; }
+  $('#info').innerHTML = s;
+}
+
+// ---------------- drawing ----------------
+function draw(){
+  if (!G.ready) return;
+  if (rasterDirty || camDirty) renderRaster();
+  ctx.imageSmoothingEnabled = cam.s*SQ3 < 5;
+  ctx.drawImage(off, 0, 0, BW*B, BH*B);
+  const cellPx = cam.s*SQ3;
+  if (cellPx >= 16){
+    const p = new Path2D(); visibleCells(i => { if (G.revealed[i]) hexPath(p, i, 1); });
+    ctx.strokeStyle = 'rgba(0,0,0,0.13)'; ctx.lineWidth = 1; ctx.stroke(p);
+  }
+  // buildings
+  const sz = Math.max(5, Math.min(26, cam.s*1.25));
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font = `${Math.round(sz*0.9)}px system-ui`;
+  for (const b of buildings){ if (!b.alive) continue; const [x,y]=cellXY(b.i); const [sx,sy]=worldToScreen(x,y);
+    if (sx<-30||sy<-30||sx>CW+30||sy>CH+30) continue; const bt=BT[b.type];
+    ctx.fillStyle = 'rgba(10,12,16,0.75)'; ctx.beginPath(); ctx.arc(sx,sy,sz*0.72,0,7); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = b.flooded? '#7cc4ff' : b.burnt? '#ff7b3b' : b.active||!bt.workers ? bt.col : '#666'; ctx.stroke();
+    if (sz >= 7){ ctx.fillStyle = bt.col; ctx.fillText(bt.glyph, sx, sy+1); }
+  }
+  // brush / placement preview
+  if (hover>=0 && tool!=='inspect'){
+    const p = new Path2D(); const rad = (tool==='dig'||tool==='raise')? brush : tool==='prospect'? 9 : tool==='scout'? 22 : 0;
+    if (rad<=4) disk(hover, rad, j=>hexPath(p,j,1)); else { const [x,y]=cellXY(hover); const [sx,sy]=worldToScreen(x,y); p.arc(sx,sy,rad*1.5*cam.s,0,7); }
+    ctx.strokeStyle = (BT[tool] && validPlacement(tool,hover))? '#ff7b6b' : '#ffffffcc'; ctx.lineWidth=1.5; ctx.stroke(p);
+  }
+  if (performance.now()-flashT < 1800){ ctx.font='14px system-ui'; ctx.fillStyle='#ffb0a0'; ctx.fillText(flashMsg, CW/2, CH-40); }
+}
+
+// ---------------- input ----------------
+let drag=null, keys={};
+cv.addEventListener('contextmenu', e=>e.preventDefault());
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  const pan = e.button===1 || e.button===2 || tool==='inspect';
+  drag = { pan, x:e.clientX, y:e.clientY, cx:cam.x, cy:cam.y };
+  if (!pan){ strokeStart(); const [wx,wy]=screenToWorld(e.clientX,e.clientY); act(worldToCell(wx,wy), false); }
+});
+cv.addEventListener('pointermove', e => {
+  const [wx,wy]=screenToWorld(e.clientX,e.clientY); hover = worldToCell(wx,wy);
+  if (!drag) return;
+  if (drag.pan){ cam.x = drag.cx - (e.clientX-drag.x)/cam.s; cam.y = drag.cy - (e.clientY-drag.y)/cam.s; camDirty=true; }
+  else if (tool==='dig'||tool==='raise') act(hover, true);
+});
+cv.addEventListener('pointerup', () => { drag=null; });
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY*0.0015)); }, {passive:false});
+function zoomAt(sx, sy, f){ const [wx,wy]=screenToWorld(sx,sy); cam.s = clamp(cam.s*f, 0.45, 28); cam.x = wx-(sx-CW/2)/cam.s; cam.y = wy-(sy-CH/2)/cam.s; camDirty=true; }
+window.addEventListener('keydown', e => { if (e.target.tagName==='INPUT') return; keys[e.key.toLowerCase()]=true;
+  if (e.key===' '){ e.preventDefault(); setRate(G.rate? 0 : 8); } if (e.key==='Escape'){ tool='inspect'; refreshTools(); } });
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()]=false; });
+function keyPan(dt){ const v=600/cam.s*dt; let dx=0,dy=0;
+  if (keys['a']||keys['arrowleft']) dx-=v; if (keys['d']||keys['arrowright']) dx+=v; if (keys['w']||keys['arrowup']) dy-=v; if (keys['s']||keys['arrowdown']) dy+=v;
+  if (dx||dy){ cam.x+=dx; cam.y+=dy; camDirty=true; } }
+function setRate(r){ G.rate=r; worker.postMessage({type:'rate', rate:r}); document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('on', +b.dataset.rate===r)); }
+document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => setRate(+b.dataset.rate));
+$('#btnGeo').onclick = () => { G.geo=!G.geo; $('#btnGeo').classList.toggle('on',G.geo); rasterDirty=true; };
+$('#btnHelp').onclick = () => $('#help').classList.toggle('hidden');
+$('#helpOk').onclick = () => { $('#help').classList.add('hidden'); };
+$('#zin').onclick = () => zoomAt(CW/2,CH/2,1.5); $('#zout').onclick = () => zoomAt(CW/2,CH/2,1/1.5);
+$('#zhome').onclick = () => { const c=buildings[0]; const [x,y]=cellXY(c.i); cam.x=x; cam.y=y; cam.s=6; camDirty=true; };
+$('#zall').onclick = () => { cam.x=0; cam.y=0; cam.s=Math.min(CW,CH)/(SQ3*(2*R+1))*1.05; camDirty=true; };
+
+// ---------------- start ----------------
+function chooseStart(){
+  let best=-1, bs=-1e9;
+  for (let t=0;t<6000;t++){
+    const q=Math.round((rnd()*2-1)*R*0.55), r=Math.round((rnd()*2-1)*R*0.55); if (Math.abs(q+r)>R*0.55) continue;
+    const i=idx(q,r); if (!G.valid[i]) continue; const h=G.h[i]; if (h<4||h>45||wOf(i)>0.02) continue;
+    let river=0, hi=0, land=0; disk(i,12,j=>{ if (wOf(j)>0.2) river++; if (G.h[j]>30) hi++; if (G.h[j]>0.5) land++; });
+    if (land < 380) continue;
+    const s = Math.min(river,40)/40 + Math.min(hi,60)/60*0.6 + G.m8[i]/255*0.6 + G.b8[i]/255*0.3 - Math.abs(h-15)/60;
+    if (s>bs){ bs=s; best=i; } }
+  return best;
+}
+function startGame(){
+  $('#loading').classList.add('hidden');
+  ['#top','#tools','#log','#goals','#info','#zoom'].forEach(s=>$(s).classList.remove('hidden'));
+  const s = chooseStart(); placeBuilding('camp', s, true);
+  const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=6; camDirty=true;
+  lastEcoStep = G.step;
+  log(`Your settlers make camp in the valley. ${G.lakes} great lakes lie somewhere on this continent.`);
+  refreshTools(); renderGoals();
+  if (!localStorage.getItem('frontier-help-seen')){ $('#help').classList.remove('hidden'); localStorage.setItem('frontier-help-seen','1'); }
+}
+// forge hook (filled by forge module)
+let openForge = () => {};
+
+let lastT = performance.now(), uiT = 0;
+function frame(){
+  const now = performance.now(), dt = Math.min(0.1,(now-lastT)/1000); lastT = now;
+  if (G.ready){ keyPan(dt); draw(); uiT += dt; if (uiT > 0.25){ uiT=0; renderTop(); renderInfo(); if (buildings.some(b=>b.type==='outpost'&&b.alive)) goal('outpost'); checkExplore(); } }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ======================================================================
+// FORGE (lattice chemistry, from the ladder prototype)
+// ======================================================================
+(function(){
+  const FR=17, FW=2*FR+1, FN=FW*FW, DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+  const fidx=(q,r)=>(r+FR)*FW+(q+FR);
+  const cells=[], nbr=new Int32Array(FN*6).fill(-1), cq=new Int16Array(FN), cr=new Int16Array(FN);
+  for (let r=-FR;r<=FR;r++) for (let q=-FR;q<=FR;q++) if (Math.abs(q+r)<=FR) cells.push(fidx(q,r));
+  const isV=new Uint8Array(FN); for (const i of cells) isV[i]=1;
+  for (const i of cells){ const q=i%FW-FR, r=((i/FW)|0)-FR; cq[i]=q; cr[i]=r; for (let d=0;d<6;d++){ const q2=q+DIRS[d][0], r2=r+DIRS[d][1]; if (Math.abs(q2)<=FR&&Math.abs(r2)<=FR&&isV[fidx(q2,r2)]) nbr[i*6+d]=fidx(q2,r2); } }
+  const NC=cells.length, type=new Uint8Array(FN);
+  const J=[0,0,0,0, 0,-1.0,-1.4,-0.25, 0,-1.4,-0.55,-0.25, 0,-0.25,-0.25,-0.35], MASS=[0,3,2,1];
+  const ERGB=[[20,24,30],[210,105,74],[63,179,168],[232,194,90]];
+  const st={T:2.5, anneal:null, open:false, loaded:false};
+  const frnd = LIB.mulberry32(SEED^0xf0f0);
+  function siteE(i,t,ex){ if(!t) return 0; let e=0; for(let d=0;d<6;d++){const k=nbr[i*6+d]; if(k>=0&&k!==ex) e+=J[t*4+type[k]];} return e; }
+  function sweep(n){ const inv=1/st.T; for(let a=0;a<n;a++){ const i=cells[(frnd()*NC)|0], j=nbr[i*6+((frnd()*6)|0)]; if(j<0) continue; const ti=type[i], tj=type[j]; if(ti===tj) continue;
+    const dE=siteE(i,tj,j)+siteE(j,ti,i)-siteE(i,ti,j)-siteE(j,tj,i); if(dE<=0||frnd()<Math.exp(-dE*inv)){type[i]=tj;type[j]=ti;} } }
+  function measure(){ let nOcc=0,E=0,def=0,mass=0; const cnt=[0,0,0,0]; const par=new Int32Array(FN); for(const i of cells) par[i]=i;
+    const find=x=>{while(par[x]!==x){par[x]=par[par[x]];x=par[x];}return x;};
+    for(const i of cells){ const t=type[i]; if(!t) continue; nOcc++; cnt[t]++; mass+=MASS[t]; let solid=0;
+      for(let d=0;d<6;d++){ const k=nbr[i*6+d]; if(k<0){solid++;continue;} const tk=type[k]; if(!tk) continue; solid++;
+        if(d<3){ const jj=J[t*4+tk]; E+=jj; if(-jj>=0.5){const a=find(i),b=find(k); if(a!==b) par[a]=b;} } }
+      if(solid<=4) def++; }
+    if(!nOcc) return null; const sz={}; let L=0; for(const i of cells) if(type[i]){ const r=find(i); sz[r]=(sz[r]||0)+1; if(sz[r]>L) L=sz[r]; }
+    const c=Math.min(1.4,Math.max(0,-E/nOcc/3)), net=L/nOcc, o=1-def/nOcc, w=cnt[3]/nOcc;
+    const stiff=c*Math.pow(net,1.5), tough=0.01+0.05*o*o+0.08*w*o;
+    let rgb=[0,0,0]; for(let t=1;t<4;t++) for(let k=0;k<3;k++) rgb[k]+=ERGB[t][k]*cnt[t]/nOcc;
+    return {stiff,tough,nOcc,cnt,rgb:rgb.map(Math.round), strength: 2.5 + 9*stiff*(0.5+8*(tough-0.01))};
+  }
+  const fc=$('#fc'), fx=fc.getContext('2d'); const HS=420/(SQ3*(2*FR+1)+0.6);
+  function drawF(){ fx.fillStyle='#0a0d11'; fx.fillRect(0,0,420,420); const glow=Math.min(1,st.T/3); fx.fillStyle=`rgba(${120*glow|0},30,20,0.25)`; fx.fillRect(0,0,420,420);
+    for(const i of cells){ const t=type[i]; const x=210+HS*SQ3*(cq[i]+cr[i]/2), y=210+HS*1.5*cr[i]; const c=ERGB[t];
+      fx.fillStyle = t? `rgb(${c[0]},${c[1]},${c[2]})` : '#141820'; fx.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/180*(60*k-30); const px=x+HS*0.95*Math.cos(a), py=y+HS*0.95*Math.sin(a); k?fx.lineTo(px,py):fx.moveTo(px,py);} fx.fill(); } }
+  function recipe(){ return {F:+$('#rF').value, S:+$('#rS').value, W:+$('#rW').value, fill:+$('#rFill').value/100}; }
+  function need(){ const r=recipe(), tot=(r.F+r.S+r.W)||1, n=Math.round(r.fill*NC); return { n, F:n*r.F/tot*0.04, S:n*r.S/tot*0.04, W:n*r.W/tot*0.04 }; }
+  function syncF(){ const r=recipe(), tot=(r.F+r.S+r.W)||1, nd=need();
+    $('#vF').textContent=Math.round(100*r.F/tot)+'%'; $('#vS').textContent=Math.round(100*r.S/tot)+'%'; $('#vW').textContent=Math.round(100*r.W/tot)+'%'; $('#vFill').textContent=Math.round(r.fill*100)+'%';
+    const ok = ST.ferrite>=nd.F && ST.silica>=nd.S && ST.resin>=nd.W;
+    $('#fcost').innerHTML = `Batch needs <b style="color:${ST.ferrite>=nd.F?'inherit':'#ff8b7b'}">${nd.F.toFixed(1)} Fe</b>, <b style="color:${ST.silica>=nd.S?'inherit':'#ff8b7b'}">${nd.S.toFixed(1)} Si</b>, <b style="color:${ST.resin>=nd.W?'inherit':'#ff8b7b'}">${nd.W.toFixed(1)} Rs</b> · yields ~${Math.round(nd.n*0.06)} hexes of bank`;
+    $('#fMix').disabled = !ok; }
+  ['#rF','#rS','#rW','#rFill'].forEach(s=>$(s).addEventListener('input', syncF));
+  $('#fMix').onclick = () => { const nd=need(); if (ST.ferrite<nd.F||ST.silica<nd.S||ST.resin<nd.W) return; ST.ferrite-=nd.F; ST.silica-=nd.S; ST.resin-=nd.W;
+    const r=recipe(), tot=(r.F+r.S+r.W)||1; const arr=new Uint8Array(NC); let k=0; const nF=Math.round(nd.n*r.F/tot), nS=Math.round(nd.n*r.S/tot);
+    for(let a=0;a<nF;a++)arr[k++]=1; for(let a=0;a<nS;a++)arr[k++]=2; while(k<nd.n)arr[k++]=3;
+    for(let a=NC-1;a>0;a--){const j=(frnd()*(a+1))|0; const t=arr[a]; arr[a]=arr[j]; arr[j]=t;} for(let a=0;a<NC;a++) type[cells[a]]=arr[a];
+    st.T=2.5; st.anneal=null; st.loaded=true; $('#fmsg').textContent='Molten. Cool it: anneal for strength, quench for speed.'; syncF(); };
+  $('#fAnneal').onclick = () => { st.anneal={from:Math.max(st.T,1.6), to:0.08, k:0, frames:600}; };
+  $('#fQuench').onclick = () => { st.anneal=null; st.T=0.08; };
+  $('#fClose').onclick = () => { st.open=false; $('#forge').classList.add('hidden'); };
+  $('#fSeal').onclick = () => { if (!st.loaded) return; const c=measure(); if (!c) return;
+    const units = Math.round(c.nOcc*0.06); const name = `Batch ${MATS.length} (${c.strength.toFixed(1)} m)`;
+    MATS.push({ id:'m'+MATS.length, name, strength:c.strength, units, col:`rgb(${c.rgb.join(',')})` }); matSel = MATS.length-1;
+    st.loaded=false; type.fill(0); log(`Forged <b>${name}</b>: ${units} hexes of bank material that holds ${c.strength.toFixed(1)} m of water.`); goal('forge');
+    $('#fmsg').textContent = `Sealed: holds ${c.strength.toFixed(1)} m (stone holds 2.5 m). Select it under “Raise with”.`; refreshTools(); syncF(); };
+  function loop(){ if (st.open){ if (st.anneal){ const a=st.anneal; a.k++; st.T=a.from+(a.to-a.from)*Math.min(1,a.k/a.frames); if(a.k>=a.frames) st.anneal=null; }
+      if (st.loaded) sweep(NC*25); drawF(); const c = st.loaded? measure() : null;
+      $('#fprobe').innerHTML = c ? `T ${st.T.toFixed(2)}${st.anneal?' (annealing)':''}<div class="stat"><span>Stiffness</span><div class="bar"><i style="width:${Math.min(100,c.stiff/1.1*100)}%;background:#7cc4ff"></i></div><span>${c.stiff.toFixed(2)}</span></div><div class="stat"><span>Toughness</span><div class="bar"><i style="width:${Math.min(100,(c.tough-0.01)/0.07*100)}%;background:#ffb86b"></i></div><span>${c.tough.toFixed(3)}</span></div><b>Holds ${c.strength.toFixed(1)} m of water</b>` : '<span class="dim">Empty crucible.</span>'; }
+    requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+  openForge = () => { st.open=true; $('#forge').classList.remove('hidden'); syncF(); };
+})();
+window.FRONTIER = { G, ST, buildings, BT, MATS, cam, act: (i)=>act(i,false), setTool:(t)=>{tool=t; refreshTools();}, placeBuilding, idx, cellXY, worldToCell, setRate, wOf, disk, goalsDone, strokeStart, get tool(){return tool;} };
+
+</script>
+</body>
+</html>

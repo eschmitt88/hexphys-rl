@@ -99,8 +99,9 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
   <b>What each building needs</b>
   <ul>
     <li><b>Farm</b>: food = 1.6 × (average soil moisture within 2 hexes − 15%) / 85% per day. Check the <i>moisture</i> lens. Standing water &gt;0.15 m floods it: no output, damage.</li>
-    <li><b>Lumber camp</b>: cuts forest within 6 hexes (&gt;25% cover) → up to ~1 wood/day + a little resin. Forest regrows. See the <i>forest</i> lens.</li>
-    <li><b>Quarry</b>: 0.7 stone/day, only on ground ≥ 30 m (the <i>height</i> lens).</li>
+    <li><b>Camp</b>: forages +0.35 food, +0.25 wood, +0.1 stone a day without workers, so you can always recover. It cannot be destroyed; if it floods, foraging stops — click it and <b>Move camp</b>. Claimed land stays yours even if the outpost that claimed it is lost.</li>
+    <li><b>Lumber camp</b> (wood only): cuts forest within 6 hexes (&gt;25% cover) → up to ~1 wood/day + a little resin. Forest regrows. See the <i>forest</i> lens.</li>
+    <li><b>Quarry</b>: 0.7 stone/day on ground ≥ 30 m (the <i>height</i> lens), 0.25 fieldstone anywhere else. Digging also yields stone.</li>
     <li><b>Mine</b>: 0.6 ore/day from <i>known</i> deposits within 2 hexes; deposits run out. Find them by <b>prospecting</b> (the <i>ore</i> lens shows where you have looked).</li>
     <li><b>Outpost</b>: claims land within 16 hexes and reveals 30. You can only build inside your territory (the bright border).</li>
   </ul>
@@ -546,8 +547,8 @@ const BT = {
              tip:'Claims land (r16) and reveals fog (r30). Place inside your territory, ≥10 hexes from other outposts.' },
   house:   { name:'House', cost:{wood:30}, housing:6, workers:0, col:'#e8b878', glyph:'■', tip:'+6 housing.' },
   farm:    { name:'Farm', cost:{wood:20}, workers:2, area:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture (r2). Drowns if flooded.' },
-  lumber:  { name:'Lumber camp', cost:{wood:15, stone:10}, workers:2, area:6, col:'#5fae5f', glyph:'♣', tip:'Fells forest within r6: wood + resin. Forest regrows.' },
-  quarry:  { name:'Quarry', cost:{wood:25}, workers:2, col:'#a8a8b0', glyph:'◆', tip:'Stone. Needs high ground (height ≥ 30).' },
+  lumber:  { name:'Lumber camp', cost:{wood:20}, workers:2, area:6, col:'#5fae5f', glyph:'♣', tip:'Fells forest within r6: wood + resin. Forest regrows.' },
+  quarry:  { name:'Quarry', cost:{wood:25}, workers:2, col:'#a8a8b0', glyph:'◆', tip:'Stone: 0.7/day on ground ≥ 30 m, 0.25/day fieldstone anywhere else.' },
   mine:    { name:'Mine', cost:{wood:30, stone:25}, workers:3, area:2, col:'#c86a4a', glyph:'⚒', tip:'Extracts known ferrite or silica within r2. Deposits deplete.' },
   forge:   { name:'Forge', cost:{wood:30, stone:60}, workers:0, col:'#ff8a3c', glyph:'♨', tip:'Opens the lattice forge: ores → building materials.' },
 };
@@ -602,7 +603,6 @@ function validPlacement(type, i){
   if (G.occ[i] >= 0) return 'occupied';
   if (!G.terr[i]) return 'outside your territory';
   if (type==='outpost'){ for (const b of buildings) if (b.alive && (b.type==='outpost'||b.type==='camp') && hexDist(b.i,i) < 10) return 'too close to another outpost'; }
-  if (type==='quarry' && G.h[i] < 30) return 'needs high ground (≥30)';
   if (type==='mine'){ let ok=false; disk(i,2,j=>{ if (G.known[j] && (G.ferrite[j]>0||G.sand[j]>0)) ok=true; }); if(!ok) return 'no known ore within 2 hexes'; }
   if (type==='forge' && buildings.some(b=>b.alive&&b.type==='forge')) return 'you already have a forge';
   if (!canAfford(BT[type].cost)) return 'cannot afford ('+costStr(BT[type].cost)+')';
@@ -614,6 +614,10 @@ function nearTerritory(i, maxD){
 function act(i, dragging){
   if (tool==='inspect' || i<0) return;
   if (BT[tool]){ if (dragging) return; const why=validPlacement(tool,i); if (why){ flash(why); return; } placeBuilding(tool,i); log(`Built ${BT[tool].name}.`); refreshTools(); allocate(); renderWork(); renderAdvice(); return; }
+  if (tool==='movecamp'){ if (dragging) return; const c=buildings.find(b=>b.alive&&b.type==='camp');
+    if (!G.valid[i]||!G.revealed[i]) return flash('unexplored'); if (G.h[i]<=0.3||wOf(i)>0.08) return flash('needs dry land'); if (G.occ[i]>=0) return flash('occupied'); if (!G.terr[i]) return flash('inside your territory only');
+    G.occ[c.i]=-1; c.i=i; G.occ[i]=c.id; c.flooded=false; c.hp=Math.max(c.hp,60); disk(i, BT.camp.terr, j=>{ G.terr[j]=1; }); reveal(i, BT.camp.reveal); recomputeBorder();
+    log('The settlers moved camp to higher ground.'); tool='inspect'; refreshTools(); renderSel(); return; }
   if (tool==='prospect'){ if (dragging) return; if (!G.revealed[i]) return flash('prospect only on explored land');
     if (!canAfford(ACTIONS.prospect.cost)) return flash('need 6 food'); pay(ACTIONS.prospect.cost);
     G.prospected=true; let fe=0, sa=0; disk(i, 9, j => { if (!G.known[j]){ G.known[j]=1; if (G.ferrite[j]>0) fe++; else if (G.sand[j]>0) sa++; } });
@@ -665,18 +669,19 @@ function economyTick(){
   const harvestCells=[], harvestAmt=[];
   for (const b of buildings){ if (!b.alive) continue; const bt=BT[b.type];
     const wHere = wOf(b.i);
-    if (wHere > 0.15){ b.hp -= b.type==='farm'?6:3; b.flooded=true; } else b.flooded=false;
+    if (wHere > 0.15){ b.hp -= (b.type==='farm'?3:1.5)*(wHere>0.6?2:1); b.flooded=true; } else b.flooded=false;
     let fireNear=G.f8[b.i]>0; for (const d of NBa) if (G.f8[b.i+d]) fireNear=true; if (fireNear){ b.hp -= 15; if (!b.burnt){ log(`<b style="color:#ff8b5b">Fire</b> reached your ${bt.name}!`); b.burnt=true; } } else b.burnt=false;
+    if (b.type==='camp' && b.hp < 1) b.hp = 1;          // the settlement core survives anything
     if (b.hp <= 0){ destroy(b); continue; }
     if (b.hp < 100 && !b.flooded) b.hp = Math.min(100, b.hp+0.5);
     b.yield = 0;
     if (!b.active || b.flooded) continue;
-    if (b.type==='camp'){ addFlow('food','camp foragers',0.35); addFlow('wood','camp foragers',0.15); }
+    if (b.type==='camp'){ addFlow('food','camp foragers',0.35); addFlow('wood','camp foragers',0.25); addFlow('stone','camp foragers',0.1); }
     else if (b.type==='farm'){ const mo=avgMoist(b.i); b.moist=mo; b.yield = farmYield(mo); addFlow('food','farms',b.yield);
       if (mo>=0.7){ let ch=false; disk(b.i,5,j=>{ if(G.dug[j] && wOf(j)>0.05) ch=true; }); if (ch) goal('irrigate'); } }
     else if (b.type==='lumber'){ let got=0, n=0; disk(b.i,6,j=>{ const v=G.b8[j]/255; if (v>0.25){ n++; if (got<0.9){ const t=Math.min(0.04, v-0.2); got+=t; harvestCells.push(j); harvestAmt.push(t); } } });
       b.forestCells=n; b.yield=got*1.1; addFlow('wood','lumber camps',got*1.1); addFlow('resin','lumber camps',got*0.12); }
-    else if (b.type==='quarry'){ b.yield=0.7; addFlow('stone','quarries',0.7); }
+    else if (b.type==='quarry'){ b.yield=quarryYield(b.i); addFlow('stone','quarries',b.yield); }
     else if (b.type==='mine'){ let got=0; disk(b.i,2,j=>{ if (got>=0.6||!G.known[j]) return;
         if (G.ferrite[j]>0){ const t=Math.min(0.6-got, G.ferrite[j]*40); G.ferrite[j]=Math.max(0,G.ferrite[j]-t/40); addFlow('ferrite','mines',t); got+=t; }
         else if (G.sand[j]>0){ const t=Math.min(0.6-got, G.sand[j]*40); G.sand[j]=Math.max(0,G.sand[j]-t/40); addFlow('silica','mines',t); got+=t; } });
@@ -703,6 +708,7 @@ function economyTick(){
   sendOps();
   if (ecoTicks % 2 === 0){ renderWork(); renderSel(); renderAdvice(); }
 }
+function quarryYield(i){ return G.h[i]>=30 ? 0.7 : 0.25; }
 function avgMoist(i){ let s=0,n=0; disk(i,2,j=>{ s+=G.m8[j]/255; n++; }); return s/n; }
 function farmYield(mo){ return 1.6*Math.max(0,mo-0.15)/0.85; }
 function mineLeft(i){ let fe=0, si=0; disk(i,2,j=>{ if(!G.known[j]) return; fe+=G.ferrite[j]*40; si+=G.sand[j]*40; }); return {fe, si}; }
@@ -712,7 +718,7 @@ function destroy(b, demolished){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.typ
   if (selB===b.id) { selB=-1; renderSel(); }
   if (demolished) log(`Demolished your ${bt.name}.`);
   else log(`<b style="color:#ff8b7b">Your ${bt.name} was destroyed${b.flooded?' by flooding':' by fire'}.</b>`);
-  if (bt.terr){ G.terr.fill(0); for (const o of buildings) if (o.alive && BT[o.type].terr) disk(o.i, BT[o.type].terr, j=>{G.terr[j]=1;}); recomputeBorder(); }
+  // claimed land stays claimed: territory never shrinks
 }
 let lastBurning=0, lastSeasonName='';
 function watchEvents(){
@@ -808,6 +814,7 @@ function renderWork(){
 
 // ---------- building inspector ----------
 function statusOf(b){ const bt=BT[b.type];
+  if (b.type==='camp' && b.flooded) return `<span style="color:#7cc4ff">Camp flooded</span> — ${wOf(b.i).toFixed(2)} m of water; foragers bring nothing. Use <b>Move camp</b> to relocate to dry, higher ground.`;
   if (b.flooded) return `<span style="color:#7cc4ff">Flooded</span> — ${wOf(b.i).toFixed(2)} m of water on site. No output; taking damage. Raise a bank or dig drainage.`;
   if (b.burnt) return `<span style="color:#ff8b5b">On fire</span> — taking heavy damage.`;
   if (b.why==='paused') return `<span class="why">Paused by you</span> — its workers are free for other buildings.`;
@@ -817,10 +824,10 @@ function statusOf(b){ const bt=BT[b.type];
   return `<span style="color:#6fd38b">Working</span>${bt.workers?` · ${bt.workers} workers`:''}`;
 }
 function yieldText(b){
-  if (b.type==='camp') return 'Foragers bring +0.35 food and +0.15 wood/day. Houses 12. Claims 18 hexes around it.';
+  if (b.type==='camp') return 'Foragers bring +0.35 food, +0.25 wood and +0.1 stone/day — so you can always recover. Houses 12. The camp cannot be destroyed; if it floods, foraging stops — move it to higher ground.';
   if (b.type==='farm'){ const mo=avgMoist(b.i); return `Soil moisture within 2 hexes: <b>${(mo*100).toFixed(0)}%</b> → <b>${farmYield(mo).toFixed(2)} food/day</b> (1.6 at 100%, nothing below 15%). Irrigate by digging a channel from water; moisture spreads a few hexes from wet ground.`; }
   if (b.type==='lumber') return `Forest hexes (&gt;25% cover) within 6: <b>${b.forestCells??'?'}</b> → <b>${(b.yield||0).toFixed(2)} wood/day</b> (max ~1) + resin. Cut forest regrows if the soil stays moist.`;
-  if (b.type==='quarry') return '+0.7 stone/day.';
+  if (b.type==='quarry') return G.h[b.i]>=30? '+0.7 stone/day (high ground).' : '+0.25 stone/day fieldstone. A quarry on ground ≥ 30 m gives 0.7.';
   if (b.type==='mine'){ const L=mineLeft(b.i); return `Known ore within 2 hexes: <b style="color:#e08a6a">${L.fe.toFixed(0)} Fe</b>, <b style="color:#5fd0c0">${L.si.toFixed(0)} Si</b> left → ${(b.yield||0).toFixed(2)}/day (max 0.6). Prospect nearby to find more.`; }
   if (b.type==='house') return 'Houses 6 settlers.';
   if (b.type==='outpost') return 'Houses 4. Claims 16 hexes and revealed 30 around it.';
@@ -833,13 +840,13 @@ function renderSel(){
   const bt=BT[b.type];
   P.innerHTML = `<div style="display:flex;justify-content:space-between"><b style="color:${bt.col}">${bt.glyph} ${bt.name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div>
     <div>${statusOf(b)}</div><div style="margin-top:3px">${yieldText(b)}</div><div class="dim">condition ${b.hp.toFixed(0)}%</div>
-    <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?`<button class="b" id="selDemo">Demolish</button>`:''}</div>`;
+    <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?`<button class="b" id="selDemo">Demolish</button>`:`<button class="b" id="selMove">Move camp</button>`}</div>`;
   P.classList.remove('hidden');
   $('#selX').onclick = () => { selB=-1; renderSel(); };
   const sp=$('#selPause'); if (sp) sp.onclick = () => { b.paused=!b.paused; allocate(); renderSel(); renderWork(); };
+  const sm=$('#selMove'); if (sm) sm.onclick = () => { tool='movecamp'; refreshTools(); flash('click a dry hex inside your territory to move the camp'); };
   const sd=$('#selDemo'); if (sd) sd.onclick = () => { if (!confirm(`Demolish this ${bt.name}? Half its cost is refunded.`)) return;
     for (const k in bt.cost) ST[k]+=bt.cost[k]*0.5; destroy(b, true);
-    if (bt.terr){ G.terr.fill(0); for (const o of buildings) if (o.alive && BT[o.type].terr) disk(o.i, BT[o.type].terr, j=>{G.terr[j]=1;}); recomputeBorder(); }
     allocate(); renderWork(); };
 }
 
@@ -850,6 +857,10 @@ function renderAdvice(){
   const flooded = buildings.filter(b=>b.alive&&b.flooded);
   if (ST.food<5 && fn<0) A.push(['bad','Your settlers are <b>starving</b>. Build farms on moist land (moisture lens) and keep Farms at the top of Workforce.']);
   else if (fn < -0.01) A.push(['warn',`Food is falling by <b>${(-fn).toFixed(2)}/day</b> — ${Math.floor(ST.food/(-fn))} days left. Build a farm where the moisture lens is blue, or staff the ones you have.`]);
+  const campB = buildings.find(b=>b.alive&&b.type==='camp');
+  if (campB && campB.flooded) A.push(['bad','Your <b>camp is flooded</b> and foragers bring nothing. Click the camp → <b>Move camp</b> to higher ground.']);
+  if (ST.stone < 10 && !buildings.some(b=>b.alive&&b.type==='quarry')) A.push(['info','Short of stone: build a <b>Quarry</b> (25 wood, works anywhere; best on ground ≥ 30 m), or <b>Dig</b> — every dug hex yields stone.']);
+  if (ST.wood < 20 && !buildings.some(b=>b.alive&&b.type==='lumber')) A.push(['info','Short of wood: a <b>Lumber camp</b> (20 wood) next to forest (forest lens). The camp also gathers a little wood each day.']);
   if (flooded.length) A.push(['warn',`${flooded.length} building${flooded.length>1?'s are':' is'} <b>flooded</b> (no output, taking damage). Click it to inspect; raise a bank or build higher.`]);
   if (unst.length) A.push(['warn',`${unst.length} building${unst.length>1?'s have':' has'} <b>no workers</b> (${ST.idle||0} idle, need ${unst.reduce((a,b)=>a+BT[b.type].workers,0)} more). Grow population or reorder Workforce.`]);
   if (ST.growth==='housing' && fn>0) A.push(['info','Population is capped by <b>housing</b>. Build a House (+6) or an Outpost (+4).']);
@@ -886,7 +897,7 @@ function preview(t, i){
   if (t==='farm'){ const mo=avgMoist(i); let risk=false; disk(i,1,j=>{ if (wOf(j)>0.05) risk=true; });
     return `expected <b>${farmYield(mo).toFixed(2)} food/day</b> (moisture ${(mo*100).toFixed(0)}% within 2)${risk?' · <span class="why">water next to it: flood risk in the rains</span>':''}`; }
   if (t==='lumber'){ let n=0, got=0; disk(i,6,j=>{ const v=G.b8[j]/255; if (v>0.25){ n++; if (got<0.9) got+=Math.min(0.04,v-0.2); } }); return `${n} forest hexes within 6 → about <b>${(got*1.1).toFixed(2)} wood/day</b>`; }
-  if (t==='quarry') return G.h[i]>=30? 'expected <b>0.7 stone/day</b>' : `height ${G.h[i].toFixed(0)} m — quarries need ≥ 30 m (height lens)`;
+  if (t==='quarry') return G.h[i]>=30? 'expected <b>0.7 stone/day</b> (high ground)' : `expected <b>0.25 stone/day</b> — fieldstone only; ground ≥ 30 m gives 0.7 (height lens)`;
   if (t==='mine'){ const L=mineLeft(i); return `known ore within 2: <b style="color:#e08a6a">${L.fe.toFixed(0)} Fe</b>, <b style="color:#5fd0c0">${L.si.toFixed(0)} Si</b> → up to 0.6/day`; }
   if (t==='house') return '+6 housing';
   if (t==='outpost') return '+4 housing · claims 16 hexes · reveals 30';
@@ -911,8 +922,9 @@ function renderInfo(){
     height:'<b>Height lens</b>: green lowland → yellow at 30 m (quarries allowed above) → brown → snow; dark lines every 10 m. Water flows across the lines, downhill.',
     ore:'<b>Ore lens</b>: <span style="color:#e08a6a">ferrite</span>, <span style="color:#5fd0c0">silica sand</span>, purple-grey = prospected but empty, plain grey = not prospected yet.' };
   if (LEG[lens]) s = `<div style="margin-bottom:4px">${LEG[lens]}</div>` + s;
-  const tdesc = BT[tool]? BT[tool].tip : ACTIONS[tool]? ACTIONS[tool].tip : null;
-  if (tdesc) s = `<div style="color:#9fd0ff;margin-bottom:4px"><b>${(BT[tool]||ACTIONS[tool]).name}:</b> ${tdesc}</div>` + s;
+  if (tool==='movecamp' && i>=0){ const ok = G.valid[i]&&G.revealed[i]&&G.h[i]>0.3&&wOf(i)<=0.08&&G.occ[i]<0&&G.terr[i]; s += `<br>${ok?'<span style="color:#6fd38b">✓ click to move the camp here</span>':'<span style="color:#ff8b7b">✗ needs dry, unoccupied land in your territory</span>'} · height ${G.h[i].toFixed(1)} m`; }
+  const tdesc = BT[tool]? BT[tool].tip : ACTIONS[tool]? ACTIONS[tool].tip : tool==='movecamp'? 'Pick a dry hex in your territory — prefer high ground well above the rivers (height lens).' : null;
+  if (tdesc) s = `<div style="color:#9fd0ff;margin-bottom:4px"><b>${tool==='movecamp'?'Move camp':(BT[tool]||ACTIONS[tool]).name}:</b> ${tdesc}</div>` + s;
   $('#info').innerHTML = s;
 }
 
@@ -993,6 +1005,7 @@ function chooseStart(){
   for (let t=0;t<6000;t++){
     const q=Math.round((rnd()*2-1)*R*0.55), r=Math.round((rnd()*2-1)*R*0.55); if (Math.abs(q+r)>R*0.55) continue;
     const i=idx(q,r); if (!G.valid[i]) continue; const h=G.h[i]; if (h<4||h>45||wOf(i)>0.02) continue;
+    let lowWet=1e9; disk(i,8,j=>{ if (wOf(j)>0.05) lowWet=Math.min(lowWet, G.h[j]+wOf(j)); }); if (lowWet<1e9 && h-lowWet<3) continue;   // above flood level
     let river=0, hi=0, land=0; disk(i,12,j=>{ if (wOf(j)>0.2) river++; if (G.h[j]>30) hi++; if (G.h[j]>0.5) land++; });
     if (land < 380) continue;
     const s = Math.min(river,40)/40 + Math.min(hi,60)/60*0.6 + G.m8[i]/255*0.6 + G.b8[i]/255*0.3 - Math.abs(h-15)/60;
@@ -1007,7 +1020,7 @@ function startGame(){
   lastEcoStep = G.step;
   log(`Your settlers make camp in the valley. ${G.lakes} great lakes lie somewhere on this continent.`);
   refreshTools(); renderGoals(); allocate(); renderWork(); renderAdvice();
-  if (!localStorage.getItem('frontier-help-seen-v2')){ $('#help').classList.remove('hidden'); localStorage.setItem('frontier-help-seen-v2','1'); }
+  if (!localStorage.getItem('frontier-help-seen-v3')){ $('#help').classList.remove('hidden'); localStorage.setItem('frontier-help-seen-v3','1'); }
 }
 // forge hook (filled by forge module)
 let openForge = () => {};

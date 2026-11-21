@@ -91,7 +91,7 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
     forests spread where the soil is wet and burn when it is dry. Nothing is scripted. You found a settlement in the fog and grow it.</div>
   <b>How a day works</b> <span class="dim">(1 day ≈ 1 s at 1×; a year is 300 days)</span>
   <ul>
-    <li>Each settler <b>eats 0.06 food/day</b>. While food &gt; 15 and there is free housing, one new settler arrives about every 15 days. With no food, settlers starve.</li>
+    <li>Each settler <b>eats 0.06 food/day</b>. While food &gt; 15 and there is free housing, the population <b>grows about 1% per day</b> (plus a trickle of newcomers) — it doubles roughly every 70 days, so housing and food run out fast. With no food, settlers starve at the same rate.</li>
     <li><b>Workers</b>: farms, lumber camps and quarries need 2 settlers, mines 3. Settlers are assigned by the <b>Workforce</b> priority list (top first); buildings that miss out sit idle with a grey ring. Reorder or pause types there, or pause single buildings in the inspector.</li>
     <li>Housing: camp 12, outpost 4, house 6. The top bar shows each resource's <b>net income per day</b>; hover it for the breakdown.</li>
     <li>The <b>advisor</b> line under the top bar names your current bottleneck.</li>
@@ -568,6 +568,7 @@ const RATE = {}; for (const r of RES) RATE[r] = {};
 let flow = null;
 function addFlow(res, src, amt){ flow[res][src] = (flow[res][src]||0) + amt; }
 let lastEcoStep = 0, ecoTicks = 0;
+const GROW_R = 0.01, GROW_BASE = 0.03;   // per day: 1% of population + a trickle of newcomers
 const goalsDone = {};
 
 function canAfford(c){ for (const k in c) if ((ST[k]||0) < c[k]) return false; return true; }
@@ -684,11 +685,16 @@ function economyTick(){
   for (const r of RES){ let tot=0; for (const k in flow[r]){ tot+=flow[r][k]; } ST[r] += tot;
     const all = new Set([...Object.keys(flow[r]), ...Object.keys(RATE[r])]);
     for (const k of all){ RATE[r][k] = (RATE[r][k]||0)*0.85 + (flow[r][k]||0)*0.15; if (Math.abs(RATE[r][k])<1e-4 && !flow[r][k]) delete RATE[r][k]; } }
-  if (ST.food < 0){ ST.food = 0; ST.popAcc -= 0.1; ST.growth='starving'; }
+  // growth is proportional to population (exponential until housing caps it); starvation scales the same way
+  ST.growRate = 0;
+  if (ST.food < 0){ ST.food = 0; ST.popAcc -= GROW_BASE + GROW_R*ST.pop; ST.growth='starving'; }
   else if (ST.food <= 15){ ST.growth='lowfood'; }
   else if (ST.pop >= ST.housing){ ST.growth='housing'; }
-  else { ST.popAcc += 0.07; ST.growth='growing'; }
-  if (ST.popAcc >= 1){ ST.pop++; ST.popAcc=0; } if (ST.popAcc <= -1){ ST.pop=Math.max(0,ST.pop-1); ST.popAcc=0; log('A settler starved.'); }
+  else { ST.growRate = GROW_BASE + GROW_R*ST.pop; ST.popAcc += ST.growRate; ST.growth='growing'; }
+  while (ST.popAcc >= 1 && ST.pop < ST.housing){ ST.pop++; ST.popAcc-=1; }
+  if (ST.pop >= ST.housing && ST.popAcc > 0) ST.popAcc = 0;
+  let starved=0; while (ST.popAcc <= -1 && ST.pop > 0){ ST.pop--; ST.popAcc+=1; starved++; }
+  if (starved) log(`<span style="color:#ff8b7b">${starved} settler${starved>1?'s':''} starved.</span>`);
   if (ST.pop >= 40) goal('town');
   if (ecoTicks % 4 === 0) checkWaterworks();
   if (ecoTicks % 2 === 0) watchEvents();
@@ -763,7 +769,7 @@ function showTip(el){
   const r = el.dataset.res, T=$('#tip'); let h='';
   if (r==='pop'){
     const why = {starving:'<span style="color:#ff8b7b">Starving: no food. Settlers will leave/die.</span>', lowfood:'<span class="why">Not growing: food must stay above 15.</span>',
-      housing:'<span class="why">Not growing: housing full. Build a House (+6) or Outpost (+4).</span>', growing:'<span style="color:#6fd38b">Growing: +1 settler about every 15 days.</span>'}[ST.growth]||'';
+      housing:'<span class="why">Not growing: housing full. Build a House (+6) or Outpost (+4).</span>', growing:`<span style="color:#6fd38b">Growing ~${(100*GROW_R).toFixed(0)}%/day: +${(ST.growRate||0).toFixed(2)} settlers/day (one every ${(1/Math.max(1e-6,ST.growRate||0)).toFixed(0)} days), doubling about every ${Math.round(Math.LN2/GROW_R)} days until housing is full.</span>`}[ST.growth]||'';
     h = `<b>Settlers ${ST.pop} / housing ${ST.housing}</b><div>${why}</div><div class="l"><span>workers needed</span><b>${ST.needed||0}</b></div><div class="l"><span>idle</span><b>${ST.idle||0}</b></div><div class="dim">Each settler eats 0.06 food/day.</div>`;
   } else {
     const rows = Object.entries(RATE[r]).filter(([k,v])=>Math.abs(v)>0.003).sort((a,b)=>b[1]-a[1]);

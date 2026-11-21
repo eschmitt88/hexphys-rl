@@ -119,9 +119,11 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
     <label class="sl"><span><span class="sw" style="background:#3fb3a8"></span>Silica</span><input type="range" id="rS" min="0" max="10" value="4"><span id="vS"></span></label>
     <label class="sl"><span><span class="sw" style="background:#e8c25a"></span>Resin</span><input type="range" id="rW" min="0" max="10" value="1"><span id="vW"></span></label>
     <label class="sl"><span>Fill</span><input type="range" id="rFill" min="30" max="100" value="70"><span id="vFill"></span></label>
+    <div id="fstock" class="dim"></div>
     <div id="fcost" class="dim"></div>
+    <div id="fwhy"></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="b on" id="fMix">Load &amp; melt</button><button class="b" id="fAnneal">Anneal</button><button class="b" id="fQuench">Quench</button>
+      <button class="b" id="fMine" title="set the recipe to the ore you actually have">Use my stock</button><button class="b on" id="fMix">Load &amp; melt</button><button class="b" id="fAnneal">Anneal</button><button class="b" id="fQuench">Quench</button>
     </div>
     <div id="fprobe"></div>
     <div style="display:flex;gap:6px"><button class="b on" id="fSeal">⬆ Seal batch</button><button class="b" id="fClose">Close</button></div>
@@ -1053,14 +1055,34 @@ requestAnimationFrame(frame);
     for(const i of cells){ const t=type[i]; const x=210+HS*SQ3*(cq[i]+cr[i]/2), y=210+HS*1.5*cr[i]; const c=ERGB[t];
       fx.fillStyle = t? `rgb(${c[0]},${c[1]},${c[2]})` : '#141820'; fx.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/180*(60*k-30); const px=x+HS*0.95*Math.cos(a), py=y+HS*0.95*Math.sin(a); k?fx.lineTo(px,py):fx.moveTo(px,py);} fx.fill(); } }
   function recipe(){ return {F:+$('#rF').value, S:+$('#rS').value, W:+$('#rW').value, fill:+$('#rFill').value/100}; }
-  function need(){ const r=recipe(), tot=(r.F+r.S+r.W)||1, n=Math.round(r.fill*NC); return { n, F:n*r.F/tot*0.04, S:n*r.S/tot*0.04, W:n*r.W/tot*0.04 }; }
+  const PER = 0.015;   // ore per atom in the crucible
+  function need(){ const r=recipe(), tot=(r.F+r.S+r.W)||1, n=Math.round(r.fill*NC); return { n, F:n*r.F/tot*PER, S:n*r.S/tot*PER, W:n*r.W/tot*PER }; }
   function syncF(){ const r=recipe(), tot=(r.F+r.S+r.W)||1, nd=need();
     $('#vF').textContent=Math.round(100*r.F/tot)+'%'; $('#vS').textContent=Math.round(100*r.S/tot)+'%'; $('#vW').textContent=Math.round(100*r.W/tot)+'%'; $('#vFill').textContent=Math.round(r.fill*100)+'%';
-    const ok = ST.ferrite>=nd.F && ST.silica>=nd.S && ST.resin>=nd.W;
-    $('#fcost').innerHTML = `Batch needs <b style="color:${ST.ferrite>=nd.F?'inherit':'#ff8b7b'}">${nd.F.toFixed(1)} Fe</b>, <b style="color:${ST.silica>=nd.S?'inherit':'#ff8b7b'}">${nd.S.toFixed(1)} Si</b>, <b style="color:${ST.resin>=nd.W?'inherit':'#ff8b7b'}">${nd.W.toFixed(1)} Rs</b> · yields ~${Math.round(nd.n*0.06)} hexes of bank`;
-    $('#fMix').disabled = !ok; }
+    $('#fstock').innerHTML = `You have <b style="color:#e08a6a">${ST.ferrite.toFixed(1)} Fe</b> · <b style="color:#5fd0c0">${ST.silica.toFixed(1)} Si</b> · <b style="color:#e8c25a">${ST.resin.toFixed(1)} Rs</b>`;
+    const short = [];
+    if (ST.ferrite < nd.F) short.push(`ferrite: need ${nd.F.toFixed(1)}, have ${ST.ferrite.toFixed(1)} — mine ferrite (uplands; prospect first) or lower Ferrite`);
+    if (ST.silica < nd.S) short.push(`silica: need ${nd.S.toFixed(1)}, have ${ST.silica.toFixed(1)} — mine river sand (prospect along big rivers) or set Silica to 0`);
+    if (ST.resin < nd.W) short.push(`resin: need ${nd.W.toFixed(1)}, have ${ST.resin.toFixed(1)} — lumber camps make a little resin, or set Resin to 0`);
+    const ok = !short.length && tot>0;
+    $('#fcost').innerHTML = `This batch uses <b>${nd.F.toFixed(1)} Fe</b>, <b>${nd.S.toFixed(1)} Si</b>, <b>${nd.W.toFixed(1)} Rs</b> → ~${Math.round(nd.n*0.06)} hexes of bank. Fill = how densely the crucible is packed (denser = more bank, more ore).`;
+    let why = '';
+    if (st.loaded) why = '<span style="color:#9fd0ff">Crucible is loaded. Anneal (slow, strong) or Quench (instant, weaker), then Seal.</span>';
+    else if (!ok) why = '<span style="color:#ff8b7b">Can’t load yet:</span><br>' + short.map(x=>'· '+x).join('<br>') + '<br><span class="dim">Or press “Use my stock” to fit the recipe to what you have.</span>';
+    else why = '<span style="color:#6fd38b">Ready: press Load &amp; melt.</span>';
+    $('#fwhy').innerHTML = why;
+    $('#fMix').disabled = !ok || st.loaded;
+    for (const id of ['#fAnneal','#fQuench','#fSeal']) { $(id).disabled = !st.loaded; $(id).title = st.loaded? '' : 'load the crucible first'; }
+  }
   ['#rF','#rS','#rW','#rFill'].forEach(s=>$(s).addEventListener('input', syncF));
-  $('#fMix').onclick = () => { const nd=need(); if (ST.ferrite<nd.F||ST.silica<nd.S||ST.resin<nd.W) return; ST.ferrite-=nd.F; ST.silica-=nd.S; ST.resin-=nd.W;
+  $('#fMine').onclick = () => { const T = ST.ferrite+ST.silica+ST.resin; if (T<=0){ $('#fwhy').innerHTML='<span style="color:#ff8b7b">You have no ore yet. Build a mine on prospected ferrite or silica, or a lumber camp for resin.</span>'; return; }
+    const mx=Math.max(ST.ferrite,ST.silica,ST.resin);
+    $('#rF').value=Math.round(10*ST.ferrite/mx); $('#rS').value=Math.round(10*ST.silica/mx); $('#rW').value=Math.round(10*ST.resin/mx);
+    const r=recipe(), tot=(r.F+r.S+r.W)||1;
+    // largest fill the scarcest chosen element allows
+    let fill=1; for (const [w,have] of [[r.F,ST.ferrite],[r.S,ST.silica],[r.W,ST.resin]]) if (w>0) fill=Math.min(fill, have/(NC*w/tot*PER));
+    $('#rFill').value = Math.max(30, Math.min(100, Math.floor(fill*100*0.98))); syncF(); };
+  $('#fMix').onclick = () => { const nd=need(); if (st.loaded || ST.ferrite<nd.F||ST.silica<nd.S||ST.resin<nd.W) return; ST.ferrite-=nd.F; ST.silica-=nd.S; ST.resin-=nd.W;
     const r=recipe(), tot=(r.F+r.S+r.W)||1; const arr=new Uint8Array(NC); let k=0; const nF=Math.round(nd.n*r.F/tot), nS=Math.round(nd.n*r.S/tot);
     for(let a=0;a<nF;a++)arr[k++]=1; for(let a=0;a<nS;a++)arr[k++]=2; while(k<nd.n)arr[k++]=3;
     for(let a=NC-1;a>0;a--){const j=(frnd()*(a+1))|0; const t=arr[a]; arr[a]=arr[j]; arr[j]=t;} for(let a=0;a<NC;a++) type[cells[a]]=arr[a];
@@ -1071,9 +1093,11 @@ requestAnimationFrame(frame);
   $('#fSeal').onclick = () => { if (!st.loaded) return; const c=measure(); if (!c) return;
     const units = Math.round(c.nOcc*0.06); const name = `Batch ${MATS.length} (${c.strength.toFixed(1)} m)`;
     MATS.push({ id:'m'+MATS.length, name, strength:c.strength, units, col:`rgb(${c.rgb.join(',')})` }); matSel = MATS.length-1;
+    if (st.T > 0.6) log('<span class="why">Sealed while still hot — the batch froze half-mixed and weak.</span>');
     st.loaded=false; type.fill(0); log(`Forged <b>${name}</b>: ${units} hexes of bank material that holds ${c.strength.toFixed(1)} m of water.`); goal('forge');
     $('#fmsg').textContent = `Sealed: holds ${c.strength.toFixed(1)} m (stone holds 2.5 m). Select it under “Raise with”.`; refreshTools(); syncF(); };
-  function loop(){ if (st.open){ if (st.anneal){ const a=st.anneal; a.k++; st.T=a.from+(a.to-a.from)*Math.min(1,a.k/a.frames); if(a.k>=a.frames) st.anneal=null; }
+  let fFrame=0;
+  function loop(){ if (st.open){ if (++fFrame % 20 === 0) syncF(); if (st.anneal){ const a=st.anneal; a.k++; st.T=a.from+(a.to-a.from)*Math.min(1,a.k/a.frames); if(a.k>=a.frames) st.anneal=null; }
       if (st.loaded) sweep(NC*25); drawF(); const c = st.loaded? measure() : null;
       $('#fprobe').innerHTML = c ? `T ${st.T.toFixed(2)}${st.anneal?' (annealing)':''}<div class="stat"><span>Stiffness</span><div class="bar"><i style="width:${Math.min(100,c.stiff/1.1*100)}%;background:#7cc4ff"></i></div><span>${c.stiff.toFixed(2)}</span></div><div class="stat"><span>Toughness</span><div class="bar"><i style="width:${Math.min(100,(c.tough-0.01)/0.07*100)}%;background:#ffb86b"></i></div><span>${c.tough.toFixed(3)}</span></div><b>Holds ${c.strength.toFixed(1)} m of water</b>` : '<span class="dim">Empty crucible.</span>'; }
     requestAnimationFrame(loop); }

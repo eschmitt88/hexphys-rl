@@ -17,15 +17,15 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1
 #top .sp{display:flex;gap:4px;margin-left:auto;align-items:center}
 .b{background:#1d232c;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
 .b:hover{border-color:#4a5563}.b.on{border-color:var(--acc);background:#1b2a3a}.b:disabled{opacity:.4;cursor:default}
-#tools{left:10px;top:60px;width:208px;display:flex;flex-direction:column;gap:4px;max-height:calc(100% - 70px);overflow:auto}
+#tools{left:10px;top:calc(var(--topb,52px) + 8px);width:208px;display:flex;flex-direction:column;gap:4px;max-height:calc(100% - var(--topb,52px) - 20px);overflow:auto}
 #tools h4{margin:6px 0 2px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
 .tool{display:flex;justify-content:space-between;gap:6px;text-align:left;width:100%}
 .tool .c{color:var(--dim);font-size:11px}
 #info{right:10px;bottom:10px;width:300px;font-size:12px}
-#log{right:10px;top:60px;width:300px;max-height:30vh;overflow:auto;font-size:12px}
+#log{right:10px;top:calc(var(--topb,52px) + 8px);width:300px;max-height:30vh;overflow:auto;font-size:12px}
 #log .e{padding:2px 0;border-bottom:1px solid #20262e}
 #log .t{color:var(--dim);margin-right:5px}
-#goals{right:10px;top:calc(70px + 30vh);width:300px;font-size:12px}
+#goals{right:10px;top:calc(var(--topb,52px) + 30vh + 18px);width:300px;font-size:12px}
 #goals .g{display:flex;gap:6px}
 #goals .g.done{color:var(--good)}
 .dim{color:var(--dim)}
@@ -42,6 +42,21 @@ label.sl{display:grid;grid-template-columns:62px 1fr 64px;gap:6px;align-items:ce
 .hidden{display:none!important}
 .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px}
 #zoom{left:226px;bottom:10px;display:flex;gap:4px;padding:5px}
+#advice{left:500px;right:320px;top:calc(var(--topb,52px) + 8px);font-size:13px;padding:6px 12px;border-color:#3a4a5c}
+#advice .a{margin:1px 0}
+#work{left:226px;top:calc(var(--topb,52px) + 8px);width:262px;font-size:12px}
+#work .wr{display:grid;grid-template-columns:16px 1fr 56px 62px;gap:4px;align-items:center;padding:2px 0;border-bottom:1px solid #20262e}
+#work .wr .x{display:flex;gap:2px}
+#work .mini{padding:0 5px;font-size:11px;border-radius:5px}
+#work .hd{cursor:pointer;display:flex;justify-content:space-between}
+#sel{right:320px;bottom:10px;width:310px;font-size:12px}
+#sel .row{display:flex;gap:6px;margin-top:6px}
+#tip{position:fixed;z-index:40;pointer-events:none;font-size:12px;min-width:180px}
+#tip .l{display:flex;justify-content:space-between;gap:12px}
+#top .r{cursor:help}
+#top .r small{font-size:11px;margin-left:2px}
+.lens{padding:4px 7px}
+.why{color:#ffb86b}
 kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;font-size:11px}
 </style>
 </head>
@@ -55,7 +70,7 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
   <span id="date" class="dim"></span>
   <div class="sp">
     <button class="b" data-rate="0">pause</button><button class="b on" data-rate="8">1×</button><button class="b" data-rate="20">2.5×</button><button class="b" data-rate="48">6×</button>
-    <button class="b" id="btnGeo" title="show known ore deposits">geology</button>
+    <span class="dim" style="margin-left:6px">lens</span><button class="b lens on" data-lens="map">map</button><button class="b lens" data-lens="moisture" title="soil moisture: where farms yield">moisture</button><button class="b lens" data-lens="forest" title="forest cover: where lumber camps yield">forest</button><button class="b lens" data-lens="height" title="height bands + 10 m contours: where water will flow">height</button><button class="b lens" data-lens="ore" title="prospected land and known ore">ore</button>
     <button class="b" id="btnHelp">?</button>
   </div>
 </div>
@@ -64,20 +79,35 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
 <div class="pn hidden" id="log"></div>
 <div class="pn hidden" id="goals"></div>
 <div class="pn hidden" id="info"><span class="dim">Hover the map.</span></div>
+<div class="pn hidden" id="advice"></div>
+<div class="pn hidden" id="work"></div>
+<div class="pn hidden" id="sel"></div>
+<div class="pn hidden" id="tip"></div>
 <div class="pn hidden" id="zoom"><button class="b" id="zin">+</button><button class="b" id="zout">-</button><button class="b" id="zhome" title="back to your settlement">home</button><button class="b" id="zall" title="whole continent">map</button></div>
 
-<div class="pn hidden" id="help">
-  <h2>⬡ Hexphys Frontier</h2>
+<div class="pn hidden" id="help" style="max-height:88vh;overflow:auto">
+  <h2>⬡ Hexphys Frontier — guide</h2>
   <div class="dim" style="margin-bottom:8px">An open continent of ~600,000 hexes. Rain falls, rivers run, lakes fill and drain with the seasons,
     forests spread where the soil is wet and burn when it is dry. Nothing is scripted. You found a settlement in the fog and grow it.</div>
+  <b>How a day works</b> <span class="dim">(1 day ≈ 1 s at 1×; a year is 300 days)</span>
   <ul>
-    <li><b>Explore</b>: outposts claim land and reveal the fog; scouts reveal far patches; prospect to find buried <span style="color:#d2694a">ferrite</span> and river <span style="color:#3fb3a8">silica sand</span>.</li>
-    <li><b>Feed</b> your settlers: farms yield by <i>soil moisture</i>. Dig channels from rivers to irrigate — but floods drown farms.</li>
-    <li><b>Shape water</b>: there are no pipes or dams as objects. <i>Dig</i> lowers land, <i>Raise</i> builds it up. A raised bank holds water up to its material's strength; stone holds ~2.5 m. Forge stronger materials for bigger reservoirs.</li>
-    <li><b>Forge</b>: mined ferrite, silica and forest resin go into the lattice forge; how you heat and cool it decides the strength of what you build.</li>
+    <li>Each settler <b>eats 0.06 food/day</b>. While food &gt; 15 and there is free housing, one new settler arrives about every 15 days. With no food, settlers starve.</li>
+    <li><b>Workers</b>: farms, lumber camps and quarries need 2 settlers, mines 3. Settlers are assigned by the <b>Workforce</b> priority list (top first); buildings that miss out sit idle with a grey ring. Reorder or pause types there, or pause single buildings in the inspector.</li>
+    <li>Housing: camp 12, outpost 4, house 6. The top bar shows each resource's <b>net income per day</b>; hover it for the breakdown.</li>
+    <li>The <b>advisor</b> line under the top bar names your current bottleneck.</li>
   </ul>
-  <div class="dim">Pan: drag (Inspect tool), right-drag, or <kbd>WASD</kbd>/arrows · Zoom: wheel or ＋/－ · <kbd>Space</kbd> pause · <kbd>Esc</kbd> back to Inspect</div>
-  <div style="margin-top:10px;text-align:right"><button class="b on" id="helpOk">Begin</button></div>
+  <b>What each building needs</b>
+  <ul>
+    <li><b>Farm</b>: food = 1.6 × (average soil moisture within 2 hexes − 15%) / 85% per day. Check the <i>moisture</i> lens. Standing water &gt;0.15 m floods it: no output, damage.</li>
+    <li><b>Lumber camp</b>: cuts forest within 6 hexes (&gt;25% cover) → up to ~1 wood/day + a little resin. Forest regrows. See the <i>forest</i> lens.</li>
+    <li><b>Quarry</b>: 0.7 stone/day, only on ground ≥ 30 m (the <i>height</i> lens).</li>
+    <li><b>Mine</b>: 0.6 ore/day from <i>known</i> deposits within 2 hexes; deposits run out. Find them by <b>prospecting</b> (the <i>ore</i> lens shows where you have looked).</li>
+    <li><b>Outpost</b>: claims land within 16 hexes and reveals 30. You can only build inside your territory (the bright border).</li>
+  </ul>
+  <b>Water is terrain</b>
+  <ul><li>No pipes or dams as objects. <i>Dig</i> lowers land 0.6 m per stroke, <i>Raise</i> builds it up. A raised bank holds water up to its material's strength (stone 2.5 m) and erodes if the head across it is larger. The <b>Forge</b> turns ferrite, silica and resin into stronger bank materials.</li></ul>
+  <div class="dim">Pan: drag (Inspect tool), right-drag, or <kbd>WASD</kbd>/arrows · Zoom: wheel or +/- · Click a building to inspect it · <kbd>Space</kbd> pause · <kbd>Esc</kbd> back to Inspect</div>
+  <div style="margin-top:10px;text-align:right"><button class="b on" id="helpOk">Got it</button></div>
 </div>
 
 <div class="pn hidden" id="forge">
@@ -455,6 +485,9 @@ function renderRaster(){
     if (i < 0){ d[o]=9; d[o+1]=11; d[o+2]=15; d[o+3]=255; continue; }
     if (!rev[i]){ const t = ((i*2654435761)>>>28)&3, f=G.fog[i]; if (f===1){ d[o]=14+t; d[o+1]=19+t; d[o+2]=30+t; } else if (f===3){ d[o]=34+t; d[o+1]=33+t; d[o+2]=34+t; } else { d[o]=25+t; d[o+1]=28+t; d[o+2]=24+t; } d[o+3]=255; continue; }
     let r=base[i*3], g=base[i*3+1], b=base[i*3+2];
+    if (lens!=='map'){ const c=lensColor(i); r=c[0]; g=c[1]; b=c[2];
+      if (G.border[i]){ r=r*0.55+255*0.45; g=g*0.55+225*0.45; b=b*0.55+150*0.45; }
+      d[o]=r; d[o+1]=g; d[o+2]=b; d[o+3]=255; continue; }
     if (G.valid[i] && h[i]>0){
       const veg=b8[i]/255, mo=m8[i]/255;
       const dry=Math.max(0,0.35-mo)*1.4*(1-veg);
@@ -474,6 +507,26 @@ function renderRaster(){
   octx.putImageData(img, 0, 0);
   rasterDirty = false;
 }
+const LC=[0,0,0];
+const HSTOPS=[[0,[64,132,70]],[30,[176,176,96]],[80,[176,126,74]],[160,[132,104,92]],[260,[238,238,240]]];
+function lensColor(i){
+  const h=G.h[i], wv=G.w8[i], wet = wv && WLUT_A[wv]>0.25;
+  if (lens==='moisture'){ if (wet||h<=0){ LC[0]=25;LC[1]=45;LC[2]=95; return LC; } const m=G.m8[i]/255;
+    if (m<0.15){ LC[0]=120;LC[1]=82;LC[2]=50; return LC; } const t=(m-0.15)/0.85; LC[0]=190-150*t; LC[1]=170-40*t+0*t; LC[2]=80+130*t; return LC; }
+  if (lens==='forest'){ if (wet||h<=0){ LC[0]=25;LC[1]=45;LC[2]=95; return LC; } const v=G.b8[i]/255;
+    LC[0]=150-125*v; LC[1]=140-20*v+ (v>0.25?10:0); LC[2]=110-85*v; if (v>0.25){ LC[1]+=20; } return LC; }
+  if (lens==='height'){ if (h<=0||wet){ LC[0]=25;LC[1]=45;LC[2]=95; return LC; }
+    const S=HSTOPS; let k=0; while (k<S.length-2 && h>S[k+1][0]) k++; const t=Math.min(1,Math.max(0,(h-S[k][0])/(S[k+1][0]-S[k][0])));
+    for (let c=0;c<3;c++) LC[c]=S[k][1][c]+(S[k+1][1][c]-S[k][1][c])*t;
+    const c10=Math.floor(h/10), W=G.W; if (G.h[i+1]>0 && Math.floor(G.h[i+1]/10)!==c10 || G.h[i+W]>0 && Math.floor(G.h[i+W]/10)!==c10){ LC[0]*=0.72; LC[1]*=0.72; LC[2]*=0.72; }
+    return LC; }
+  if (lens==='ore'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.45; LC[0]=g0; LC[1]=g0; LC[2]=g0+4;
+    if (G.known[i]){ if (G.ferrite[i]>0){ const a=0.5+0.5*G.ferrite[i]; LC[0]=g0*(1-a)+235*a; LC[1]=g0*(1-a)+100*a; LC[2]=g0*(1-a)+60*a; }
+      else if (G.sand[i]>0){ const a=0.5+0.5*G.sand[i]; LC[0]=g0*(1-a)+70*a; LC[1]=g0*(1-a)+215*a; LC[2]=g0*(1-a)+200*a; }
+      else { LC[0]=g0+18; LC[1]=g0+8; LC[2]=g0+30; } }
+    return LC; }
+  return LC;
+}
 const HEXV = [0,1,2,3,4,5].map(k => { const a=Math.PI/180*(60*k-30); return [Math.cos(a), Math.sin(a)]; });
 function hexPath(path, i, scale){ const [x,y]=cellXY(i); const [sx,sy]=worldToScreen(x,y); const s=cam.s*scale;
   path.moveTo(sx+s*HEXV[0][0], sy+s*HEXV[0][1]); for (let k=1;k<6;k++) path.lineTo(sx+s*HEXV[k][0], sy+s*HEXV[k][1]); path.closePath(); }
@@ -487,14 +540,14 @@ function visibleCells(fn){
 // ---------------- buildings + economy ----------------
 const BT = {
   camp:    { name:'Camp', cost:{}, housing:12, terr:18, reveal:34, workers:0, col:'#f2d29b', glyph:'⌂' },
-  outpost: { name:'Outpost', cost:{wood:40, stone:30, food:10}, housing:4, terr:16, reveal:30, workers:1, col:'#ffe08a', glyph:'▲',
+  outpost: { name:'Outpost', cost:{wood:40, stone:30, food:10}, housing:4, terr:16, reveal:30, workers:0, col:'#ffe08a', glyph:'▲',
              tip:'Claims land (r16) and reveals fog (r30). Place inside your territory, ≥10 hexes from other outposts.' },
   house:   { name:'House', cost:{wood:30}, housing:6, workers:0, col:'#e8b878', glyph:'■', tip:'+6 housing.' },
-  farm:    { name:'Farm', cost:{wood:20}, workers:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture (r2). Drowns if flooded.' },
-  lumber:  { name:'Lumber camp', cost:{wood:15, stone:10}, workers:2, col:'#5fae5f', glyph:'♣', tip:'Fells forest within r6: wood + resin. Forest regrows.' },
+  farm:    { name:'Farm', cost:{wood:20}, workers:2, area:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture (r2). Drowns if flooded.' },
+  lumber:  { name:'Lumber camp', cost:{wood:15, stone:10}, workers:2, area:6, col:'#5fae5f', glyph:'♣', tip:'Fells forest within r6: wood + resin. Forest regrows.' },
   quarry:  { name:'Quarry', cost:{wood:25}, workers:2, col:'#a8a8b0', glyph:'◆', tip:'Stone. Needs high ground (height ≥ 30).' },
-  mine:    { name:'Mine', cost:{wood:30, stone:25}, workers:3, col:'#c86a4a', glyph:'⚒', tip:'Extracts known ferrite or silica within r2. Deposits deplete.' },
-  forge:   { name:'Forge', cost:{wood:30, stone:60}, workers:2, col:'#ff8a3c', glyph:'♨', tip:'Opens the lattice forge: ores → building materials.' },
+  mine:    { name:'Mine', cost:{wood:30, stone:25}, workers:3, area:2, col:'#c86a4a', glyph:'⚒', tip:'Extracts known ferrite or silica within r2. Deposits deplete.' },
+  forge:   { name:'Forge', cost:{wood:30, stone:60}, workers:0, col:'#ff8a3c', glyph:'♨', tip:'Opens the lattice forge: ores → building materials.' },
 };
 const ACTIONS = {
   prospect: { name:'Prospect', cost:{food:6}, tip:'Reveals buried ore within r9 of a revealed hex.' },
@@ -507,6 +560,13 @@ const MATS = [ { id:'stone', name:'Stone', strength:2.5, units:Infinity, col:'#9
 let matSel = 0;
 const buildings = [];
 let tool = 'inspect', brush = 1;
+const PRIO = ['farm','lumber','quarry','mine'];
+const typePaused = {};
+let selB = -1, lens = 'map';
+const RES = ['food','wood','stone','ferrite','silica','resin'];
+const RATE = {}; for (const r of RES) RATE[r] = {};
+let flow = null;
+function addFlow(res, src, amt){ flow[res][src] = (flow[res][src]||0) + amt; }
 let lastEcoStep = 0, ecoTicks = 0;
 const goalsDone = {};
 
@@ -550,11 +610,11 @@ function nearTerritory(i, maxD){
 
 function act(i, dragging){
   if (tool==='inspect' || i<0) return;
-  if (BT[tool]){ if (dragging) return; const why=validPlacement(tool,i); if (why){ flash(why); return; } placeBuilding(tool,i); log(`Built ${BT[tool].name}.`); refreshTools(); return; }
+  if (BT[tool]){ if (dragging) return; const why=validPlacement(tool,i); if (why){ flash(why); return; } placeBuilding(tool,i); log(`Built ${BT[tool].name}.`); refreshTools(); allocate(); renderWork(); renderAdvice(); return; }
   if (tool==='prospect'){ if (dragging) return; if (!G.revealed[i]) return flash('prospect only on explored land');
     if (!canAfford(ACTIONS.prospect.cost)) return flash('need 6 food'); pay(ACTIONS.prospect.cost);
-    let fe=0, sa=0; disk(i, 9, j => { if (!G.known[j]){ G.known[j]=1; if (G.ferrite[j]>0) fe++; else if (G.sand[j]>0) sa++; } });
-    if (fe||sa){ log(`Prospectors found ${fe?`<b style="color:#e08a6a">ferrite</b> (${fe} hexes) `:''}${sa?`<b style="color:#5fd0c0">silica sand</b> (${sa} hexes)`:''}.`); G.geo=true; $('#btnGeo').classList.add('on'); if(fe) goal('ferrite'); if(sa) goal('silica'); }
+    G.prospected=true; let fe=0, sa=0; disk(i, 9, j => { if (!G.known[j]){ G.known[j]=1; if (G.ferrite[j]>0) fe++; else if (G.sand[j]>0) sa++; } });
+    if (fe||sa){ log(`Prospectors found ${fe?`<b style="color:#e08a6a">ferrite</b> (${fe} hexes) `:''}${sa?`<b style="color:#5fd0c0">silica sand</b> (${sa} hexes)`:''}.`); G.geo=true; rasterDirty=true; if(fe) goal('ferrite'); if(sa) goal('silica'); }
     else log('Prospectors found nothing here.');
     rasterDirty=true; return; }
   if (tool==='scout'){ if (dragging) return; if (!nearTerritory(i,70)) return flash('too far: within 70 hexes of your territory');
@@ -583,42 +643,67 @@ function economyCatchUp(){
   // one economy tick per 8 simulation steps
   while (G.step - lastEcoStep >= 8){ lastEcoStep += 8; economyTick(); }
 }
+function allocate(){
+  let free = ST.pop; let needed = 0;
+  for (const b of buildings){ if (!b.alive) continue; const w=BT[b.type].workers; b.active = !w; b.why = w? '' : null; }
+  PRIO.forEach((t, rank) => {
+    const list = buildings.filter(b=>b.alive && b.type===t);
+    for (const b of list){ const w=BT[t].workers;
+      if (typePaused[t]){ b.active=false; b.why='typepaused'; continue; }
+      if (b.paused){ b.active=false; b.why='paused'; continue; }
+      needed += w;
+      if (free >= w){ b.active=true; b.why=''; free -= w; } else { b.active=false; b.why='unstaffed'; b.rank=rank+1; } } });
+  ST.idle = free; ST.needed = needed;
+}
 function economyTick(){
   ecoTicks++;
-  let free = ST.pop;
+  flow = {}; for (const r of RES) flow[r] = {};
+  allocate();
   const harvestCells=[], harvestAmt=[];
   for (const b of buildings){ if (!b.alive) continue; const bt=BT[b.type];
-    b.active = free >= bt.workers; if (b.active) free -= bt.workers;
     const wHere = wOf(b.i);
     if (wHere > 0.15){ b.hp -= b.type==='farm'?6:3; b.flooded=true; } else b.flooded=false;
     let fireNear=G.f8[b.i]>0; for (const d of NBa) if (G.f8[b.i+d]) fireNear=true; if (fireNear){ b.hp -= 15; if (!b.burnt){ log(`<b style="color:#ff8b5b">Fire</b> reached your ${bt.name}!`); b.burnt=true; } } else b.burnt=false;
     if (b.hp <= 0){ destroy(b); continue; }
     if (b.hp < 100 && !b.flooded) b.hp = Math.min(100, b.hp+0.5);
+    b.yield = 0;
     if (!b.active || b.flooded) continue;
-    if (b.type==='camp'){ ST.food += 0.35; ST.wood += 0.15; }
-    else if (b.type==='farm'){ let s=0,n=0; disk(b.i,2,j=>{ s+=G.m8[j]/255; n++; }); const mo=s/n; b.yield = 1.6*Math.max(0,mo-0.15)/0.85; ST.food += b.yield;
+    if (b.type==='camp'){ addFlow('food','camp foragers',0.35); addFlow('wood','camp foragers',0.15); }
+    else if (b.type==='farm'){ const mo=avgMoist(b.i); b.moist=mo; b.yield = farmYield(mo); addFlow('food','farms',b.yield);
       if (mo>=0.7){ let ch=false; disk(b.i,5,j=>{ if(G.dug[j] && wOf(j)>0.05) ch=true; }); if (ch) goal('irrigate'); } }
-    else if (b.type==='lumber'){ let got=0; disk(b.i,6,j=>{ const v=G.b8[j]/255; if (v>0.25 && got<0.9){ const t=Math.min(0.04, v-0.2); got+=t; harvestCells.push(j); harvestAmt.push(t); } });
-      ST.wood += got*1.1; ST.resin += got*0.12; b.yield=got; }
-    else if (b.type==='quarry'){ ST.stone += 0.7; }
+    else if (b.type==='lumber'){ let got=0, n=0; disk(b.i,6,j=>{ const v=G.b8[j]/255; if (v>0.25){ n++; if (got<0.9){ const t=Math.min(0.04, v-0.2); got+=t; harvestCells.push(j); harvestAmt.push(t); } } });
+      b.forestCells=n; b.yield=got*1.1; addFlow('wood','lumber camps',got*1.1); addFlow('resin','lumber camps',got*0.12); }
+    else if (b.type==='quarry'){ b.yield=0.7; addFlow('stone','quarries',0.7); }
     else if (b.type==='mine'){ let got=0; disk(b.i,2,j=>{ if (got>=0.6||!G.known[j]) return;
-        if (G.ferrite[j]>0){ const t=Math.min(0.6-got, G.ferrite[j]*40); G.ferrite[j]=Math.max(0,G.ferrite[j]-t/40); ST.ferrite+=t; got+=t; }
-        else if (G.sand[j]>0){ const t=Math.min(0.6-got, G.sand[j]*40); G.sand[j]=Math.max(0,G.sand[j]-t/40); ST.silica+=t; got+=t; } });
-      b.yield=got; if (got===0 && !b.dry){ log('A mine has run dry.'); b.dry=true; } }
+        if (G.ferrite[j]>0){ const t=Math.min(0.6-got, G.ferrite[j]*40); G.ferrite[j]=Math.max(0,G.ferrite[j]-t/40); addFlow('ferrite','mines',t); got+=t; }
+        else if (G.sand[j]>0){ const t=Math.min(0.6-got, G.sand[j]*40); G.sand[j]=Math.max(0,G.sand[j]-t/40); addFlow('silica','mines',t); got+=t; } });
+      b.yield=got; b.left=mineLeft(b.i); if (got===0 && !b.dry){ log('A mine has run dry. Demolish it to free its workers.'); b.dry=true; } }
   }
   if (harvestCells.length) pendingOps.push({op:'harvest', cells:harvestCells, amt:harvestAmt});
-  ST.food -= 0.06*ST.pop;
-  if (ST.food < 0){ ST.food = 0; ST.popAcc -= 0.1; }
-  else if (ST.food > 15 && ST.pop < ST.housing) ST.popAcc += 0.07;
+  addFlow('food','settlers eat', -0.06*ST.pop);
+  for (const r of RES){ let tot=0; for (const k in flow[r]){ tot+=flow[r][k]; } ST[r] += tot;
+    const all = new Set([...Object.keys(flow[r]), ...Object.keys(RATE[r])]);
+    for (const k of all){ RATE[r][k] = (RATE[r][k]||0)*0.85 + (flow[r][k]||0)*0.15; if (Math.abs(RATE[r][k])<1e-4 && !flow[r][k]) delete RATE[r][k]; } }
+  if (ST.food < 0){ ST.food = 0; ST.popAcc -= 0.1; ST.growth='starving'; }
+  else if (ST.food <= 15){ ST.growth='lowfood'; }
+  else if (ST.pop >= ST.housing){ ST.growth='housing'; }
+  else { ST.popAcc += 0.07; ST.growth='growing'; }
   if (ST.popAcc >= 1){ ST.pop++; ST.popAcc=0; } if (ST.popAcc <= -1){ ST.pop=Math.max(0,ST.pop-1); ST.popAcc=0; log('A settler starved.'); }
   if (ST.pop >= 40) goal('town');
   if (ecoTicks % 4 === 0) checkWaterworks();
   if (ecoTicks % 2 === 0) watchEvents();
   sendOps();
+  if (ecoTicks % 2 === 0){ renderWork(); renderSel(); renderAdvice(); }
 }
-function destroy(b){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.type];
+function avgMoist(i){ let s=0,n=0; disk(i,2,j=>{ s+=G.m8[j]/255; n++; }); return s/n; }
+function farmYield(mo){ return 1.6*Math.max(0,mo-0.15)/0.85; }
+function mineLeft(i){ let fe=0, si=0; disk(i,2,j=>{ if(!G.known[j]) return; fe+=G.ferrite[j]*40; si+=G.sand[j]*40; }); return {fe, si}; }
+function netRate(r){ let t=0; for (const k in RATE[r]) t+=RATE[r][k]; return t; }
+function destroy(b, demolished){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.type];
   if (bt.housing) ST.housing -= bt.housing;
-  log(`<b style="color:#ff8b7b">Your ${bt.name} was destroyed${b.flooded?' by flooding':' by fire'}.</b>`);
+  if (selB===b.id) { selB=-1; renderSel(); }
+  if (demolished) log(`Demolished your ${bt.name}.`);
+  else log(`<b style="color:#ff8b7b">Your ${bt.name} was destroyed${b.flooded?' by flooding':' by fire'}.</b>`);
   if (bt.terr){ G.terr.fill(0); for (const o of buildings) if (o.alive && BT[o.type].terr) disk(o.i, BT[o.type].terr, j=>{G.terr[j]=1;}); recomputeBorder(); }
 }
 let lastBurning=0, lastSeasonName='';
@@ -654,21 +739,122 @@ function positionGoals(){}
 // ---------------- dates ----------------
 function yearPhase(){ return (G.step % G.yearSteps)/G.yearSteps; }
 function seasonName(){ const p=yearPhase(); return p<0.12?'Spring rains': p<0.38?'Monsoon': p<0.55?'Late rains': p<0.92?'Dry season':'Spring rains'; }
-function dateShort(){ return `Y${1+Math.floor(G.step/G.yearSteps)}`; }
+function dayOfYear(){ return 1+Math.floor((G.step % G.yearSteps)/8); }
+function dateShort(){ return `Y${1+Math.floor(G.step/G.yearSteps)} d${dayOfYear()}`; }
 
 // ---------------- UI ----------------
 function fmt(x){ return x>=1000? (x/1000).toFixed(1)+'k' : x>=100? x.toFixed(0) : x.toFixed(x<10?1:0); }
+const RES_LABEL = { food:'food', wood:'wood', stone:'stone', ferrite:'<span style="color:#e08a6a">Fe</span>', silica:'<span style="color:#5fd0c0">Si</span>', resin:'<span style="color:#e8c25a">Rs</span>' };
 function renderTop(){
   const mats = MATS.filter(m=>m.id!=='stone').reduce((a,m)=>a+m.units,0);
-  $('#res').innerHTML = [
-    ['<span class="dim">settlers</span>', `${ST.pop}/${ST.housing}`], ['<span class="dim">food</span>', fmt(ST.food)], ['<span class="dim">wood</span>', fmt(ST.wood)], ['<span class="dim">stone</span>', fmt(ST.stone)],
-    ['<span style="color:#e08a6a">Fe</span>', fmt(ST.ferrite)], ['<span style="color:#5fd0c0">Si</span>', fmt(ST.silica)], ['<span style="color:#e8c25a">Rs</span>', fmt(ST.resin)],
-    mats? ['<span class="dim">forged</span>', fmt(mats)] : null,
-  ].filter(Boolean).map(([k,v])=>`<span class="r">${k} <b>${v}</b></span>`).join('');
-  const p = yearPhase(), wet = G.season;
+  const rateTag = r => { const n=netRate(r); if (Math.abs(n)<0.005) return ''; return `<small style="color:${n>0?'#6fd38b':'#ff8b7b'}">${n>0?'+':''}${n.toFixed(n<1&&n>-1?2:1)}</small>`; };
+  let html = `<span class="r" data-res="pop"><span class="dim">settlers</span> <b>${ST.pop}/${ST.housing}</b>${ST.idle?` <small class="dim">${ST.idle} idle</small>`:''}</span>`;
+  for (const r of RES) html += `<span class="r" data-res="${r}"><span class="dim">${RES_LABEL[r]}</span> <b>${fmt(ST[r])}</b>${rateTag(r)}</span>`;
+  if (mats) html += `<span class="r"><span class="dim">forged</span> <b>${fmt(mats)}</b></span>`;
+  $('#res').innerHTML = html;
+  const wet = G.season;
   const explored = G.validCount ? (100*(G.revealedCount||0)/G.validCount).toFixed(1) : 0;
-  $('#date').innerHTML = `Year ${1+Math.floor(G.step/G.yearSteps)} · ${seasonName()} <span style="color:${wet>1.5?'#7cc4ff':wet<0.3?'#ffb86b':'#c8d0d8'}">(rain ×${Math.max(0,wet).toFixed(1)})</span> · explored ${explored}%${G.burning? ` · <span style="color:#ff8b5b">fires: ${G.burning}</span>`:''}`;
+  $('#date').innerHTML = `Year ${1+Math.floor(G.step/G.yearSteps)}, day ${dayOfYear()} · ${seasonName()} <span style="color:${wet>1.5?'#7cc4ff':wet<0.3?'#ffb86b':'#c8d0d8'}">(rain ×${Math.max(0,wet).toFixed(1)})</span> · explored ${explored}%${G.burning? ` · <span style="color:#ff8b5b">fires: ${G.burning}</span>`:''}`;
+  document.documentElement.style.setProperty('--topb', $('#top').getBoundingClientRect().bottom+'px');
+  if (tipFor){ const el=document.querySelector(`#res [data-res="${tipFor}"]`); if (el) showTip(el); }
 }
+let tipFor = null;
+function showTip(el){
+  const r = el.dataset.res, T=$('#tip'); let h='';
+  if (r==='pop'){
+    const why = {starving:'<span style="color:#ff8b7b">Starving: no food. Settlers will leave/die.</span>', lowfood:'<span class="why">Not growing: food must stay above 15.</span>',
+      housing:'<span class="why">Not growing: housing full. Build a House (+6) or Outpost (+4).</span>', growing:'<span style="color:#6fd38b">Growing: +1 settler about every 15 days.</span>'}[ST.growth]||'';
+    h = `<b>Settlers ${ST.pop} / housing ${ST.housing}</b><div>${why}</div><div class="l"><span>workers needed</span><b>${ST.needed||0}</b></div><div class="l"><span>idle</span><b>${ST.idle||0}</b></div><div class="dim">Each settler eats 0.06 food/day.</div>`;
+  } else {
+    const rows = Object.entries(RATE[r]).filter(([k,v])=>Math.abs(v)>0.003).sort((a,b)=>b[1]-a[1]);
+    h = `<b>${r} — net ${netRate(r)>=0?'+':''}${netRate(r).toFixed(2)}/day</b>` + (rows.length? rows.map(([k,v])=>`<div class="l"><span>${k}</span><b style="color:${v>0?'#6fd38b':'#ff8b7b'}">${v>0?'+':''}${v.toFixed(2)}</b></div>`).join('') : '<div class="dim">no steady income or upkeep</div>')
+      + `<div class="dim" style="margin-top:3px">Building and digging costs are paid up front and not shown here.</div>`;
+  }
+  T.innerHTML = h; T.classList.remove('hidden');
+  const b = el.getBoundingClientRect(); T.style.left = Math.min(window.innerWidth-260, b.left)+'px'; T.style.top = (b.bottom+8)+'px';
+}
+$('#res').addEventListener('mouseover', e => { const el=e.target.closest('[data-res]'); if (el){ tipFor=el.dataset.res; showTip(el); } });
+$('#res').addEventListener('mouseleave', () => { tipFor=null; $('#tip').classList.add('hidden'); });
+
+// ---------- workforce panel ----------
+let workOpen = true;
+function renderWork(){
+  const W=$('#work');
+  let h = `<div class="hd" id="workHd"><b>Workforce</b><span class="dim">${ST.pop} settlers · ${ST.idle||0} idle ${workOpen?'▾':'▸'}</span></div>`;
+  if (workOpen){
+    h += `<div class="dim" style="margin:3px 0 4px">Settlers fill building types top-down. Short-staffed types sit idle. ↑↓ reorder · ❚❚ pause a type.</div>`;
+    PRIO.forEach((t,k) => { const bt=BT[t]; const list=buildings.filter(b=>b.alive&&b.type===t); const on=list.filter(b=>b.active).length;
+      const staffed = on*bt.workers, want = list.filter(b=>!b.paused).length*bt.workers;
+      h += `<div class="wr"><span class="dim">${k+1}</span><span style="color:${bt.col}">${bt.glyph} ${bt.name}${typePaused[t]?' <span class="why">(paused)</span>':''}</span>
+        <span>${list.length? `${on}/${list.length} on` : '<span class="dim">none</span>'}</span>
+        <span class="x"><button class="b mini" data-up="${k}" ${k===0?'disabled':''}>↑</button><button class="b mini" data-dn="${k}" ${k===PRIO.length-1?'disabled':''}>↓</button><button class="b mini ${typePaused[t]?'on':''}" data-tp="${t}" title="pause all ${bt.name}s">❚❚</button></span></div>`;
+      if (list.length && on<list.length && !typePaused[t]){ const unst=list.filter(b=>!b.active&&b.why==='unstaffed').length; if (unst) h += `<div class="why" style="padding-left:20px">${unst} unstaffed · needs ${bt.workers} each</div>`; } });
+    h += `<div class="dim" style="margin-top:4px">Camp, houses, outposts and the forge need no workers.</div>`;
+  }
+  W.innerHTML = h;
+  $('#workHd').onclick = () => { workOpen=!workOpen; renderWork(); };
+  W.querySelectorAll('[data-up]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.up; [PRIO[k-1],PRIO[k]]=[PRIO[k],PRIO[k-1]]; allocate(); renderWork(); });
+  W.querySelectorAll('[data-dn]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.dn; [PRIO[k+1],PRIO[k]]=[PRIO[k],PRIO[k+1]]; allocate(); renderWork(); });
+  W.querySelectorAll('[data-tp]').forEach(e=>e.onclick=()=>{ const t=e.dataset.tp; typePaused[t]=!typePaused[t]; allocate(); renderWork(); });
+}
+
+// ---------- building inspector ----------
+function statusOf(b){ const bt=BT[b.type];
+  if (b.flooded) return `<span style="color:#7cc4ff">Flooded</span> — ${wOf(b.i).toFixed(2)} m of water on site. No output; taking damage. Raise a bank or dig drainage.`;
+  if (b.burnt) return `<span style="color:#ff8b5b">On fire</span> — taking heavy damage.`;
+  if (b.why==='paused') return `<span class="why">Paused by you</span> — its workers are free for other buildings.`;
+  if (b.why==='typepaused') return `<span class="why">Paused</span> — all ${bt.name}s are paused in Workforce.`;
+  if (b.why==='unstaffed') return `<span style="color:#ff8b7b">Unstaffed</span> — needs ${bt.workers} workers; ${ST.idle||0} idle after higher priorities. ${bt.name}s are #${b.rank} in Workforce. Grow population (housing + food) or move this type up.`;
+  if (b.type==='mine' && b.dry) return `<span class="why">Depleted</span> — no known ore left within 2 hexes. Demolish to free 3 workers.`;
+  return `<span style="color:#6fd38b">Working</span>${bt.workers?` · ${bt.workers} workers`:''}`;
+}
+function yieldText(b){
+  if (b.type==='camp') return 'Foragers bring +0.35 food and +0.15 wood/day. Houses 12. Claims 18 hexes around it.';
+  if (b.type==='farm'){ const mo=avgMoist(b.i); return `Soil moisture within 2 hexes: <b>${(mo*100).toFixed(0)}%</b> → <b>${farmYield(mo).toFixed(2)} food/day</b> (1.6 at 100%, nothing below 15%). Irrigate by digging a channel from water; moisture spreads a few hexes from wet ground.`; }
+  if (b.type==='lumber') return `Forest hexes (&gt;25% cover) within 6: <b>${b.forestCells??'?'}</b> → <b>${(b.yield||0).toFixed(2)} wood/day</b> (max ~1) + resin. Cut forest regrows if the soil stays moist.`;
+  if (b.type==='quarry') return '+0.7 stone/day.';
+  if (b.type==='mine'){ const L=mineLeft(b.i); return `Known ore within 2 hexes: <b style="color:#e08a6a">${L.fe.toFixed(0)} Fe</b>, <b style="color:#5fd0c0">${L.si.toFixed(0)} Si</b> left → ${(b.yield||0).toFixed(2)}/day (max 0.6). Prospect nearby to find more.`; }
+  if (b.type==='house') return 'Houses 6 settlers.';
+  if (b.type==='outpost') return 'Houses 4. Claims 16 hexes and revealed 30 around it.';
+  if (b.type==='forge') return 'Turns ferrite, silica and resin into bank materials. Use “Open forge” in the tools.';
+  return '';
+}
+function renderSel(){
+  const P=$('#sel'); const b = selB>=0 ? buildings[selB] : null;
+  if (!b || !b.alive){ P.classList.add('hidden'); return; }
+  const bt=BT[b.type];
+  P.innerHTML = `<div style="display:flex;justify-content:space-between"><b style="color:${bt.col}">${bt.glyph} ${bt.name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div>
+    <div>${statusOf(b)}</div><div style="margin-top:3px">${yieldText(b)}</div><div class="dim">condition ${b.hp.toFixed(0)}%</div>
+    <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?`<button class="b" id="selDemo">Demolish</button>`:''}</div>`;
+  P.classList.remove('hidden');
+  $('#selX').onclick = () => { selB=-1; renderSel(); };
+  const sp=$('#selPause'); if (sp) sp.onclick = () => { b.paused=!b.paused; allocate(); renderSel(); renderWork(); };
+  const sd=$('#selDemo'); if (sd) sd.onclick = () => { if (!confirm(`Demolish this ${bt.name}? Half its cost is refunded.`)) return;
+    for (const k in bt.cost) ST[k]+=bt.cost[k]*0.5; destroy(b, true);
+    if (bt.terr){ G.terr.fill(0); for (const o of buildings) if (o.alive && BT[o.type].terr) disk(o.i, BT[o.type].terr, j=>{G.terr[j]=1;}); recomputeBorder(); }
+    allocate(); renderWork(); };
+}
+
+// ---------- advisor ----------
+function renderAdvice(){
+  const A=[]; const fn=netRate('food');
+  const unst = buildings.filter(b=>b.alive&&b.why==='unstaffed');
+  const flooded = buildings.filter(b=>b.alive&&b.flooded);
+  if (ST.food<5 && fn<0) A.push(['bad','Your settlers are <b>starving</b>. Build farms on moist land (moisture lens) and keep Farms at the top of Workforce.']);
+  else if (fn < -0.01) A.push(['warn',`Food is falling by <b>${(-fn).toFixed(2)}/day</b> — ${Math.floor(ST.food/(-fn))} days left. Build a farm where the moisture lens is blue, or staff the ones you have.`]);
+  if (flooded.length) A.push(['warn',`${flooded.length} building${flooded.length>1?'s are':' is'} <b>flooded</b> (no output, taking damage). Click it to inspect; raise a bank or build higher.`]);
+  if (unst.length) A.push(['warn',`${unst.length} building${unst.length>1?'s have':' has'} <b>no workers</b> (${ST.idle||0} idle, need ${unst.reduce((a,b)=>a+BT[b.type].workers,0)} more). Grow population or reorder Workforce.`]);
+  if (ST.growth==='housing' && fn>0) A.push(['info','Population is capped by <b>housing</b>. Build a House (+6) or an Outpost (+4).']);
+  if ((ST.idle||0)>=2) A.push(['info',`<b>${ST.idle} settlers idle</b> — build farms, lumber camps, quarries or mines to employ them.`]);
+  if (lastBurning) A.push(['warn','<b>Wildfire</b> near your lands — fire spreads through dry forest in the dry season; it stops at water and wet ground.']);
+  if (!buildings.some(b=>b.alive&&b.type==='outpost') && ST.wood>=40 && ST.stone>=30) A.push(['info','Expand: build an <b>Outpost</b> near your border to claim and reveal more land.']);
+  if (!G.prospected && !goalsDone.ferrite) A.push(['info','Find ore: <b>Prospect</b> (6 food) on hills — ferrite lies in the uplands, silica sand along big rivers.']);
+  const col={bad:'#ff8b7b',warn:'#ffb86b',info:'#c8d0d8'};
+  const P=$('#advice');
+  if (!A.length){ P.innerHTML='<span class="dim">All quiet. Explore, prospect, or shape the land.</span>'; return; }
+  P.innerHTML = A.slice(0,2).map(([k,t])=>`<div class="a" style="color:${col[k]}">${t}</div>`).join('');
+}
+
 function refreshTools(){
   const sec = (t, items) => `<h4>${t}</h4>` + items.join('');
   const btn = (k, label, cost, tip) => `<button class="b tool ${tool===k?'on':''}" data-tool="${k}" title="${tip||''}"><span>${label}</span><span class="c">${cost}</span></button>`;
@@ -688,6 +874,16 @@ function refreshTools(){
 let flashT=0, flashMsg='';
 function flash(m){ flashMsg=m; flashT=performance.now(); }
 let hover=-1;
+function preview(t, i){
+  if (t==='farm'){ const mo=avgMoist(i); let risk=false; disk(i,1,j=>{ if (wOf(j)>0.05) risk=true; });
+    return `expected <b>${farmYield(mo).toFixed(2)} food/day</b> (moisture ${(mo*100).toFixed(0)}% within 2)${risk?' · <span class="why">water next to it: flood risk in the rains</span>':''}`; }
+  if (t==='lumber'){ let n=0, got=0; disk(i,6,j=>{ const v=G.b8[j]/255; if (v>0.25){ n++; if (got<0.9) got+=Math.min(0.04,v-0.2); } }); return `${n} forest hexes within 6 → about <b>${(got*1.1).toFixed(2)} wood/day</b>`; }
+  if (t==='quarry') return G.h[i]>=30? 'expected <b>0.7 stone/day</b>' : `height ${G.h[i].toFixed(0)} m — quarries need ≥ 30 m (height lens)`;
+  if (t==='mine'){ const L=mineLeft(i); return `known ore within 2: <b style="color:#e08a6a">${L.fe.toFixed(0)} Fe</b>, <b style="color:#5fd0c0">${L.si.toFixed(0)} Si</b> → up to 0.6/day`; }
+  if (t==='house') return '+6 housing';
+  if (t==='outpost') return '+4 housing · claims 16 hexes · reveals 30';
+  return '';
+}
 function renderInfo(){
   if (hover<0 || !G.valid[hover]){ $('#info').innerHTML='<span class="dim">Hover the map.</span>'; return; }
   const i=hover;
@@ -701,7 +897,14 @@ function renderInfo(){
   else s += '<br><span class="dim">not prospected</span>';
   if (G.terr[i]) s += ' · <span style="color:#f2d29b">your territory</span>';
   if (G.occ[i]>=0){ const b=buildings[G.occ[i]], bt=BT[b.type]; s += `<br><b>${bt.name}</b> · ${b.active?'working':(bt.workers?'<span style="color:#ff8b7b">no workers</span>':'')}${b.flooded?' · <span style="color:#7cc4ff">FLOODED</span>':''} · hp ${b.hp.toFixed(0)}${b.yield!==undefined?` · yield ${b.yield.toFixed(2)}`:''}`; }
-  if (tool!=='inspect' && BT[tool]){ const why=validPlacement(tool,i); s += `<br>${why? '<span style="color:#ff8b7b">✗ '+why+'</span>' : '<span style="color:#6fd38b">✓ click to build '+BT[tool].name+'</span>'}`; }
+  if (tool!=='inspect' && BT[tool]){ const why=validPlacement(tool,i); s += `<br>${why? '<span style="color:#ff8b7b">✗ '+why+'</span>' : '<span style="color:#6fd38b">✓ click to build '+BT[tool].name+'</span>'}`; s += '<br>'+preview(tool,i); }
+  const LEG = { moisture:'<b>Moisture lens</b>: brown = under 15% (farms yield nothing) → pale → blue = wet. Dark blue = standing water.',
+    forest:'<b>Forest lens</b>: bright green = &gt;25% cover (lumber camps cut it); tan = open land.',
+    height:'<b>Height lens</b>: green lowland → yellow at 30 m (quarries allowed above) → brown → snow; dark lines every 10 m. Water flows across the lines, downhill.',
+    ore:'<b>Ore lens</b>: <span style="color:#e08a6a">ferrite</span>, <span style="color:#5fd0c0">silica sand</span>, purple-grey = prospected but empty, plain grey = not prospected yet.' };
+  if (LEG[lens]) s = `<div style="margin-bottom:4px">${LEG[lens]}</div>` + s;
+  const tdesc = BT[tool]? BT[tool].tip : ACTIONS[tool]? ACTIONS[tool].tip : null;
+  if (tdesc) s = `<div style="color:#9fd0ff;margin-bottom:4px"><b>${(BT[tool]||ACTIONS[tool]).name}:</b> ${tdesc}</div>` + s;
   $('#info').innerHTML = s;
 }
 
@@ -725,6 +928,11 @@ function draw(){
     ctx.lineWidth = 2; ctx.strokeStyle = b.flooded? '#7cc4ff' : b.burnt? '#ff7b3b' : b.active||!bt.workers ? bt.col : '#666'; ctx.stroke();
     if (sz >= 7){ ctx.fillStyle = bt.col; ctx.fillText(bt.glyph, sx, sy+1); }
   }
+  // work area of the selected building, and of a hovered placement
+  const area = (i, rad, col) => { const p=new Path2D(); if (rad*cam.s*1.5 > 6){ disk(i, rad, (j,dd)=>{ if (dd===rad) hexPath(p,j,1); }); } ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke(p); };
+  if (selB>=0 && buildings[selB] && buildings[selB].alive){ const b=buildings[selB], bt=BT[b.type]; const rad = bt.area || bt.terr; if (rad) area(b.i, rad, '#9fd0ffcc');
+    const [x,y]=cellXY(b.i); const [sx,sy]=worldToScreen(x,y); ctx.strokeStyle='#9fd0ff'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(sx,sy,sz*0.95,0,7); ctx.stroke(); }
+  if (hover>=0 && BT[tool] && (BT[tool].area||BT[tool].terr)) area(hover, BT[tool].area||BT[tool].terr, '#ffffff66');
   // brush / placement preview
   if (hover>=0 && tool!=='inspect'){
     const p = new Path2D(); const rad = (tool==='dig'||tool==='raise')? brush : tool==='prospect'? 9 : tool==='scout'? 22 : 0;
@@ -749,7 +957,11 @@ cv.addEventListener('pointermove', e => {
   if (drag.pan){ cam.x = drag.cx - (e.clientX-drag.x)/cam.s; cam.y = drag.cy - (e.clientY-drag.y)/cam.s; camDirty=true; }
   else if (tool==='dig'||tool==='raise') act(hover, true);
 });
-cv.addEventListener('pointerup', () => { drag=null; });
+cv.addEventListener('pointerup', e => {
+  if (drag && drag.pan && tool==='inspect' && e.button===0 && Math.hypot(e.clientX-drag.x, e.clientY-drag.y) < 5){
+    const [wx,wy]=screenToWorld(e.clientX,e.clientY); const i=worldToCell(wx,wy);
+    selB = (i>=0 && G.occ[i]>=0) ? G.occ[i] : -1; renderSel(); }
+  drag=null; });
 cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY*0.0015)); }, {passive:false});
 function zoomAt(sx, sy, f){ const [wx,wy]=screenToWorld(sx,sy); cam.s = clamp(cam.s*f, 0.45, 28); cam.x = wx-(sx-CW/2)/cam.s; cam.y = wy-(sy-CH/2)/cam.s; camDirty=true; }
 window.addEventListener('keydown', e => { if (e.target.tagName==='INPUT') return; keys[e.key.toLowerCase()]=true;
@@ -760,7 +972,7 @@ function keyPan(dt){ const v=600/cam.s*dt; let dx=0,dy=0;
   if (dx||dy){ cam.x+=dx; cam.y+=dy; camDirty=true; } }
 function setRate(r){ G.rate=r; worker.postMessage({type:'rate', rate:r}); document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('on', +b.dataset.rate===r)); }
 document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => setRate(+b.dataset.rate));
-$('#btnGeo').onclick = () => { G.geo=!G.geo; $('#btnGeo').classList.toggle('on',G.geo); rasterDirty=true; };
+document.querySelectorAll('[data-lens]').forEach(b => b.onclick = () => { lens=b.dataset.lens; document.querySelectorAll('[data-lens]').forEach(x=>x.classList.toggle('on', x.dataset.lens===lens)); rasterDirty=true; });
 $('#btnHelp').onclick = () => $('#help').classList.toggle('hidden');
 $('#helpOk').onclick = () => { $('#help').classList.add('hidden'); };
 $('#zin').onclick = () => zoomAt(CW/2,CH/2,1.5); $('#zout').onclick = () => zoomAt(CW/2,CH/2,1/1.5);
@@ -781,13 +993,13 @@ function chooseStart(){
 }
 function startGame(){
   $('#loading').classList.add('hidden');
-  ['#top','#tools','#log','#goals','#info','#zoom'].forEach(s=>$(s).classList.remove('hidden'));
+  ['#top','#tools','#log','#goals','#info','#zoom','#advice','#work'].forEach(s=>$(s).classList.remove('hidden'));
   const s = chooseStart(); placeBuilding('camp', s, true);
   const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=6; camDirty=true;
   lastEcoStep = G.step;
   log(`Your settlers make camp in the valley. ${G.lakes} great lakes lie somewhere on this continent.`);
-  refreshTools(); renderGoals();
-  if (!localStorage.getItem('frontier-help-seen')){ $('#help').classList.remove('hidden'); localStorage.setItem('frontier-help-seen','1'); }
+  refreshTools(); renderGoals(); allocate(); renderWork(); renderAdvice();
+  if (!localStorage.getItem('frontier-help-seen-v2')){ $('#help').classList.remove('hidden'); localStorage.setItem('frontier-help-seen-v2','1'); }
 }
 // forge hook (filled by forge module)
 let openForge = () => {};
@@ -862,7 +1074,7 @@ requestAnimationFrame(frame);
   requestAnimationFrame(loop);
   openForge = () => { st.open=true; $('#forge').classList.remove('hidden'); syncF(); };
 })();
-window.FRONTIER = { G, ST, buildings, BT, MATS, cam, act: (i)=>act(i,false), setTool:(t)=>{tool=t; refreshTools();}, placeBuilding, idx, cellXY, worldToCell, setRate, wOf, disk, goalsDone, strokeStart, get tool(){return tool;} };
+window.FRONTIER = { PRIO, RATE, netRate, allocate, renderWork, renderAdvice, get selB(){return selB;}, set selB(v){selB=v; renderSel();}, setLens:(l)=>{ lens=l; rasterDirty=true; }, G, ST, buildings, BT, MATS, cam, act: (i)=>act(i,false), setTool:(t)=>{tool=t; refreshTools();}, placeBuilding, idx, cellXY, worldToCell, setRate, wOf, disk, goalsDone, strokeStart, get tool(){return tool;} };
 
 </script>
 </body>

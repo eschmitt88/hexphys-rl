@@ -260,10 +260,18 @@ fine board by 110–234%. The measured test year with dredging misses by
 
 ### What is not solved
 
-**Realm 12's coast.** About 28 water per day of dry-season inflow
-crosses the border into a large eastern lake. The capital is on the far
-west coast. No scripted channel delivered dry-season water to it; that
-takes a long channel from the lake, which the bots never built.
-Placement of the capital relative to the inflow is the next lever.
+**Realm 12's coast (since resolved).** About 28 water per day of
+dry-season inflow crossed the border into a large eastern lake, and the
+capital sat on the far west coast. Three changes fixed it:
+- the capital is now placed on dry coast about 32 hexes from the mouth
+  of the main river, found by flow accumulation seeded with the upstream
+  inflow;
+- canals are now graded, with a steady fall from intake to destination:
+  cut where the ground is higher, an embanked aqueduct where it is lower;
+- the readout's own advice was followed: a 1 m diversion weir below the
+  intake.
+
+A scripted weir plus graded canal then delivered 260 dry-season water
+against a year-1 demand of 268. Before the changes it delivered 0.
 
 **Terraform-to-template** has not been built.

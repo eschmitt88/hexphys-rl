@@ -668,7 +668,7 @@ function damSite(r, rise){ // shortest straight cross-section through river cell
 function bestDamNear(c, radius, minQ){ // survey river cells near c, keep the site that stores the most
   const cand=[]; disk(c,radius,(j,d)=>{ const q=qOf(j); if (q>(minQ||0.5)&&G.h[j]>0.5) cand.push([q,j]); }); cand.sort((x,y)=>y[0]-x[0]);
   let best=null, bv=-1; const oldW=width, oldM=mat; width=2; mat='earth';
-  for (const [,j] of cand.slice(0,30)){ const s=damSite(j); if (!s) continue; const p=planJob('dam',s[0],s[1]); const v=p.reservoir?p.reservoir.vol:0; if (v>bv){ bv=v; best=Object.assign(s,{plan:p, vol:v}); } }
+  for (const [,j] of cand.slice(0,30)){ const s=damSite(j)||damSite(j,1.0); if (!s) continue;   // a low diversion weir where the banks are too low for a dam const p=planJob('dam',s[0],s[1]); const v=p.reservoir?p.reservoir.vol:0; if (v>bv){ bv=v; best=Object.assign(s,{plan:p, vol:v}); } }
   width=oldW; mat=oldM; return best; }
 function damAcross(c){ const b=bestDamNear(c, Math.round(R*0.28)); if (b) return b;   // the site that stores the most water near the anchor
   // fallback: a river cell near c, then walk both banks until the ground stands 3 m above the water
@@ -908,9 +908,11 @@ function widen(path, wdt){ if (wdt<=1) return path.slice(); const set=new Set(pa
 function planJob(kind, a, b){
   let cells=[], target=[]; const extra={};
   if (kind==='channel'){ let p=routePath(a,b); if (G.h[p[0]]<G.h[p[p.length-1]]) p=p.reverse(); // run downhill
-    const bed=[]; let prev=G.h[p[0]]-0.8; for (let k=0;k<p.length;k++){ const v=Math.max(0.3, Math.min(G.h[p[k]]-0.8, k?prev-0.03:prev)); bed.push(v); prev=v; }   // never below sea level: the sea would flood in
+    // a graded canal: a steady fall from the intake to the destination — cut where the ground is higher, built up (an aqueduct) where it is lower
+    const n=p.length, b0=G.h[p[0]]-0.8; let b1=Math.max(0.3, G.h[p[n-1]]-0.8); if (b1>b0-0.02*n) b1=Math.max(0.3, b0-0.02*n);
+    const bed=[]; for (let k=0;k<n;k++){ const g=n>1? b0+(b1-b0)*k/(n-1) : b0; const cutOnly=Math.min(G.h[p[k]]-0.8, g); bed.push(Math.max(0.3, Math.max(g, Math.min(cutOnly, g)))); }
     const tmap=new Map(); p.forEach((c,k)=>tmap.set(c,bed[k])); const all=widen(p,width);
-    for (const c of all){ let t=tmap.get(c); if (t===undefined){ let best=1e9; for (const d of NBa){ const v=tmap.get(c+d); if (v!==undefined) best=Math.min(best,v); } t=Math.min(G.h[c], best+0.3); } cells.push(c); target.push(Math.min(G.h[c],t)); }
+    for (const c of all){ let t=tmap.get(c); if (t===undefined){ let best=1e9; for (const d of NBa){ const v=tmap.get(c+d); if (v!==undefined) best=Math.min(best,v); } t=Math.min(G.h[c], best+0.3); cells.push(c); target.push(Math.min(G.h[c],t)); } else { cells.push(c); target.push(t); } }   // path cells sit exactly on the grade (cut or fill)
     // banks: wherever the ground beside the channel is lower than the water would stand, build it up (an aqueduct) — except at the intake and the outlet
     const inCh=new Set(all), bank=new Map();
     p.forEach((c,k)=>{ if (k<1 || k>=p.length-2) return; const want=bed[k]+1.0; for (const d of NBa){ const n=c+d; if (inCh.has(n)||!G.valid[n]||G.occ[n]>=0) continue; if (G.h[n]<want) bank.set(n, Math.max(bank.get(n)||-1e9, want)); } });
@@ -1242,9 +1244,14 @@ function chooseGates(camp){
     let river=false; disk(i,7,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; cand.push(i); }
   const pick=(dmin,dmax,avoid)=>{ let best=-1, bs=-1e9; for (const i of cand){ const d=hexDist(i,camp); if (d<dmin||d>dmax) continue; if (avoid.some(a=>hexDist(a,i)<40)) continue; const s=-Math.abs(d-(dmin+dmax)/2)+rnd()*10; if (s>bs){ bs=s; best=i; } } return best; };
   const out=[]; const g1=pick(15,45,[]); if (g1>=0) out.push(g1); const g2=pick(40,110,out); if (g2>=0) out.push(g2); const g3=pick(60,200,out); if (g3>=0) out.push(g3); return out; }
-function chooseCapital(){ // deterministic: dry coast, no river close by, nearest the tile's south-centre
+function chooseCapital(){ // near — not at — the mouth of the main river (including what flows in from upstream): a channel worth digging
+  const acc=new Float32Array(G.N); const ord=[]; for (let i=0;i<G.N;i++) if (G.valid[i]&&G.h[i]>0){ acc[i]=1; ord.push(i); }
+  for (const x of upstreamInflow()) acc[x.cell]+=x.bins.reduce((a,b)=>a+b,0)*2;
+  ord.sort((a,b)=>G.h[b]-G.h[a]); let mouth=-1, bm=-1;
+  for (const i of ord){ let lo=-1, lh=G.h[i]; for (const d of NBa){ const j=i+d; if (G.valid[j]&&G.h[j]<lh){ lh=G.h[j]; lo=j; } } if (lo>=0){ if (G.h[lo]<=0){ if (acc[i]>bm){ bm=acc[i]; mouth=i; } } else acc[lo]+=acc[i]; } }
   let best=-1, bs=1e9; for (let i=0;i<G.N;i++){ if (!G.valid[i]||G.h[i]<0.8||G.h[i]>9||wOf(i)>0.02) continue; let coast=false; for (const d of NBa){ const j=i+d; if (G.h[j]<0) coast=true; } if (!coast) continue;
-    let river=false; disk(i,6,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; const [x,y]=cellXY(i); const sc=Math.hypot(x+30,y-60); if (sc<bs){ bs=sc; best=i; } } return best; }
+    let river=false; disk(i,6,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; const d=mouth>=0? hexDist(i,mouth) : 0; const sc=Math.abs(d-32)+(d<20?100:0); if (sc<bs){ bs=sc; best=i; } }
+  return best; }
 function restoreTile(){
   ST.housing=0; for (const b of SAVED.buildings){ const nb=placeBuilding(b.type,b.i,true); nb.paused=b.paused; nb.got=b.got; }
   Object.assign(ST, SAVED.ST); ST.housing=buildings.filter(b=>b.alive).reduce((a,b)=>a+(BT[b.type].housing||0),0);

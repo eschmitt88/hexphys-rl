@@ -30,6 +30,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1
 #info{right:10px;bottom:10px;width:300px;font-size:12px}
 #sel{right:320px;bottom:10px;width:310px;font-size:12px}#sel .row{display:flex;gap:6px;margin-top:6px}
 #zoom{left:230px;bottom:10px;display:flex;gap:4px;padding:5px}
+#bp{left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);z-index:26;max-height:86vh;overflow:auto}#bp .job{grid-template-columns:1fr;padding:5px 0}.box2{background:#0f1318;border:1px solid #2a313b;border-radius:8px;padding:7px 9px}
 #tip{position:fixed;z-index:40;pointer-events:none;font-size:12px;min-width:200px}#tip .l{display:flex;justify-content:space-between;gap:12px}
 #help{left:50%;top:50%;transform:translate(-50%,-50%);width:min(600px,94vw);padding:18px 22px;z-index:20;max-height:88vh;overflow:auto}#help h2{margin:0 0 8px;font-size:20px}#help li{margin:3px 0}
 #loading{left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 22px;z-index:30;font-size:15px}
@@ -46,8 +47,8 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
   <b>⬡ Watershed</b><div class="res" id="res"></div><span id="date" class="dim"></span>
   <div class="sp">
     <button class="b" data-rate="0">pause</button><button class="b on" data-rate="8">1×</button><button class="b" data-rate="24">3×</button><button class="b" data-rate="80">10×</button>
-    <span class="dim" style="margin-left:6px">lens</span><button class="b lens on" data-lens="map">map</button><button class="b lens" data-lens="height">height</button><button class="b lens" data-lens="moisture">moisture</button><button class="b lens" data-lens="heat">heat</button><button class="b lens" data-lens="rain">rain</button>
-    <button class="b" id="btnHelp">?</button>
+    <span class="dim" style="margin-left:6px">lens</span><button class="b lens on" data-lens="map">map</button><button class="b lens" data-lens="height">height</button><button class="b lens" data-lens="flow">flow</button><button class="b lens" data-lens="moisture">moisture</button><button class="b lens" data-lens="heat">heat</button><button class="b lens" data-lens="rain">rain</button>
+    <a class="b" href="works.html" title="the level below: design the quench works">works ↓</a><a class="b" href="realm.html" title="the level above">realm ↑</a><button class="b" id="btnHelp">?</button>
   </div>
 </div>
 <div class="pn hidden" id="tools"></div>
@@ -58,18 +59,21 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
 <div class="pn hidden" id="info"></div>
 <div class="pn hidden" id="sel"></div>
 <div class="pn hidden" id="tip"></div>
+<div class="pn hidden" id="bp"></div>
 <div class="pn hidden" id="zoom"><button class="b" id="zin">+</button><button class="b" id="zout">-</button><button class="b" id="zhome">home</button><button class="b" id="zall">island</button></div>
 <div class="pn hidden" id="help">
   <h2>⬡ Hexphys Watershed</h2>
-  <div class="dim" style="margin-bottom:8px">One island, simulated whole. Storms drift across it on the wind and rain where they pass; the land decides where that water runs. A volcano leaks lava, and now and then it erupts. You shape the land so water and lava end up where you want them — and export both.</div>
+  <div class="dim" style="margin-bottom:8px">One island, simulated whole. Storms drift across it on the wind and rain where they pass; the land decides where that water runs. A volcano leaks lava, and now and then it erupts. You shape the land so water and lava end up where you want them — and export both. Use the <b>flow</b> lens to see where rivers really run: they carry their whole catchment's rain.</div>
   <b>The goal</b>
-  <ul><li><b>Export.</b> Water (worth 1) counts when it reaches an <b>Export gate</b> (⇲ on the coast; each takes up to 8/day). No river goes there by itself: you dig channels to bring it, and dams to store it for the dry season. Lava (worth 3) is caught by <b>lava traps</b>; <b>obsidian</b> (worth 10) forms where lava is quenched by water — so bring water to the lava, or lava to the water. Each year has an export charter (top right).</li></ul>
+  <ul><li><b>Export.</b> Water counts when it reaches an <b>Export gate</b> (⇲ on the coast; up to 20/day each). It is worth <b>1 in the wet season, 3 in the dry</b> — so storing water behind dams and releasing it in the dry season pays. No river goes there by itself: you dig channels to bring it, and dams to store it for the dry season. Lava (worth 3) is caught by <b>lava traps</b> — pits that swallow an eruption's flow, ladled out by workers before it freezes; <b>obsidian</b> (worth 10) forms where lava is quenched by water — so bring water to the lava, or lava to the water. Each year has an export charter (top right).</li></ul>
   <b>Earthworks — say what you want, settlers dig it</b>
   <ul>
     <li><b>Channel</b>: click start, then end. It always runs downhill from the higher end, cutting through rises.</li>
     <li><b>Dam</b>: click one valley side, then the other. Flat crest at the lower side's height; water pools behind. Give it a spillway, or storms overtop it and wear an earth dam down. Obsidian dams resist 9× better.</li>
     <li><b>Levee</b>: a 1.5 m bank along a line, to keep water — or lava — out. <b>Basin</b>: a pond to catch water.</li>
     <li>A yellow outline previews the plan with its cost in earth and days. Cuts give earth; fills use it.</li>
+    <li><b>Dams hold a limited head</b>: earth holds ~2.5 m (more if wider), obsidian ~22 m. Click a dam to see the water against it. Beyond its limit it sags and fails.</li>
+    <li><b>Hired crews</b> (Workforce) turn surplus food into extra diggers for big projects.</li>
   </ul>
   <b>Settlers</b>
   <ul>
@@ -77,7 +81,7 @@ kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;
     <li><b>Workforce</b>: rows fill top-down; <b>Earthworks takes everyone left</b> at its row. Each digger moves 1.5 earth/day.</li>
   </ul>
   <b>The volcano</b>
-  <ul><li>Vents leak a little lava always. Before an eruption a vent <b>rumbles</b> for days — check the <i>heat</i> lens and move what's in the way. Lava buries buildings (the camp just stops working; move it). Lava cooled in air becomes basalt; quenched in water, obsidian. Digging deep into hot ground can open a new vent.</li></ul>
+  <ul><li>Vents leak a little lava always. Before an eruption a vent <b>rumbles</b> for days — check the <i>heat</i> lens and move what's in the way. Lava buries buildings (the camp just stops working; move it). Lava cooled in air becomes basalt; quenched in water, obsidian. A <b>Quench works</b> fed by both a lava path and a water channel makes obsidian steadily — design its insides in the <b>Works</b> (the level below). Digging deep into hot ground can open a new vent.</li></ul>
   <div class="dim">Click a building or a queued earthwork to inspect it · Pan: drag (Inspect), right-drag, <kbd>WASD</kbd> · Zoom: wheel · <kbd>Space</kbd> pause · <kbd>Esc</kbd> cancel</div>
   <div style="margin-top:10px;text-align:right"><button class="b on" id="helpOk">Begin</button></div>
 </div>
@@ -102,9 +106,36 @@ function makeNoise(seed){
     return 70*n;
   };
 }
+// ===================== REALM: contiguous tiles from one global terrain =====================
+const RT = 110;                                   // tile radius (hexes)
+const REALM_TILES = { N:{q:RT, r:-2*RT-1, name:'North uplands', down:'C'}, C:{q:0, r:0, name:'Middle valley', up:'N', down:'S'}, S:{q:-RT, r:2*RT+1, name:'South coast', up:'C'} };
+const REALM_ORDER = ['N','C','S'];
+function tileXY(t){ const T=REALM_TILES[t]; return [Math.sqrt(3)*(T.q+T.r/2), 1.5*T.r]; }
+function makeRealmH(seed){
+  const n1=makeNoise(seed*7+1), n2=makeNoise(seed*7+2), n3=makeNoise(seed*7+3), n4=makeNoise(seed*7+4), n5=makeNoise(seed*7+5);
+  const fbm=(nz,x,y,o)=>{let s=0,a=1,f=1,t=0;for(let k=0;k<o;k++){s+=a*nz(x*f,y*f);t+=a;a*=0.5;f*=2.03;}return s/t;};
+  const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
+  const rr=mulberry32(seed*13+5); const vx=-40+rr()*80, vy=-385+rr()*40, fx=30+rr()*50, fy=-120+rr()*60, meander=0.6+rr()*0.8;
+  const H=function(x,y){
+    const ny=y/500;
+    let h = 150*(0.42-0.62*ny) + 48*fbm(n1,x/230,y/230,4);
+    const rg=1-Math.abs(fbm(n2,x/80,y/80,4)); h += 85*rg*rg*rg*ss(0.1,-0.5,ny)*ss(-0.1,0.4,fbm(n3,x/260+3,y/260,3));
+    const vxm = 40*Math.sin(y/170*meander)+20*fbm(n4,y/90,1.3,2); h -= 30*Math.exp(-((x-vxm)*(x-vxm))/(2*45*45))*ss(-0.9,-0.2,ny);   // a main valley north→south
+    const dv=Math.hypot(x-vx,y-vy); h += 175*Math.exp(-dv/28)+55*Math.exp(-dv/80)-10*Math.exp(-dv*dv/6);
+    const df=Math.hypot(x-fx,y-fy); h += 38*Math.exp(-df/14);
+    h -= 240*ss(0.78,1.08, ny+0.12*fbm(n5,x/180,0.7,3));                                           // the southern sea
+    h += 9*fbm(n4,x/22,y/22,3) + 14;
+    const xc=35*Math.sin(y/260*meander);                                                              // the realm's axis
+    h += 120*ss(60,175,Math.abs(x-xc)) + 110*ss(-430,-540,y);                                         // flanking ranges + a northern rim funnel water south
+    if(h>0) h=h*0.6+Math.pow(h,1.2)*0.08;
+    return h; };
+  H.vents=[{x:vx,y:vy,base:0.006,name:'Great Vent'},{x:fx,y:fy,base:0.003,name:'Fissure'}];
+  return H;
+}
 // rock types: 0 natural, 1 earth fill, 2 basalt, 3 obsidian
 const ROCK_S = [0, 1.0, 3.0, 9.0];   // erosion resistance of built / volcanic rock
-function makeSim(R, seed){
+function makeSim(R, seed, opts){
+  opts=opts||{};
   const W=2*R+5, N=W*W, OFF=R+2, SQ3=Math.sqrt(3);
   const idx=(q,r)=>(r+OFF)*W+(q+OFF);
   const NB=[1,1-W,-W,-1,-1+W,W];
@@ -118,15 +149,16 @@ function makeSim(R, seed){
   const hexDist=(i,j)=>{ const dq=qOf[i]-qOf[j], dr=rOf[i]-rOf[j]; return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2; };
   const h=new Float32Array(N), h0=new Float32Array(N), w=new Float32Array(N), m=new Float32Array(N);
   const L=new Float32Array(N), E=new Float32Array(N), qAcc=new Float32Array(N), aAcc=new Float32Array(N), Tc=new Float32Array(N);
-  const rock=new Uint8Array(N), wallS=new Float32Array(N), heat=new Float32Array(N), rain=new Float32Array(N), flowOut=new Float32Array(N);
+  const rock=new Uint8Array(N), wallS=new Float32Array(N), heat=new Float32Array(N), rain=new Float32Array(N), flowOut=new Float32Array(N), flowDay=new Float32Array(N);
   const F0=new Float32Array(N),F1=new Float32Array(N),F2=new Float32Array(N), FF=[F0,F1,F2], out=new Float32Array(N), tmp=new Float32Array(N);
   const G0=new Float32Array(N),G1=new Float32Array(N),G2=new Float32Array(N), FL=[G0,G1,G2], lout=new Float32Array(N);
   const rnd=mulberry32(seed^0x9e37);
   const P={ KP:0.15, DAMP:0.985, drizzle:1.2e-5, evap:2.5e-5, KL:0.09, coolAir:0.0016, coolWater:0.035, steamK:0.6, Ts:0.32,
-            yearSteps:2400, step:0, hChanged:false, events:[], collected:{}, coll:[], vents:[], storms:[], wind:0.6 };
+            yearSteps:2400, step:0, runoff:0, hChanged:false, events:[], collected:{}, coll:[], vents:[], storms:[], wind:0.6 };
 
   // ---------------- generation ----------------
-  function generate(){
+  let BIN=null, BKIND=null, BIN_IN=null;                // tile mode: boundary cells, kind (0 sea,1 land), inner neighbour
+  function generate(){ if(opts.tile) return generateTile(); if(opts.board) return generateBoard();
     const n1=makeNoise(seed), n2=makeNoise(seed+1), n3=makeNoise(seed+2), n4=makeNoise(seed+3);
     const fbm=(nz,x,y,o)=>{let s=0,a=1,f=1,t=0;for(let k=0;k<o;k++){s+=a*nz(x*f,y*f);t+=a;a*=0.5;f*=2.03;}return s/t;};
     const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
@@ -159,39 +191,79 @@ function makeSim(R, seed){
         comps.push({id,area,depth}); }
       comps.sort((a,b)=>b.area*Math.min(b.depth,15)-a.area*Math.min(a.depth,15)); const keep=new Uint8Array(comps.length); let tot=0;
       for(const c of comps){ if(c.depth<3||c.area<25) continue; if(tot+c.area>0.03*VAL.length) continue; keep[c.id]=1; tot+=c.area; }
-      for(const i of VAL){ const l=lab[i]; if(l>=0&&!keep[l]) h[i]=Fs[i]; }
+      for(const i of VAL){ const l=lab[i]; if(l>=0&&!keep[l]) h[i]=Fs[i]; else if(l>=0) h[i]=Math.max(h[i], Fs[i]-1.6); }   // natural lakes are shallow seasonal stores
       for(const i of VAL){ const d=Fs[i]-h[i]; w[i]=d>0.02?d:0; } }
     for(const s of SEA) w[s]=-h[s];
     h0.set(h);
     // vents
     let top=v0; for(let k=0;k<200;k++){ let best=top; for(let d=0;d<6;d++){ const j=top+NB[d]; if(valid[j]&&hexDist(j,v0)<6&&h[j]<h[best]) best=j; } if(best===top) break; top=best; }
-    addVent(top, 0.03, 'Great Vent');
+    addVent(top, 0.006, 'Great Vent');
     if(rnd()<0.75){ for(let t=0;t<400;t++){ const a=rnd()*Math.PI*2, rr=40+rnd()*40; const q=Math.round(qOf[v0]+rr*Math.cos(a)), r=Math.round(rOf[v0]+rr*Math.sin(a)*0.8);
-      if(Math.abs(q)>R||Math.abs(r)>R||Math.abs(q+r)>R) continue; const j=idx(q,r); if(valid[j]&&h[j]>25&&w[j]===0){ addVent(j, 0.015, 'Fissure'); break; } } }
+      if(Math.abs(q)>R||Math.abs(r)>R||Math.abs(q+r)>R) continue; const j=idx(q,r); if(valid[j]&&h[j]>25&&w[j]===0){ addVent(j, 0.003, 'Fissure'); break; } } }
     // spin up: a season of weather + lava history
     for(let k=0;k<500;k++) step(true);
     for(const i of VAL) m[i]=Math.min(1,m[i]);
     P.events.length=0; P.collected={};
   }
+  function generateBoard(){
+    const B=opts.board; for(let i=0;i<N;i++) h[i]=B.h? (B.h[i]||0) : 0;
+    BKIND=new Uint8Array(SEA.length); SEA.forEach((s,k)=>{ BKIND[k]= (B.drains&&B.drains.includes(s))?1:2; if(BKIND[k]===2) h[s]=400; else h[s]=Math.min(h[s], -0.5); });
+    P.edgeOut=new Float32Array(SEA.length); h0.set(h); P.noWeather=true; P.noErupt=true; P.vents=[]; heat.fill(0);
+    if(B.lavaIn!==undefined) P.vents.push({i:B.lavaIn, base:B.lavaRate||0.03, name:'inlet', state:'quiet', t:0, mult:1});
+    P.inflow = B.waterIn!==undefined ? {cells:Int32Array.from([B.waterIn]), rates:Float32Array.from([B.waterRate||0.1])} : null; }
+  function boardMeasure(){ let obs=0, bas=0, wst=0, lav=0; for(const i of VAL){ const d=h[i]-h0[i]; if(rock[i]===3&&d>0) obs+=d; if(rock[i]===2&&d>0) bas+=d; wst+=w[i]; lav+=L[i]; } let out=0; for(let k=0;k<SEA.length;k++) out+=P.edgeOut[k]; return {obs, bas, wst, lav, out}; }
+  function generateTile(){
+    const T=REALM_TILES[opts.tile], H=makeRealmH(opts.realm); const [tx,ty]=tileXY(opts.tile);
+    for(let i=0;i<N;i++) h[i]=H(cx[i]+tx, cy[i]+ty);
+    BIN=SEA; BKIND=new Uint8Array(SEA.length); BIN_IN=new Int32Array(SEA.length);
+    const up=T.up?REALM_TILES[T.up]:null;
+    SEA.forEach((s,k)=>{ BKIND[k]= h[s]<0?0:1;
+      if(up){ const gq=qOf[s]+T.q-up.q, gr=rOf[s]+T.r-up.r; if(Math.abs(gq)<=R&&Math.abs(gr)<=R&&Math.abs(gq+gr)<=R){ BKIND[k]=2; } }   // upstream edge: water arrives as inflow, never flows back
+      for(let d=0;d<6;d++){ const j=s+NB[d]; if(valid[j]){ BIN_IN[k]=j; break; } } });
+    P.edgeOut=new Float32Array(SEA.length); P.inflow=null;
+    // fill depressions draining to any boundary (sea at level 0, land boundaries at their own height)
+    const Fs=new Float32Array(N), seen=new Uint8Array(N); const heapI=new Int32Array(N), heapV=new Float32Array(N); let hn=0;
+    const push=(i,v)=>{let k=hn++; while(k>0){const pk=(k-1)>>1; if(heapV[pk]<=v)break; heapI[k]=heapI[pk];heapV[k]=heapV[pk];k=pk;} heapI[k]=i;heapV[k]=v;};
+    const pop=()=>{const top=heapI[0]; const li=heapI[--hn], lv=heapV[hn]; let k=0; for(;;){let c=2*k+1; if(c>=hn)break; if(c+1<hn&&heapV[c+1]<heapV[c])c++; if(heapV[c]>=lv)break; heapI[k]=heapI[c];heapV[k]=heapV[c];k=c;} heapI[k]=li;heapV[k]=lv; return top;};
+    SEA.forEach((s,k)=>{ seen[s]=1; if(BKIND[k]===2) return; const base=BKIND[k]?h[s]:0; for(let d=0;d<6;d++){ const j=s+NB[d]; if(valid[j]&&!seen[j]){ seen[j]=1; Fs[j]=Math.max(h[j],base); push(j,Fs[j]); } } });
+    while(hn>0){ const c=pop(); for(let d=0;d<6;d++){ const j=c+NB[d]; if(!valid[j]||seen[j]) continue; seen[j]=1; Fs[j]=Math.max(h[j],Fs[c]+(Fs[c]>0?0.03:0)); push(j,Fs[j]); } }
+    { const lab=new Int32Array(N).fill(-1), comps=[], stack=[];
+      for(const i of VAL){ if(lab[i]>=0||Fs[i]-h[i]<0.05||Fs[i]<=0.001) continue; const id=comps.length; let area=0,depth=0; lab[i]=id; stack.push(i);
+        while(stack.length){ const c=stack.pop(); area++; depth=Math.max(depth,Fs[c]-h[c]); for(let d=0;d<6;d++){ const j=c+NB[d]; if(valid[j]&&lab[j]<0&&Fs[j]-h[j]>=0.05&&Fs[j]>0.001){lab[j]=id;stack.push(j);} } }
+        comps.push({id,area,depth}); }
+      comps.sort((a,b)=>b.area*Math.min(b.depth,15)-a.area*Math.min(a.depth,15)); const keep=new Uint8Array(comps.length); let tot=0;
+      for(const c of comps){ if(c.depth<3||c.area<25) continue; if(tot+c.area>0.025*VAL.length) continue; keep[c.id]=1; tot+=c.area; }
+      for(const i of VAL){ const l=lab[i]; if(l>=0&&!keep[l]) h[i]=Fs[i]; else if(l>=0) h[i]=Math.max(h[i], Fs[i]-1.6); }
+      for(const i of VAL){ const d=Fs[i]-h[i]; w[i]=d>0.02?d:0; } }
+    SEA.forEach((s,k)=>{ w[s]= BKIND[k]? 0 : -h[s]; if(BKIND[k]===2) h[s]=h[s]+400; });
+    h0.set(h);
+    for(const v of H.vents){ const x=v.x-tx, y=v.y-ty; const q=Math.round(SQ3/3*x-y/3), r=Math.round(2/3*y);
+      if(Math.abs(q)<=R && Math.abs(r)<=R && Math.abs(q+r)<=R){ let c=idx(q,r); for(let k=0;k<60;k++){ let best=c; for(let d=0;d<6;d++){ const j=c+NB[d]; if(valid[j]&&h[j]<h[best]&&Math.hypot(cx[j]-x,cy[j]-y)<6) best=j; } if(best===c) break; c=best; }
+        P.vents.push({ i:c, base:v.base, name:v.name, state:'quiet', t:0, mult:1 }); } }
+    computeHeat();
+    for(let k=0;k<400;k++) step(true);
+    for(const i of VAL) m[i]=Math.min(1,m[i]);
+    P.events.length=0; P.collected={}; P.edgeOut.fill(0); P.runoff=0;
+  }
   function addVent(i, base, name){ const v={ i, base, name: name+(P.vents.length?(' '+(P.vents.length+1)):''), state:'quiet', t:0, mult:1 }; P.vents.push(v); computeHeat(); return v; }
-  function computeHeat(){
+  function computeHeat(){ if(!P.vents.length){ heat.fill(0); return; }
     const n=makeNoise(seed+9);
     for(const i of VAL){ let best=0; for(const v of P.vents){ const d=Math.hypot(cx[i]-cx[v.i],cy[i]-cy[v.i]); best=Math.max(best, Math.exp(-d/24)); } heat[i]=Math.min(1,best*(1+0.35*n(cx[i]/18,cy[i]/18))); }
   }
 
   // ---------------- weather ----------------
   function seasonF(){ const ph=(P.step%P.yearSteps)/P.yearSteps; return 1+0.85*Math.sin(2*Math.PI*ph); }  // wet peak 1/4, dry 3/4
-  function weather(){
+  function weather(){ if(P.noWeather) return;
     const sf=seasonF(); const th = P.wind + 0.5*Math.sin(2*Math.PI*P.step/P.yearSteps*1.7);
     const ux=Math.cos(th), uy=Math.sin(th);
-    const want = Math.max(0, Math.round(1 + 2.6*sf));
+    const want = Math.max(0, Math.round(3.4*(sf-0.45)));
     if (P.storms.length < want && rnd() < 0.02){
       const off=(rnd()*2-1)*R*1.6, D=R*1.5+40;
       P.storms.push({ x:-ux*D - uy*off, y:-uy*D + ux*off, vx:ux*(0.35+0.25*rnd()), vy:uy*(0.35+0.25*rnd()), r:16+rnd()*22, amp:(0.0009+0.0012*rnd())*(0.6+0.4*sf), age:0 });
     }
     for (const s of P.storms){ s.x+=s.vx; s.y+=s.vy; s.age++; }
     P.storms = P.storms.filter(s => Math.hypot(s.x,s.y) < R*1.5+80 && s.age < 4000);
-    const dz = P.drizzle*Math.max(0.15,sf);
+    const dz = P.drizzle*Math.max(0,sf-0.4);
     const lens = (P.step%4===0);
     if (lens) for (const i of VAL) rain[i]=dz;
     for (const i of VAL) w[i]+=dz;
@@ -214,9 +286,12 @@ function makeSim(R, seed){
     for(let k=0;k<ACT.length;k++){ const i=ACT[k], o=out[i]; out[i]= o>w[i] ? w[i]/o : 1; }
     for(let k=0;k<ACT.length;k++){ const i=ACT[k];
       for(let d=0;d<3;d++){ const j=i+NB[d], Fd=FF[d]; let f=Fd[i]; if(f===0) continue;
-        f*= f>0 ? out[i] : out[j]; Fd[i]=f; w[i]-=f; w[j]+=f; if(f>0) flowOut[i]+=f; else flowOut[j]-=f; } }
-    for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
-    const ev=P.evap*(seasonF()<0.5?1.8:1);
+        f*= f>0 ? out[i] : out[j]; Fd[i]=f; w[i]-=f; w[j]+=f; if(f>0) flowOut[i]+=f; else flowOut[j]-=f;
+        if(f>0 && h[i]>0 && h[j]<=0) P.runoff+=f; else if(f<0 && h[j]>0 && h[i]<=0) P.runoff-=f; } }
+    if(BKIND){ for(let k=0;k<SEA.length;k++){ const s=SEA[k]; if(BKIND[k]===1){ if(w[s]>0){ P.edgeOut[k]+=w[s]; w[s]=0; } } else if(BKIND[k]===0) w[s]=-h[s]; else w[s]=0; }
+      if(P.inflow){ const inf=P.inflow; for(let k=0;k<inf.cells.length;k++) w[inf.cells[k]]+=inf.rates[k]; } }
+    else for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
+    const sf0=seasonF(); const ev=P.evap*(sf0<0.6? 6 : sf0<1? 2 : 1);
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const x=w[i]-ev; w[i]=x>0?x:0; }
   }
   // ---------------- lava ----------------
@@ -249,8 +324,8 @@ function makeSim(R, seed){
   // ---------------- vents ----------------
   function vents(){
     for(const v of P.vents){
-      if(v.state==='quiet'){ if(rnd() < 1/(P.yearSteps*0.45)){ v.state='rumble'; v.t=80+((rnd()*60)|0); P.events.push({type:'rumble', vent:v.name, i:v.i, days:Math.round(v.t/8)}); } }
-      else if(v.state==='rumble'){ if(--v.t<=0){ v.state='erupt'; v.t=150+((rnd()*200)|0); v.mult=14+rnd()*16; P.events.push({type:'erupt', vent:v.name, i:v.i}); } }
+      if(v.state==='quiet'){ if(!P.noErupt && rnd() < 1/(P.yearSteps*1.1)){ v.state='rumble'; v.t=80+((rnd()*60)|0); P.events.push({type:'rumble', vent:v.name, i:v.i, days:Math.round(v.t/8)}); } }
+      else if(v.state==='rumble'){ if(--v.t<=0){ v.state='erupt'; v.t=160+((rnd()*160)|0); v.mult=(40+rnd()*40)*(0.006/v.base>1?1:1); P.events.push({type:'erupt', vent:v.name, i:v.i}); } }
       else if(v.state==='erupt'){ if(--v.t<=0){ v.state='quiet'; v.mult=1; P.events.push({type:'calm', vent:v.name, i:v.i}); } }
     }
   }
@@ -259,15 +334,19 @@ function makeSim(R, seed){
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const S=wallS[i];
       if(S>0 && w[i]>0.03 && flowOut[i]>0.4){ const e=0.012*(flowOut[i]-0.4)/S; h[i]-=e; P.hChanged=true;
         if(h[i]<=h0[i]+0.01){ h[i]=Math.min(h[i],h0[i]); wallS[i]=0; rock[i]=0; } }
-      flowOut[i]=0; }
+      flowDay[i]=flowDay[i]*0.985+flowOut[i]*2*0.015; flowOut[i]=0; }   // discharge per day, smoothed over ~a month
   }
   // ---------------- collectors (cisterns, lava traps) ----------------
   function collect(){
-    for(const c of P.coll){ if(!c.active) continue; const per=c.rate/8/c.cells.length; let got=0;
+    for(const c of P.coll){ if(!c.active && c.type==='cistern') continue; const per=c.rate/8/c.cells.length; let got=0;
       for(const j of c.cells){
         if(c.type==='cistern'){ const t=Math.min(w[j], per); w[j]-=t; got+=t; }
-        else { if(L[j]>1e-4 && E[j]/L[j]>0.45){ const t=Math.min(L[j], per); const T=E[j]/L[j]; L[j]-=t; E[j]-=t*T; got+=t; } } }
-      P.collected[c.id]=(P.collected[c.id]||0)+got; }
+        else if(c.type==='quench'){ c.held=c.held||0; c.water=c.water||0;
+          if(L[j]>1e-4 && E[j]/L[j]>0.4 && c.held<c.cap){ const t=Math.min(L[j], c.cap-c.held); const T=E[j]/L[j]; L[j]-=t; E[j]-=t*T; c.held+=t; }
+          if(w[j]>0.02 && c.water<c.wcap){ const t=Math.min(w[j]-0.02, c.wcap-c.water); w[j]-=t; c.water+=t; } }
+        else { c.held=c.held||0; if(L[j]>1e-4 && E[j]/L[j]>0.4 && c.held<c.cap){ const t=Math.min(L[j], c.cap-c.held); const T=E[j]/L[j]; L[j]-=t; E[j]-=t*T; c.held+=t; } } }
+      if(c.type==='cistern') P.collected[c.id]=(P.collected[c.id]||0)+got;
+      else if(c.type==='lavatrap'){ const slag=c.held*0.0025; c.held-=slag; P.slag=(P.slag||0)+slag; } }
   }
   function moisture(){
     const sf=seasonF();
@@ -292,40 +371,73 @@ function makeSim(R, seed){
     P.hChanged=true;
   }
   function mineRock(cells, amt){ let got=0; for(const i of cells){ if(rock[i]!==3) continue; const t=Math.min(amt-got, 0.25); if(t<=0) break; h[i]-=t; got+=t; if(h[i]<=h0[i]+0.01){ rock[i]=0; wallS[i]=0; } } P.hChanged=true; return got; }
-  return { R, W, N, OFF, NB, valid, qOf, rOf, cx, cy, idx, hexDist, h, h0, w, m, L, E, rock, wallS, heat, rain, P, VAL, ACT, SEA,
+  // run one headless year; inflowBins: [{cell, bins:Float32Array(30)}] in units per day; returns the tile card
+  function runYear(inflowBins, autoColl){
+    const bins=30, per=P.yearSteps/bins; const card={ edge:{}, capital:new Float32Array(bins), lava:0, obsidian:0, runoff:0 };
+    const edgeBins=Array.from(SEA,()=>null); if(!P.edgeOut) P.edgeOut=new Float32Array(SEA.length); P.edgeOut.fill(0); const r0=P.runoff; const startStep=P.step;
+    for(let b=0;b<bins;b++){
+      if(inflowBins&&inflowBins.length){ P.inflow={cells:Int32Array.from(inflowBins.map(x=>x.cell)), rates:Float32Array.from(inflowBins.map(x=>x.bins[b]/8))}; } else P.inflow=null;
+      const before=Float32Array.from(P.edgeOut);
+      for(let k=0;k<per;k++){ step(false);
+        if(autoColl && P.step%8===0){ for(const c of P.coll){ if(c.type==='lavatrap'){ const t=Math.min(c.held||0,4); c.held-=t; card.lava+=t; } } for(const q of (opts.quarries||[])){ card.obsidian+=mineRock(q.cells,0.6); } } }
+      for(let k=0;k<SEA.length;k++){ const d=P.edgeOut[k]-before[k]; if(d>0.001){ if(!edgeBins[k]) edgeBins[k]=new Float32Array(bins); edgeBins[k][b]=d/(per/8); } }
+      for(const c of P.coll) if(c.type==='cistern'){ const g=P.collected[c.id]||0; card.capital[b]+=g/(per/8); P.collected[c.id]=0; }
+    }
+    for(let k=0;k<SEA.length;k++){ if(edgeBins[k]) card.edge[SEA[k]]=edgeBins[k]; }
+    card.runoff=P.runoff-r0; P.inflow=null; return card;
+  }
+  function restore(st){ if(st.dh) for(const [i,d] of st.dh){ h[i]+=d; } if(st.rock) for(const [i,r] of st.rock){ rock[i]=r; wallS[i]=ROCK_S[r]; } P.hChanged=true; }
+  return { boardMeasure, runYear, restore, SEA, flowDay, get BKIND(){return BKIND;}, R, W, N, OFF, NB, valid, qOf, rOf, cx, cy, idx, hexDist, h, h0, w, m, L, E, rock, wallS, heat, rain, P, VAL, ACT, SEA,
            generate, step, seasonF, applyDh, mineRock, addVent };
 }
 
 // ===================== worker glue =====================
 if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope) {
-  let S=null, rate=8, acc=0, last=0, lastPost=0, lastSeq=0;
+  let S=null, rate=8, acc=0, last=0, lastPost=0, lastSeq=0, EB=null, yearOf=0, inflowBins=null, curBin=-1, capBins=new Float32Array(30);
+  function tileStep(){
+    const ys=S.P.yearSteps, bin=Math.floor((S.P.step%ys)/(ys/30));
+    if(inflowBins && bin!==curBin){ curBin=bin; S.P.inflow={cells:Int32Array.from(inflowBins.map(x=>x.cell)), rates:Float32Array.from(inflowBins.map(x=>x.bins[bin]/8))}; }
+    S.step(false);
+    if(EB){ const eo=S.P.edgeOut; for(let k=0;k<eo.length;k++){ const d=eo[k]; if(d>0){ if(!EB[k]) EB[k]=new Float32Array(30); EB[k][bin]+=d*30/ys*8; eo[k]=0; } } }
+    const y=Math.floor(S.P.step/ys); if(EB && y!==yearOf){ const edge={}; for(let k=0;k<S.SEA.length;k++) if(EB[k]) edge[S.SEA[k]]=Array.from(EB[k]); postMessage({type:'yearcard', year:yearOf, edge}); EB=Array.from(S.SEA,()=>null); yearOf=y; }
+  }
   const q6=(x)=> x<=0?0: x>=6?255: Math.round(Math.sqrt(x/6)*255);
   function post(){
-    const N=S.N, w8=new Uint8Array(N), m8=new Uint8ClampedArray(N), L8=new Uint8Array(N), T8=new Uint8ClampedArray(N), rn8=new Uint8ClampedArray(N);
-    for(let i=0;i<N;i++){ w8[i]=q6(S.w[i]); m8[i]=S.m[i]*255; const l=S.L[i]; L8[i]=q6(l); T8[i]= l>1e-4? S.E[i]/l*255 : 0; rn8[i]=Math.sqrt(S.rain[i]/0.002)*255; }
-    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, w8, m8, L8, T8, rn8, events:S.P.events.splice(0), collected:S.P.collected,
+    const N=S.N, w8=new Uint8Array(N), m8=new Uint8ClampedArray(N), L8=new Uint8Array(N), T8=new Uint8ClampedArray(N), rn8=new Uint8ClampedArray(N), q8=new Uint8ClampedArray(N);
+    for(let i=0;i<N;i++){ w8[i]=q6(S.w[i]); m8[i]=S.m[i]*255; const l=S.L[i]; L8[i]=q6(l); T8[i]= l>1e-4? S.E[i]/l*255 : 0; rn8[i]=Math.sqrt(S.rain[i]/0.002)*255; const fq=S.flowDay[i]; q8[i]= fq<=0.01?0 : Math.log10(fq*100)*64; }
+    const traps={}, quench={}; for(const c of S.P.coll){ if(c.type==='lavatrap') traps[c.id]=c.held||0; if(c.type==='quench') quench[c.id]={lava:c.held||0, water:c.water||0}; }
+    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, traps, quench, slag:S.P.slag||0, runoff:S.P.runoff, w8, m8, L8, T8, rn8, q8, events:S.P.events.splice(0), collected:S.P.collected,
       vents:S.P.vents.map(v=>({i:v.i,name:v.name,state:v.state,t:v.t})), storms:S.P.storms.map(s=>({x:s.x,y:s.y,r:s.r,a:s.amp}))};
     S.P.collected={};
-    const tr=[w8.buffer,m8.buffer,L8.buffer,T8.buffer,rn8.buffer];
+    const tr=[w8.buffer,m8.buffer,L8.buffer,T8.buffer,rn8.buffer,q8.buffer];
     if(S.P.hChanged){ msg.h=S.h.slice(); msg.rock=S.rock.slice(); msg.wallS=S.wallS.slice(); msg.heat=S.heat.slice(); tr.push(msg.h.buffer,msg.rock.buffer,msg.wallS.buffer,msg.heat.buffer); S.P.hChanged=false; }
     postMessage(msg, tr);
   }
   function tick(){
     const now=performance.now(); let dt=(now-last)/1000; last=now; if(dt>0.25) dt=0.25;
     acc+=rate*dt; const t0=performance.now();
-    while(acc>=1 && performance.now()-t0<45){ S.step(false); acc-=1; }
+    while(acc>=1 && performance.now()-t0<45){ tileStep(); acc-=1; }
     if(acc>2) acc=2;
     if(now-lastPost>90){ post(); lastPost=now; }
     setTimeout(tick, 4);
   }
   onmessage=(e)=>{ const m=e.data;
-    if(m.type==='init'){ S=makeSim(m.R,m.seed); S.generate();
-      postMessage({type:'world', R:S.R, W:S.W, OFF:S.OFF, N:S.N, h:S.h.slice(), h0:S.h0.slice(), rock:S.rock.slice(), wallS:S.wallS.slice(), heat:S.heat.slice(), valid:S.valid, yearSteps:S.P.yearSteps});
+    if(m.type==='init'){ S=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm}); S.generate(); const hNat=S.h.slice();
+      if(m.restore){ S.restore(m.restore); } if(m.step) S.P.step=m.step;
+      if(m.tile){ EB=Array.from(S.SEA,()=>null); yearOf=Math.floor(S.P.step/S.P.yearSteps); }
+      postMessage({type:'world', R:S.R, W:S.W, OFF:S.OFF, N:S.N, h:S.h.slice(), h0:S.h0.slice(), hNat, bound:Int32Array.from(S.SEA), bkind:S.BKIND?Uint8Array.from(S.BKIND):null, rock:S.rock.slice(), wallS:S.wallS.slice(), heat:S.heat.slice(), valid:S.valid, yearSteps:S.P.yearSteps});
       S.P.hChanged=false; post(); last=performance.now(); tick(); }
     else if(m.type==='rate'){ rate=m.rate; }
+    else if(m.type==='inflow'){ inflowBins=m.bins; curBin=-1; }
+    else if(m.type==='runTile'){ // headless: used by the realm page and blueprint previews
+      const T=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm, quarries:m.quarries}); T.generate(); if(m.restore) T.restore(m.restore); if(m.coll) T.P.coll=m.coll;
+      const card=T.runYear(m.inflow||[], true); const edge={}; for(const k in card.edge) edge[k]=Array.from(card.edge[k]);
+      postMessage({type:'tileCard', id:m.id, card:{edge, capital:Array.from(card.capital), lava:card.lava, obsidian:card.obsidian}}); }
     else if(m.type==='edit'){ for(const op of m.ops){
         if(op.op==='dh') S.applyDh(op.cells, op.dhs, op.rock);
-        else if(op.op==='coll') S.P.coll=op.list;
+        else if(op.op==='coll'){ const old={}, oldw={}; for(const c of S.P.coll){ old[c.id]=c.held||0; oldw[c.id]=c.water||0; } S.P.coll=op.list; for(const c of S.P.coll){ c.held=old[c.id]||0; c.water=oldw[c.id]||0; } }
+        else if(op.op==='quenchUse'){ for(const c of S.P.coll) if(c.id===op.id){ c.held=Math.max(0,(c.held||0)-op.lava); c.water=Math.max(0,(c.water||0)-op.water); } }
+        else if(op.op==='harvest'){ for(const c of S.P.coll) if(c.id===op.id){ const t=Math.min(c.held||0, op.amt); c.held-=t; S.P.collected['lava'+op.id]=(S.P.collected['lava'+op.id]||0)+t; } }
         else if(op.op==='mine'){ const got=S.mineRock(op.cells, op.amt); S.P.collected['mine'+op.id]=(S.P.collected['mine'+op.id]||0)+got; } }
       lastSeq = m.seq||lastSeq; }
   };
@@ -342,8 +454,14 @@ const $ = s => document.querySelector(s);
 const clamp = (x,a,b) => x<a?a:x>b?b:x;
 const SQ3 = Math.sqrt(3);
 const SIMSRC = document.getElementById('simsrc').textContent;
-const LIB = new Function(SIMSRC + '\n;return {makeNoise, mulberry32};')();
-const R = 150, SEED = (Number(new URLSearchParams(location.search).get('seed')) || (Date.now() % 100000));
+const LIB = new Function(SIMSRC + '\n;return {makeNoise, mulberry32, RT, REALM_TILES, REALM_ORDER, tileXY};')();
+const QS = new URLSearchParams(location.search);
+const REALM = QS.get('realm') ? +QS.get('realm') : null, TILE = QS.get('tile') || null, TMODE = !!(REALM && TILE);
+const R = TMODE ? LIB.RT : 150, SEED = TMODE ? REALM*100 + LIB.REALM_ORDER.indexOf(TILE) : (Number(QS.get('seed')) || (Date.now() % 100000));
+const RKEY = TMODE ? `ws-realm-${REALM}` : null, TKEY = TMODE ? `ws-tile-${REALM}-${TILE}` : null;
+const realmState = () => { try { return JSON.parse(localStorage.getItem(RKEY)||'null') || {year:1, credits:0, tiles:{}}; } catch(e){ return {year:1, credits:0, tiles:{}}; } };
+const saveRealm = st => { try { localStorage.setItem(RKEY, JSON.stringify(st)); } catch(e){ console.warn('realm save failed', e); } };
+const SAVED = TMODE ? (()=>{ try { return JSON.parse(localStorage.getItem(TKEY)||'null'); } catch(e){ return null; } })() : null;
 const rnd = LIB.mulberry32(SEED ^ 0x51ed);
 const DAY = 8;                       // simulation steps per day
 const ROCKNAME = ['natural ground','earth fill','basalt','obsidian'];
@@ -352,8 +470,8 @@ const ROCK_S = [0, 1.0, 3.0, 9.0];
 const G = { ready:false, W:0, OFF:0, N:0, rate:8, lens:'map' };
 let NBa = null;
 const worker = new Worker(URL.createObjectURL(new Blob([SIMSRC], {type:'text/javascript'})));
-worker.onmessage = e => { const m=e.data; if (m.type==='world') onWorld(m); else if (m.type==='state') onState(m); };
-worker.postMessage({type:'init', R, seed:SEED});
+worker.onmessage = e => { const m=e.data; if (m.type==='world') onWorld(m); else if (m.type==='state') onState(m); else if (m.type==='yearcard') onYearCard(m); else if (m.type==='tileCard') onTileCard(m); };
+worker.postMessage({type:'init', R, seed:SEED, tile:TILE, realm:REALM, restore: SAVED? {dh:SAVED.dh, rock:SAVED.rock} : null, step: SAVED? SAVED.step : 0});
 let opSeq = 0; const pendingOps = [];
 function sendOps(){ if (pendingOps.length){ opSeq++; worker.postMessage({type:'edit', seq:opSeq, ops:pendingOps.splice(0)}); } }
 
@@ -366,11 +484,12 @@ function disk(i, rad, fn){ const q0=G.qOf[i], r0=G.rOf[i];
     const q=q0+dq, r=r0+dr; if (!inArr(q,r)) continue; const j=idx(q,r); if (G.valid[j]) fn(j,(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2); } }
 const dq6 = x => { const v=x/255; return v*v*6; };
 const wOf = i => dq6(G.w8[i]);
+const qOf = i => { const v=G.q8?G.q8[i]:0; return v? Math.pow(10, v/64)/100 : 0; };   // river discharge, water/day
 const lOf = i => dq6(G.L8[i]);
 const tOf = i => G.T8[i]/255;
 
 function onWorld(m){
-  Object.assign(G, {W:m.W, OFF:m.OFF, N:m.N, valid:m.valid, h:m.h, h0:m.h0, rock:m.rock, wallS:m.wallS, heat:m.heat, yearSteps:m.yearSteps});
+  Object.assign(G, {W:m.W, OFF:m.OFF, N:m.N, valid:m.valid, h:m.h, h0:m.h0, hNat:m.hNat, bound:m.bound, bkind:m.bkind, rock:m.rock, wallS:m.wallS, heat:m.heat, yearSteps:m.yearSteps});
   NBa = [1, 1-G.W, -G.W, -1, -1+G.W, G.W];
   G.qOf=new Int16Array(G.N); G.rOf=new Int16Array(G.N);
   for (let i=0;i<G.N;i++){ G.qOf[i]=i%G.W-G.OFF; G.rOf[i]=((i/G.W)|0)-G.OFF; }
@@ -378,14 +497,17 @@ function onWorld(m){
   const nz=LIB.makeNoise(SEED+77), nz2=LIB.makeNoise(SEED+78); G.tex=new Float32Array(G.N);
   for (let i=0;i<G.N;i++){ if(!G.valid[i]) continue; const [x,y]=cellXY(i); G.tex[i]=2.5*nz(x/8,y/8)+1.2*nz2(x/3,y/3); }
   G.base=new Uint8ClampedArray(G.N*3); for (let i=0;i<G.N;i++) baseColor(i);
+  G.landCells=0; for (let i=0;i<G.N;i++) if (G.valid[i]&&G.h[i]>0) G.landCells++;
 }
 function onState(m){
-  G.w8=m.w8; G.m8=m.m8; G.L8=m.L8; G.T8=m.T8; G.rn8=m.rn8; G.step=m.step; G.season=m.season; G.vents=m.vents; G.storms=m.storms;
+  G.w8=m.w8; G.m8=m.m8; G.L8=m.L8; G.T8=m.T8; G.rn8=m.rn8; G.q8=m.q8; G.step=m.step; G.season=m.season; G.vents=m.vents; G.storms=m.storms;
   if (m.h && m.seq >= opSeq){ const old=G.h; G.h=m.h; G.rock=m.rock; G.wallS=m.wallS; G.heat=m.heat;
     for (let i=0;i<G.N;i++) if (old[i]!==G.h[i]) { baseColor(i); for (const d of NBa) baseColor(i+d); } }
+  G.traps=m.traps||{}; G.quench=m.quench||{}; G.runoff=m.runoff||0; if (G.runoffYearStart===undefined) G.runoffYearStart=G.runoff;
   for (const k in m.collected){ const v=m.collected[k];
-    if (k.startsWith('mine')){ const id=+k.slice(4); const b=buildings[id]; if (b){ b.got=(b.got||0)+v; } ST.obsidian+=v; dayFlow.obsidian=(dayFlow.obsidian||0)+v; EX.obsidian+=v; }
-    else { const b=buildings[+k]; if (!b) continue; b.got=(b.got||0)+v; if (b.type==='gate'){ ST.water+=v; dayFlow.water=(dayFlow.water||0)+v; EX.water+=v; } else { ST.lava+=v; dayFlow.lava=(dayFlow.lava||0)+v; EX.lava+=v; } } }
+    if (k.startsWith('lava')){ const b=buildings[+k.slice(4)]; if (b) b.got=(b.got||0)+v; ST.lava+=v; dayFlow.lava=(dayFlow.lava||0)+v; EX.lava+=v; EX.value+=3*v; EX.lavaYear=(EX.lavaYear||0)+v; continue; }
+    if (k.startsWith('mine')){ const id=+k.slice(4); const b=buildings[id]; if (b){ b.got=(b.got||0)+v; } ST.obsidian+=v; dayFlow.obsidian=(dayFlow.obsidian||0)+v; EX.obsidian+=v; EX.value+=10*v; EX.obsYear=(EX.obsYear||0)+v; }
+    else { const b=buildings[+k]; if (!b) continue; b.got=(b.got||0)+v; if (b.type==='gate'||b.type==='capital'){ ST.water+=v; dayFlow.water=(dayFlow.water||0)+v; EX.water+=v; EX.value+=v*waterPrice(); if (b.type==='capital') CAP.bins[binOfYear()]+=v/((G.yearSteps/30)/8); } } }
   for (const ev of m.events) onEvent(ev);
   rasterDirty = true;
   if (!G.ready){ G.ready=true; startGame(); } else economyCatchUp();
@@ -429,6 +551,7 @@ function lensColor(i){
     if (G.h[i+1]>0&&Math.floor(G.h[i+1]/5)!==c10 || G.h[i+W]>0&&Math.floor(G.h[i+W]/5)!==c10){ LC[0]*=0.7; LC[1]*=0.7; LC[2]*=0.7; } return LC; }
   if (G.lens==='heat'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.35; const ht=G.heat[i]; LC[0]=g0+ht*170; LC[1]=g0+ht*60; LC[2]=g0+10;
     if (ht>0.5){ LC[0]=Math.min(255,LC[0]+40); } if (lv>0.005){ const T=tOf(i); LC[0]=255; LC[1]=80+170*T; LC[2]=30; } return LC; }
+  if (G.lens==='flow'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.38; const f=Math.min(1,(G.q8?G.q8[i]:0)/200); LC[0]=g0*(1-f)+40*f; LC[1]=g0*(1-f)+170*f; LC[2]=g0*(1-f)+255*f; if (h<=0){ LC[0]=14;LC[1]=22;LC[2]=40; } return LC; }
   if (G.lens==='rain'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.4; const rn=G.rn8[i]/255; LC[0]=g0*(1-rn)+60*rn; LC[1]=g0*(1-rn)+150*rn; LC[2]=g0*(1-rn)+255*rn;
     if (wet){ LC[0]=LC[0]*0.5+15; LC[1]=LC[1]*0.5+35; LC[2]=LC[2]*0.5+80; } return LC; }
   return LC;
@@ -445,7 +568,7 @@ function renderRaster(){
       if (G.valid[i] && h[i]>0 && G.rock[i]===0){ const mo=m8[i]/255; const dry=Math.max(0,0.3-mo)*1.6; r+=(178-r)*dry*0.5; g+=(160-g)*dry*0.5; b+=(98-b)*dry*0.5; const v=Math.max(0,mo-0.35)*0.7; r+=(46-r)*v; g+=(96-g)*v; b+=(46-b)*v; }
       const wv=w8[i]; if (wv){ const a=WA[wv]; r=r*(1-a)+WR[wv]*a; g=g*(1-a)+WG[wv]*a; b=b*(1-a)+WB[wv]*a; } }
     const lv=L8[i]; if (lv){ const T=T8[i]/255; const a=Math.min(1,0.45+lv/60); const fl=((i+t)&3)*10*T; const lr=120+135*Math.min(1,T*1.4), lg=40+170*T*T+fl, lb=20+30*T*T; r=r*(1-a)+lr*a; g=g*(1-a)+lg*a; b=b*(1-a)+lb*a; }
-    if (G.jobAt[i]>=0){ r=r*0.7+255*0.3; g=g*0.7+210*0.3; b=b*0.7+80*0.3; }
+    if (G.jobAt[i]>=0 && !(jobById[G.jobAt[i]]||{}).done){ r=r*0.7+255*0.3; g=g*0.7+210*0.3; b=b*0.7+80*0.3; }
     d[o]=r; d[o+1]=g; d[o+2]=b; d[o+3]=255; }
   octx.putImageData(img,0,0); rasterDirty=false;
 }
@@ -454,13 +577,171 @@ function hexPath(p,i){ const [x,y]=cellXY(i); const [sx,sy]=worldToScreen(x,y); 
 function visibleCells(fn){ const [x0,y0]=screenToWorld(0,0), [x1,y1]=screenToWorld(CW,CH); const r0=Math.floor(y0/1.5)-1, r1=Math.ceil(y1/1.5)+1;
   for (let r=r0;r<=r1;r++){ const q0=Math.floor(x0/SQ3-r/2)-1, q1=Math.ceil(x1/SQ3-r/2)+1; for (let q=q0;q<=q1;q++){ if(!inArr(q,r)) continue; const i=idx(q,r); if (G.valid[i]) fn(i); } } }
 
+const lavaCache=new Map(); let lavaCacheStep=-1;
+function lavaPath(v){ if (G.step-lavaCacheStep>80){ lavaCache.clear(); lavaCacheStep=G.step; }
+  if (lavaCache.has(v)) return lavaCache.get(v);
+  const p=[v]; let c=v; const seen=new Set([v]);
+  for (let k=0;k<120;k++){ let best=-1, bh=G.h[c]+0.05; for (const d of NBa){ const j=c+d; if (!G.valid[j]||seen.has(j)) continue; if (G.h[j]<bh){ bh=G.h[j]; best=j; } }
+    if (best<0){ // flat or pit: step to the lowest unvisited neighbour anyway, lava will pool then spill
+      let lo=1e9; for (const d of NBa){ const j=c+d; if (G.valid[j]&&!seen.has(j)&&G.h[j]<lo){ lo=G.h[j]; best=j; } } if (best<0||G.h[best]>G.h[c]+3) break; }
+    if (wOf(best)>0.3 || G.h[best]<=0) { p.push(best); break; } c=best; seen.add(c); p.push(c); }
+  lavaCache.set(v,p); return p; }
+// ---------------- realm tile mode ----------------
+function tileOf(gq,gr){ for (const t of LIB.REALM_ORDER){ const T=LIB.REALM_TILES[t]; const q=gq-T.q, r=gr-T.r; if (Math.abs(q)<=R&&Math.abs(r)<=R&&Math.abs(q+r)<=R) return t; } return null; }
+function localToGlobal(t,i){ const T=LIB.REALM_TILES[t]; return [i%G.W-G.OFF+T.q, ((i/G.W)|0)-G.OFF+T.r]; }
+function upstreamInflow(){ // the upstream tile's latest card, mapped onto this tile's edge cells
+  const T=LIB.REALM_TILES[TILE]; if (!T.up) return []; const rs=realmState(); const card=(rs.tiles[T.up]||{}).card; if (!card) return [];
+  const out=[]; for (const k in card.edge){ const [gq,gr]=localToGlobal(T.up,+k); const q=gq-T.q, r=gr-T.r; if (Math.abs(q)>R||Math.abs(r)>R||Math.abs(q+r)>R) continue; out.push({cell:idx(q,r), bins:card.edge[k]}); }
+  return out; }
+function downstreamBound(){ const T=LIB.REALM_TILES[TILE]; const set=[]; if (!T.down) return set; G.bound.forEach((c,k)=>{ const [gq,gr]=localToGlobal(TILE,c); if (tileOf(gq,gr)===T.down) set.push(k); }); return set; }
+const CAP = { bins:new Float32Array(30) };
+function binOfYear(){ return Math.floor((G.step%G.yearSteps)/(G.yearSteps/30)); }
+function onYearCard(m){
+  const rs=realmState(); const T=LIB.REALM_TILES[TILE];
+  const card={ edge:m.edge, capital:Array.from(CAP.bins), lava:EX.lavaYear||0, obsidian:EX.obsYear||0, realmYear:rs.year, tileYear:m.year };
+  rs.tiles[TILE]=Object.assign(rs.tiles[TILE]||{}, {status:'settled', card}); saveRealm(rs);
+  let down=0; const dset=new Set(downstreamBound().map(k=>G.bound[k])); for (const k in m.edge) if (dset.has(+k)) down+=m.edge[k].reduce((a,b)=>a+b,0)*10;
+  log(`<b>Tile year complete.</b> Card sent to the realm: ${T.down?`${down.toFixed(0)} water flowed on to the ${LIB.REALM_TILES[T.down].name}; `:''}${card.capital.reduce((a,b)=>a+b,0)*10>0?`${(card.capital.reduce((a,b)=>a+b,0)*10).toFixed(0)} reached the capital; `:''}lava ${card.lava.toFixed(0)}, obsidian ${card.obsidian.toFixed(0)}.`);
+  CAP.bins.fill(0); EX.lavaYear=0; EX.obsYear=0; saveTile(); }
+function saveTile(){
+  if (!TMODE || !G.ready) return;
+  const dh=[], rk=[]; for (let i=0;i<G.N;i++){ const d=G.h[i]-G.hNat[i]; if (Math.abs(d)>0.01) dh.push([i, +d.toFixed(3)]); if (G.rock[i]) rk.push([i, G.rock[i]]); }
+  const st={ v:1, step:G.step, dh, rock:rk, ST, PRIO, typePaused, goalsDone, EX,
+    buildings: buildings.filter(b=>b.alive).map(b=>({type:b.type, i:b.i, paused:!!b.paused, got:b.got||0})),
+    jobs: jobs.map(j=>({kind:j.kind, a:j.a, b:j.b, width:j.width||1, mat:j.mat, cells:Array.from(j.cells), delta:Array.from(j.delta), applied:Array.from(j.applied), done:j.done})),
+    coll: collectorList(), quarries: buildings.filter(b=>b.alive&&b.type==='quarry').map(b=>{ const c=[]; disk(b.i,2,j=>c.push(j)); return {cells:c}; }), thumb: thumbnail() };
+  try { localStorage.setItem(TKEY, JSON.stringify(st)); } catch(e){ log('<span class="bad">Could not save this tile (browser storage full?).</span>'); }
+  const rs=realmState(); rs.tiles[TILE]=Object.assign(rs.tiles[TILE]||{}, {status:'settled'}); saveRealm(rs); }
+function thumbnail(){ const c=document.createElement('canvas'); const S=180; c.width=S; c.height=S; const x=c.getContext('2d'); const im=x.createImageData(S,S); const sc=S/(SQ3*(2*R+1));
+  for (let py=0;py<S;py++) for (let px=0;px<S;px++){ const i=worldToCell((px-S/2)/sc,(py-S/2)/sc), o=(py*S+px)*4; if (i<0||!G.valid[i]){ im.data[o+3]=0; continue; }
+    let r=G.base[i*3], g=G.base[i*3+1], b=G.base[i*3+2]; const wv=G.w8[i]; if (wv){ const a=WA[wv]; r=r*(1-a)+WR[wv]*a; g=g*(1-a)+WG[wv]*a; b=b*(1-a)+WB[wv]*a; } if (G.L8[i]){ r=255; g=120; b=30; }
+    im.data[o]=r; im.data[o+1]=g; im.data[o+2]=b; im.data[o+3]=255; }
+  x.putImageData(im,0,0); return c.toDataURL('image/png'); }
+function onTileCard(m){ if (pendingPreview[m.id]){ pendingPreview[m.id](m.card); delete pendingPreview[m.id]; } }
+const pendingPreview={};
+// ---------------- blueprints: intents anchored to features, re-solved on new terrain ----------------
+const BPKEY='ws-blueprints';
+const bpLoad=()=>{ try { return JSON.parse(localStorage.getItem(BPKEY)||'[]'); } catch(e){ return []; } };
+function uv(i){ return [G.qOf[i]/R, G.rOf[i]/R]; }
+function fromUV(u,v){ let q=Math.round(u*R), r=Math.round(v*R); while (Math.abs(q)+Math.abs(r)+Math.abs(q+r) > 2*R){ q=Math.round(q*0.95); r=Math.round(r*0.95); } return idx(q,r); }
+function sinks(){ return buildings.filter(b=>b.alive&&(b.type==='capital'||b.type==='gate')); }
+function downEdgeCells(){ if (!TMODE) return []; const out=[]; const ks=downstreamBound(); for (const k of ks){ const c=G.bound[k]; for (const d of NBa){ const j=c+d; if (G.valid[j]) { out.push(j); break; } } } return out; }
+function ventPath(){ if (!G.vents||!G.vents.length) return []; const v=G.vents[0].i; let c=v; const p=[c]; const seen=new Set([c]);
+  for (let k=0;k<60;k++){ let best=-1,bh=G.h[c]+0.05; for (const d of NBa){ const j=c+d; if (G.valid[j]&&!seen.has(j)&&G.h[j]<bh){ bh=G.h[j]; best=j; } } if (best<0) break; c=best; seen.add(c); p.push(c); } return p; }
+function anchorOf(kind, which, i, j){
+  if (kind==='channel' && which==='a'){ const dams=jobs.filter(x=>x.kind==='dam'); for (let d=0; d<dams.length; d++){ const [x1,y1]=cellXY(dams[d].a), [x2,y2]=cellXY(dams[d].b); const mid=worldToCell((x1+x2)/2,(y1+y2)/2); if (hexDist(mid,i)<=8) return {type:'reservoir', dam:d, uv:uv(i)}; } return {type:'water', uv:uv(i)}; }
+  if (kind==='channel' && which==='b'){ for (const s of sinks()) if (hexDist(s.i,i)<=6) return {type:'sink', uv:uv(i)}; for (const c of downEdgeCells()) if (hexDist(c,i)<=6) return {type:'edge', uv:uv(i)}; return {type:'pos', uv:uv(i)}; }
+  if (kind==='dam'){ const [x1,y1]=cellXY(i), [x2,y2]=cellXY(j); return {type:'damsite', uv:uv(worldToCell((x1+x2)/2,(y1+y2)/2))}; }
+  if (kind==='basin') return {type:'low', uv:uv(i)};
+  return {type:'pos', uv:uv(i)}; }
+function resolveAnchor(an){
+  const c=fromUV(an.uv[0],an.uv[1]); const rad=Math.round(R*0.28);
+  if (an.type==='water'){ let best=-1, bs=1e9; disk(c,rad,(j,d)=>{ const q=qOf(j); if (q>0.3&&G.h[j]>0.5){ const sc=d*0.15-Math.log(1+q)*6; if (sc<bs){ bs=sc; best=j; } } }); return best; }   // a river with real discharge, near the same spot
+  if (an.type==='sink'){ let best=-1, bd=1e9; for (const s of sinks()){ const d=hexDist(s.i,c); if (d<bd){ bd=d; best=s.i; } } if (best>=0) return best; }
+  if (an.type==='edge'||an.type==='sink'){ let best=-1, bd=1e9; for (const e of downEdgeCells()){ const d=hexDist(e,c); if (d<bd){ bd=d; best=e; } } return best>=0?best:c; }
+  if (an.type==='low'){ let best=c; disk(c,6,j=>{ if (G.h[j]<G.h[best]&&G.h[j]>0) best=j; }); return best; }
+  return c; }
+function damSite(r, rise){ // shortest straight cross-section through river cell r whose both ends stand `rise` m above the water
+  rise=rise||2.5; const surf=G.h[r]+wOf(r); let best=null, bl=1e9; let down=0, lo=1e9; NBa.forEach((d,k)=>{ const v=G.h[r+d]+wOf(r+d); if (v<lo){ lo=v; down=k; } });
+  const patterns=[]; for (let d=0; d<3; d++){ patterns.push([[d],[d+3]]); patterns.push([[d,(d+1)%6],[(d+3)%6,(d+4)%6]]); }
+  for (const [p1,p2] of patterns){ if (p1.includes(down)||p2.includes(down)||p1.includes((down+3)%6)&&p1.length===1) continue;
+    const walk=(dirs)=>{ let c=r; for (let s=0;s<22;s++){ c=c+NBa[dirs[s%dirs.length]%6]; if (!G.valid[c]||G.h[c]<=0) return null; if (G.h[c]>surf+rise) return [c,s+1]; } return null; };
+    const a=walk(p1), b=walk(p2); if (!a||!b) continue; if (a[1]+b[1]<bl){ bl=a[1]+b[1]; best=[a[0],b[0]]; } }
+  if (best){ best.river=r; best.down=down; } return best; }
+function damAcross(c){ // a river cell near c, then walk both banks until the ground stands 3 m above the water
+  const cand=[]; disk(c,Math.round(R*0.28),(j,d)=>{ const q=qOf(j); if (q>0.5&&G.h[j]>0.5) cand.push([d*0.15-Math.log(1+q)*6, j]); }); cand.sort((x,y)=>x[0]-y[0]);
+  for (const [,j] of cand.slice(0,40)){ const s=damSite(j); if (s) return s; } return null;
+  let r=-1, bd=1e9;
+  let k=0, lo=1e9; NBa.forEach((d,kk)=>{ const v=G.h[r+d]+wOf(r+d); if (v<lo){ lo=v; k=kk; } }); const surf=G.h[r]+wOf(r);
+  const walk=(dirs)=>{ let c2=r; for (let s=0;s<16;s++){ c2=c2+NBa[dirs[s%2]]; if (!G.valid[c2]) break; if (G.h[c2]>surf+3) return c2; } return c2; };
+  const ends=[walk([(k+1)%6,(k+2)%6]), walk([(k+4)%6,(k+5)%6])]; ends.river=r; ends.down=k; return ends; }
+function makeBlueprint(name){
+  const vp=ventPath();
+  const bp={ name, created:Date.now(), from: TMODE?`${LIB.REALM_TILES[TILE].name} (realm ${REALM})`:`island ${SEED}`, tile: TMODE?TILE:null,
+    jobs: jobs.slice().sort((x,y)=>(x.kind==='dam'?0:1)-(y.kind==='dam'?0:1)).map(j=>({kind:j.kind, width:j.width||1, mat:j.mat, A:anchorOf(j.kind,'a',j.a,j.b), B:anchorOf(j.kind,'b',j.b,j.a)})),
+    buildings: buildings.filter(b=>b.alive&&['farm','house','lavatrap'].includes(b.type)).map(b=>({type:b.type, uv:uv(b.i), rank: b.type==='lavatrap'? vp.indexOf(b.i) : -1})) };
+  return bp; }
+function applyBlueprintPlans(bp){
+  const plans=[], placed=[]; const oldW=width, oldM=mat; const damsResolved=[];
+  const order=bp.jobs.map((j,k)=>k).sort((x,y)=>(bp.jobs[x].kind==='dam'?0:1)-(bp.jobs[y].kind==='dam'?0:1));   // dams first, so reservoirs exist for channels
+  for (const k of order){ const j=bp.jobs[k]; width=j.width; mat=j.mat; let a,b;
+    if (j.kind==='dam'){ const ab=damAcross(fromUV(j.A.uv[0],j.A.uv[1])); damsResolved.push(ab); if (!ab) continue; [a,b]=ab; }
+    else if (j.A.type==='reservoir'){ const dr=damsResolved[j.A.dam]; if (dr){ a=dr.river-NBa[dr.down]; } else a=resolveAnchor({type:'water', uv:j.A.uv}); b=resolveAnchor(j.B); }
+    else { a=resolveAnchor(j.A); b=j.kind==='basin'? a : resolveAnchor(j.B); }
+    if (a<0||b<0||a===undefined||b===undefined) continue; const p=planJob(j.kind,a,b); p.fromBp=true; plans.push(p); }
+  width=oldW; mat=oldM;
+  const vp=ventPath();
+  for (const b of bp.buildings){ let at=-1;
+    if (b.type==='lavatrap'){ if (b.rank>=0 && vp.length){ for (let d=0; d<6 && at<0; d++){ const c=vp[Math.min(b.rank+d, vp.length-1)]; if (c!==undefined && G.occ[c]<0 && G.h[c]>0.5) at=c; } } }
+    else { const c=fromUV(b.uv[0],b.uv[1]); let bs=-1e9; disk(c,10,j=>{ if (G.occ[j]>=0||wOf(j)>0.05||G.h[j]<0.5||lOf(j)>0.01||placed.includes(j)) return; const sc = b.type==='farm'? G.m8[j] : -hexDist(j,c); if (sc>bs){ bs=sc; at=j; } }); }
+    if (at>=0){ placed.push(at); plans.push({building:b.type, i:at}); } }
+  return plans; }
+// headless preview in a second worker so the live game keeps running
+let pvWorker=null; let pvId=0;
+function previewYear(extraDh, extraColl){ if (!pvWorker){ pvWorker=new Worker(URL.createObjectURL(new Blob([SIMSRC],{type:'text/javascript'}))); pvWorker.onerror=e=>{ log('<span class="bad">Preview simulation failed: '+(e.message||'error')+'</span>'); for (const k in pendingPreview){ pendingPreview[k]({edge:{},capital:[],lava:0,obsidian:0}); delete pendingPreview[k]; } }; pvWorker.onmessage=e=>{ const m=e.data; if (m.type==='tileCard'&&pendingPreview[m.id]){ pendingPreview[m.id](m.card); delete pendingPreview[m.id]; } }; }
+  return new Promise(res=>{ const id=++pvId; pendingPreview[id]=res;
+    const dh=[]; for (let i=0;i<G.N;i++){ const d=G.h[i]-G.hNat[i]; if (Math.abs(d)>0.01) dh.push([i,d]); } for (const [i,d] of extraDh) dh.push([i,d]);
+    const rk=[]; for (let i=0;i<G.N;i++) if (G.rock[i]) rk.push([i,G.rock[i]]);
+    pvWorker.postMessage({type:'runTile', id, R, seed:SEED, tile:TILE, realm:REALM, inflow: TMODE? upstreamInflow() : [], restore:{dh, rock:rk}, coll: collectorList().concat(extraColl||[]).map(c=>Object.assign({},c,{held:0,active:true})), quarries:[] }); }); }
+function cardScore(card){ // what this tile is for: water to the sink or downstream, dry-season weighted
+  let tot=0, dry=0; const add=(v,b)=>{ tot+=v*10; if (b>=17&&b<=27) dry+=v*10; };
+  if (sinks().length) card.capital.forEach(add); else { const dset=new Set(downstreamBound().map(k=>G.bound[k])); for (const k in card.edge) if (dset.has(+k)) card.edge[k].forEach(add); }
+  return {tot, dry, lava:card.lava, value: tot + 2*dry + 3*card.lava}; }
+// ---------------- blueprint UI ----------------
+async function saveBlueprintUI(){
+  if (!jobs.length) return flash('nothing to record yet — build some earthworks first');
+  const name=`${TMODE?LIB.REALM_TILES[TILE].name:'Island '+SEED} · ${jobs.length} works · Y${1+Math.floor(G.step/G.yearSteps)}`;
+  const bp=makeBlueprint(name); log('Measuring the blueprint (a headless year)…'); const card=await previewYear([],[]); bp.score=cardScore(card);
+  const lib=bpLoad(); lib.unshift(bp); localStorage.setItem(BPKEY, JSON.stringify(lib.slice(0,12)));
+  log(`Saved blueprint <b>${name}</b>: ${bp.score.tot.toFixed(0)} water/yr (${bp.score.dry.toFixed(0)} dry), lava ${bp.score.lava.toFixed(0)}.`); refreshTools(); }
+let bpState=null;
+function openBlueprintUI(){ const lib=bpLoad(); const P=$('#bp');
+  if (!lib.length){ P.innerHTML=`<b>No blueprints yet.</b><div class="dim">Develop a tile or island, then press <i>Save blueprint</i>. It records your works as rules — "a channel from the nearest river to the sink", "a dam across the river here", "lava traps 5 and 10 hexes down the vent path" — so they can be re-solved on any other terrain.</div><div style="text-align:right;margin-top:8px"><button class="b" id="bpClose">Close</button></div>`; P.classList.remove('hidden'); $('#bpClose').onclick=()=>P.classList.add('hidden'); return; }
+  P.innerHTML=`<b>Apply a blueprint</b><div class="dim" style="margin:3px 0 6px">Each work is re-solved for this terrain. A preview simulates this tile for a year with and without it.</div>`+lib.map((b,k)=>`<div class="job" data-bp="${k}"><span>${b.name}<br><span class="dim">from ${b.from} · source: ${b.score?b.score.tot.toFixed(0)+' water/yr, '+b.score.dry.toFixed(0)+' dry':'?'}</span></span><span></span><span></span></div>`).join('')+`<div id="bpOut" style="margin-top:6px"></div><div style="text-align:right;margin-top:8px"><button class="b" id="bpClose">Close</button></div>`;
+  P.classList.remove('hidden'); $('#bpClose').onclick=()=>P.classList.add('hidden');
+  P.querySelectorAll('[data-bp]').forEach(el=>el.onclick=()=>previewBlueprint(lib[+el.dataset.bp])); }
+async function previewBlueprint(bp){
+  const out=$('#bpOut'); out.innerHTML='<span class="dim">Re-solving the works for this terrain…</span>';
+  const plans=applyBlueprintPlans(bp); const works=plans.filter(p=>!p.building), blds=plans.filter(p=>p.building);
+  const missing=[]; if (works.length<bp.jobs.length) missing.push(`${bp.jobs.length-works.length} of ${bp.jobs.length} works found no matching feature here (e.g. no river near a dam site)`);
+  const wantTraps=bp.buildings.filter(b=>b.type==='lavatrap').length, gotTraps=blds.filter(b=>b.building==='lavatrap').length; if (wantTraps>gotTraps) missing.push(`${wantTraps-gotTraps} lava trap${wantTraps-gotTraps>1?'s':''} skipped — ${G.vents.length?'the vent path is shorter here':'no vent on this tile'}`);
+  const dh=[]; let cut=0, fill=0; for (const p of works) p.cells.forEach((c,k)=>{ dh.push([c,p.delta[k]]); if (p.delta[k]<0) cut-=p.delta[k]; else fill+=p.delta[k]; });
+  const extraColl=blds.filter(b=>b.building==='lavatrap').map((b,k)=>{ const cells=[]; disk(b.i,1,j=>{ if (G.h[j]>0.5) cells.push(j); }); return {id:9000+k, type:'lavatrap', rate:0, cap:60, cells, active:true}; });
+  out.innerHTML='<span class="dim">Simulating a year without it, then with it (~15 s)…</span>';
+  const base=cardScore(await previewYear([],[])), withBp=cardScore(await previewYear(dh,extraColl));
+  const src=bp.score||{tot:1,dry:1,lava:0}; const pct=src.tot>0? 100*withBp.tot/src.tot : 0, pctDry=src.dry>0? 100*withBp.dry/src.dry : 0;
+  const days=Math.ceil((cut+fill)/Math.max(0.1,ST.crew*1.5)); const credit=Math.round((cut+fill)*0.05), foodCost=Math.round((cut+fill)*0.25);
+  bpState={plans, works, blds, dh, cut, fill};
+  out.innerHTML=`<div class="box2"><b>Prediction for this tile</b> <span class="dim">(headless year)</span>
+    <div>without the blueprint: ${base.tot.toFixed(0)} water (${base.dry.toFixed(0)} dry) · lava ${base.lava.toFixed(0)}</div>
+    <div>with it: <b>${withBp.tot.toFixed(0)}</b> water (<b>${withBp.dry.toFixed(0)}</b> dry) · lava ${withBp.lava.toFixed(0)}</div>
+    <div>= <b class="${pct>=60?'good':'warn'}">${pct.toFixed(0)}%</b> of the source tile's water, <b>${pctDry.toFixed(0)}%</b> of its dry-season water</div>
+    ${missing.length?`<div class="warn">${missing.join('; ')}.</div>`:''}
+    <div class="dim">${works.length} works: ${cut.toFixed(0)} to cut, ${fill.toFixed(0)} to fill (~${days} days with ${ST.crew} diggers) · ${blds.length} buildings</div></div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="b on" id="bpQueue">Queue for your settlers</button><button class="b" id="bpNow">Build it now (${TMODE?credit+' realm credits':foodCost+' food for hired crews'})</button></div>`;
+  $('#bpQueue').onclick=()=>commitBlueprint(false); $('#bpNow').onclick=()=>commitBlueprint(true, TMODE?credit:foodCost); }
+function commitBlueprint(instant, cost){
+  const S=bpState; if (!S) return;
+  if (instant){ if (TMODE){ const rs=realmState(); if ((rs.credits||0)<cost) return flash('not enough realm credits'); rs.credits-=cost; saveRealm(rs); } else { if (ST.food<cost) return flash('not enough food to hire the crews'); ST.food-=cost; } }
+  for (const p of S.works){ addJob(p); if (instant){ const j=jobs[jobs.length-1]; const cells=[], dhs=[]; j.cells.forEach((c,k)=>{ cells.push(c); dhs.push(j.delta[k]); j.applied[k]=j.delta[k]; G.h[c]+=j.delta[k]; baseColor(c); });
+      pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); j.done=true; if (j.kind!=='dam') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; } }
+  for (const b of S.blds){ if (validPlacement(b.building,b.i)===null){ placeBuilding(b.building,b.i); } }
+  sendOps(); allocate(); syncCollectors(); renderWork(); rasterDirty=true; $('#bp').classList.add('hidden');
+  log(instant? '<b class="good">Blueprint built.</b> The land has been reshaped — boom.' : `Blueprint queued: ${S.works.length} works for your settlers.`); if (instant) goal('channel'); }
+// ---------------- works card (the level below) ----------------
+const DEFAULT_CARD={ rates:[0.01,0.03,0.06], yield:[0.04,0.04,0.05], steam:[0.7,0.25,0.15], clog:[0.78,0.8,0.69] };
+function worksCard(){ try { const s=JSON.parse(localStorage.getItem('ws-works-card')||'null'); if (s&&s.card) return Object.assign({sealed:true}, s.card); } catch(e){} return DEFAULT_CARD; }
+function yieldAt(card, lr, cl){ const r=card.rates; const rowAt=(k)=>{ if (!card.grid) return card.yield[k]; const bins=card.clBins; const c=Math.min(cl||0, bins[bins.length-1]); let j=0; while (j<bins.length-2 && c>bins[j+1]) j++; const t=(c-bins[j])/Math.max(1e-9,bins[j+1]-bins[j]); return card.grid[k][j]*(1-t)+card.grid[k][j+1]*t; };
+  if (lr<=r[0]) return rowAt(0); for (let k=0;k<r.length-1;k++) if (lr<=r[k+1]){ const t=(lr-r[k])/(r[k+1]-r[k]); return rowAt(k)*(1-t)+rowAt(k+1)*t; } return rowAt(r.length-1); }
 // ---------------- economy ----------------
 const BT = {
   camp:     { name:'Camp', cost:{}, housing:12, workers:0, col:'#f2d29b', glyph:'⌂', tip:'Your settlement. Foragers bring food without workers. Cannot be destroyed; move it if threatened.' },
   house:    { name:'House', cost:{earth:25}, housing:6, workers:0, col:'#e8b878', glyph:'■', tip:'+6 housing.' },
   farm:     { name:'Farm', cost:{earth:15}, workers:2, area:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture within 2 hexes. Floods and lava ruin it.' },
-  gate:     { name:'Export gate', cost:{}, workers:0, area:1, rate:8, col:'#7cc4ff', glyph:'⇲', tip:'Where water leaves the island for export, up to 8/day per gate. Rivers do not come here on their own — dig channels to it. Each gate fills separately, so feeding all of them pays.' },
-  lavatrap: { name:'Lava trap', cost:{earth:40}, workers:1, area:1, rate:2, col:'#ff8a3c', glyph:'▼', tip:'Collects molten lava on its 7 hexes, up to 2/day, for export. Lava-proof. Put it on a lava path.' },
+  capital:  { name:'Capital terminal', cost:{}, workers:0, area:1, rate:40, col:'#ffd36b', glyph:'♛', tip:'The realm\'s capital takes delivery here (up to 40/day). Water that reaches it is the realm\'s export — worth 3× in the dry season. Bring rivers here with channels; store upstream for the dry season.' },
+  gate:     { name:'Export gate', cost:{}, workers:0, area:1, rate:20, col:'#7cc4ff', glyph:'⇲', tip:'Where water leaves the island for export, up to 20/day per gate. Dry-season water sells for 3×. Rivers do not come here on their own — dig channels to it. Each gate fills separately, so feeding all of them pays.' },
+  lavatrap: { name:'Lava trap', cost:{earth:40}, workers:2, area:1, cap:60, col:'#ff8a3c', glyph:'▼', tip:'A pit that swallows molten lava flowing over its 7 hexes (holds 60). Its 2 workers ladle out 4/day for export; lava left in the pit slowly freezes to worthless slag. Put several on an eruption\'s path (dashed line in the heat lens).' },
+  quench:   { name:'Quench works', cost:{earth:60}, workers:2, area:1, cap:30, wcap:60, col:'#c9a0ff', glyph:'⌬', tip:'Fed by BOTH a lava path and a water channel, it turns them into obsidian — at the rates of the device you designed in the Works (or the default design). Basalt slowly clogs it; its workers clear it.' },
   quarry:   { name:'Obsidian quarry', cost:{earth:30}, workers:2, area:2, col:'#b48cff', glyph:'◆', tip:'Cuts obsidian rock within 2 hexes (0.6/day). Obsidian forms where lava is quenched by water.' },
 };
 const EW = { // earthwork intents
@@ -469,10 +750,11 @@ const EW = { // earthwork intents
   levee:   { name:'Levee', two:true, tip:'Click start, then end. Raises a bank 1.5 m along the line to keep a river out.' },
   basin:   { name:'Basin', two:false, tip:'Click a spot. Excavates a flat-bottomed pond (radius = width) to catch water.' },
 };
-const ST = { food:80, earth:150, obsidian:0, water:0, lava:0, pop:10, popAcc:0, housing:0, idle:0, crew:0 };
-const EX = { year:1, water:0, lava:0, obsidian:0 };
+const ST = { food:80, earth:150, obsidian:0, water:0, lava:0, pop:10, popAcc:0, housing:0, idle:0, crew:0, hired:0 };
+const EX = { year:1, water:0, lava:0, obsidian:0, value:0 };
+function waterPrice(){ const sf=G.season||1; return sf<0.6?3 : sf<1.2?1.5 : 1; }
 const RATE = {}; let dayFlow = {};
-const PRIO = ['farm','lavatrap','quarry','earthworks'];
+const PRIO = ['farm','lavatrap','quench','quarry','earthworks'];
 const typePaused = {};
 const buildings=[], jobs=[]; let jobSeq=0;
 let tool='inspect', width=1, mat='earth', firstClick=-1, selB=-1, selJ=-1;
@@ -488,20 +770,23 @@ function placeBuilding(type,i,free){ const bt=BT[type]; const b={id:buildings.le
 function validPlacement(type,i){
   if (i<0||!G.valid[i]) return 'off the map'; if (G.h[i]<=0.3) return 'needs land';
   if (G.occ[i]>=0) return 'occupied';
-  if (type!=='cistern' && type!=='lavatrap' && wOf(i)>0.1) return 'needs dry land';
-  if (type!=='lavatrap' && lOf(i)>0.01) return 'lava here';
+  if (type!=='cistern' && type!=='lavatrap' && type!=='quench' && wOf(i)>0.1) return 'needs dry land';
+  if (type!=='lavatrap' && type!=='quench' && lOf(i)>0.01) return 'lava here';
   if (type==='quarry'){ let ok=false; disk(i,2,j=>{ if (G.rock[j]===3) ok=true; }); if (!ok) return 'no obsidian rock within 2 hexes'; }
   if (!canAfford(BT[type].cost)) return 'cannot afford ('+costStr(BT[type].cost)+')';
   return null; }
+function collectorList(){ const list=[]; for (const b of buildings){ if (!b.alive || (b.type!=='gate'&&b.type!=='lavatrap'&&b.type!=='capital'&&b.type!=='quench')) continue; const cells=[]; disk(b.i,1,j=>{ if ((G.hNat||G.h)[j]>0.5) cells.push(j); });
+    list.push({id:b.id, type:b.type==='lavatrap'?'lavatrap':b.type==='quench'?'quench':'cistern', rate:BT[b.type].rate||0, cap:BT[b.type].cap||0, wcap:BT[b.type].wcap||0, cells, active:(b.type!=='lavatrap'&&b.type!=='quench') || (b.active&&!b.flooded)}); } return list; }
 function syncCollectors(){
+  if (G.ready||true){ pendingOps.push({op:'coll', list:collectorList()}); sendOps(); return; }
   const list=[]; for (const b of buildings){ if (!b.alive || (b.type!=='gate'&&b.type!=='lavatrap')) continue; const cells=[]; disk(b.i,1,j=>{ if (G.h[j]>0.5) cells.push(j); });
-    list.push({id:b.id, type:b.type==='gate'?'cistern':'lavatrap', rate:BT[b.type].rate, cells, active:b.type==='gate' || (b.active&&!b.flooded)}); }
+    list.push({id:b.id, type:b.type==='gate'?'cistern':'lavatrap', rate:BT[b.type].rate||0, cap:BT[b.type].cap||0, cells, active:b.type==='gate' || (b.active&&!b.flooded)}); }
   pendingOps.push({op:'coll', list}); sendOps(); }
 function allocate(){
   let free=ST.pop; ST.crew=0;
   for (const b of buildings){ if (!b.alive) continue; const w=BT[b.type].workers; b.active=!w; b.why=w?'':null; }
   PRIO.forEach((t,rank)=>{
-    if (t==='earthworks'){ if (typePaused.earthworks){ ST.crew=0; return; } ST.crew=free; free=0; return; }
+    if (t==='earthworks'){ if (typePaused.earthworks){ ST.crew=0; return; } ST.crew=free+(ST.hired||0); free=0; return; }
     for (const b of buildings.filter(b=>b.alive&&b.type===t)){ const w=BT[t].workers;
       if (typePaused[t]){ b.active=false; b.why='typepaused'; continue; } if (b.paused){ b.active=false; b.why='paused'; continue; }
       if (free>=w){ b.active=true; b.why=''; free-=w; } else { b.active=false; b.why='unstaffed'; b.rank=rank+1; } } });
@@ -511,13 +796,13 @@ function economyCatchUp(){ while (G.step-lastEcoStep>=DAY){ lastEcoStep+=DAY; ec
 function addFlow(r,src,v){ dayFlow[r+'|'+src]=(dayFlow[r+'|'+src]||0)+v; }
 function economyDay(){
   ecoDays++;
-  for (const b of buildings){ if (b.type==='gate'){ const g=b.got||0; b.rate=(b.rate||0)*0.9+(g-(b.prevGot||0))*0.1; b.prevGot=g; } }
+  for (const b of buildings){ if (b.type==='gate'||b.type==='capital'){ const g=b.got||0; b.rate=(b.rate||0)*0.9+(g-(b.prevGot||0))*0.1; b.prevGot=g; } }
   const prevActive = buildings.map(b=>b.active&&!b.flooded);
   allocate();
   for (const b of buildings){ if (!b.alive) continue; const bt=BT[b.type];
-    b.flooded = wOf(b.i)>0.3 && b.type!=='gate';
+    b.flooded = wOf(b.i)>0.3 && b.type!=='gate' && b.type!=='capital' && b.type!=='quench';
     const lava = lOf(b.i)>0.03 && tOf(b.i)>0.35;
-    if (lava && b.type!=='lavatrap'){ if (b.type==='camp'){ b.inLava=true; } else { destroy(b,'lava'); continue; } } else b.inLava=false;
+    if (lava && b.type!=='lavatrap' && b.type!=='quench'){ if (b.type==='camp'){ b.inLava=true; } else { destroy(b,'lava'); continue; } } else b.inLava=false;
     if (b.flooded) b.hp-=(b.type==='farm'?3:1.5); else if (b.hp<100) b.hp=Math.min(100,b.hp+0.5);
     if (b.type==='camp' && b.hp<1) b.hp=1;
     if (b.hp<=0){ destroy(b,'flood'); continue; }
@@ -525,10 +810,18 @@ function economyDay(){
     if (!b.active || b.flooded || b.inLava) continue;
     if (b.type==='camp'){ addFlow('food','camp foragers',0.45); }
     else if (b.type==='farm'){ const mo=avgMoist(b.i); b.moist=mo; b.yield=farmYield(mo); addFlow('food','farms',b.yield); }
+    else if (b.type==='quench'){ const st=(G.quench||{})[b.id]||{lava:0,water:0}; const card=worksCard(); const steamPer=(card.steam?card.steam[1]:0.3)+0.2;
+      const use=Math.min(st.lava, 3, st.water/steamPer); b.store=st; b.cl=b.cl||0;
+      if (use>0.01){ const lr=0.01+0.05*Math.min(1,use/3); const y=yieldAt(card, lr, b.cl*2); const ob=use*y; b.yield=ob; b.lastYield=y;
+        pendingOps.push({op:'quenchUse', id:b.id, lava:use, water:use*steamPer}); ST.obsidian+=ob; addFlow('obsidian','quench works',ob); EX.obsidian+=ob; EX.value+=10*ob; EX.obsYear=(EX.obsYear||0)+ob; b.cl+=use; b.got=(b.got||0)+ob; }
+      b.cl=Math.max(0,b.cl-0.5); }
+    else if (b.type==='lavatrap'){ const held=(G.traps||{})[b.id]||0; b.held=held; if (held>0.01) pendingOps.push({op:'harvest', id:b.id, amt:4}); }
     else if (b.type==='quarry'){ const cells=[]; disk(b.i,2,j=>{ if (G.rock[j]===3) cells.push(j); }); if (cells.length) pendingOps.push({op:'mine', id:b.id, cells, amt:0.6}); else if (!b.dry){ b.dry=true; log('An obsidian quarry has cut all its rock.'); } }
   }
   if (buildings.some((b,k)=>(b.active&&!b.flooded)!==prevActive[k] && b.type==='lavatrap')) syncCollectors();
   addFlow('food','settlers eat',-0.06*ST.pop);
+  if (ST.hired>0){ if (ST.food>ST.hired*0.4){ addFlow('food','hired crews',-0.4*ST.hired); } else { ST.hired=0; log('<span class="warn">Not enough food to pay the hired crews — they left.</span>'); } }
+  checkDams();
   // earthworks
   workJobs();
   // apply food & record rates
@@ -545,8 +838,9 @@ function economyDay(){
   while (ST.popAcc>=1 && ST.pop<ST.housing){ ST.pop++; ST.popAcc-=1; } if (ST.pop>=ST.housing&&ST.popAcc>0) ST.popAcc=0;
   let starved=0; while (ST.popAcc<=-1&&ST.pop>0){ ST.pop--; ST.popAcc+=1; starved++; } if (starved) log(`<span class="bad">${starved} settler${starved>1?'s':''} starved.</span>`);
   // year roll
-  const yr=1+Math.floor(G.step/G.yearSteps); if (yr!==EX.year){ const v=exportValue(); log(`<b>Year ${EX.year} closed:</b> exports worth ${v.toFixed(0)} (charter ${charterTarget(EX.year)}). ${v>=charterTarget(EX.year)?'<span class="good">Charter met.</span>':'<span class="warn">Charter missed.</span>'}`);
-    if (v>=charterTarget(EX.year)) goal('charter'+Math.min(EX.year,3)); EX.year=yr; EX.water=0; EX.lava=0; EX.obsidian=0; }
+  const yr=1+Math.floor(G.step/G.yearSteps); if (yr!==EX.year && TMODE){ EX.year=yr; EX.water=0; EX.lava=0; EX.obsidian=0; EX.value=0; }
+  if (yr!==EX.year){ const v=exportValue(); log(`<b>Year ${EX.year} closed:</b> exports worth ${v.toFixed(0)} (charter ${charterTarget(EX.year)}). ${v>=charterTarget(EX.year)?'<span class="good">Charter met.</span>':'<span class="warn">Charter missed.</span>'}`);
+    if (v>=charterTarget(EX.year)) goal('charter'+Math.min(EX.year,3)); EX.year=yr; EX.water=0; EX.lava=0; EX.obsidian=0; EX.value=0; G.lastYearRunoff=G.runoff-G.runoffYearStart; G.runoffYearStart=G.runoff; }
   checkGoals(); sendOps();
   if (ecoDays%2===0){ renderWork(); renderSel(); renderAdvice(); }
 }
@@ -554,8 +848,10 @@ function avgMoist(i){ let s=0,n=0; disk(i,2,j=>{ s+=G.m8[j]/255; n++; }); return
 const farmYield=mo=>1.6*Math.max(0,mo-0.15)/0.85;
 function destroy(b,why){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.type]; if (bt.housing) ST.housing-=bt.housing; if (selB===b.id){ selB=-1; renderSel(); }
   log(why==='demolish'? `Demolished your ${bt.name}.` : `<b class="bad">Your ${bt.name} was ${why==='lava'?'buried by lava':'destroyed by flooding'}.</b>`); syncCollectors(); }
-const exportValue=()=>EX.water+3*EX.lava+10*EX.obsidian;
-const charterTarget=y=> y===1?600 : y===2?2400 : y===3?5000 : 5000*Math.pow(1.5,y-3);
+const exportValue=()=>EX.value;
+// the charter scales with this island's own hydrology: a rising share of last year's runoff, at the average season price
+const CHARTER_FRAC=[0,0.04,0.10,0.18,0.28,0.40];
+function charterTarget(y){ const f=CHARTER_FRAC[Math.min(y,5)]||0.8; const R = G.lastYearRunoff || (0.14*(G.landCells||40000)); return Math.round(f*R*1.8/10)*10; }
 function netRate(r){ let t=0; for (const k in (RATE[r]||{})) t+=RATE[r][k]; return t; }
 
 // ---------------- earthworks ----------------
@@ -568,7 +864,9 @@ function routePath(a,b){ // Dijkstra preferring low ground
   const pop=()=>{ const top=hI[0]; const li=hI.pop(), lv=hV.pop(); if (hI.length){ hI[0]=li; hV[0]=lv; let k=0; for(;;){ let c=2*k+1; if (c>=hI.length) break; if (c+1<hI.length&&hV[c+1]<hV[c]) c++; if (hV[c]>=hV[k]) break; [hI[k],hI[c]]=[hI[c],hI[k]]; [hV[k],hV[c]]=[hV[c],hV[k]]; k=c; } } return top; };
   dist[a]=0; push(a,0);
   while (hI.length){ const c=pop(); if (c===b) break; for (const d of NBa){ const j=c+d; if (!G.valid[j]||G.h[j]<=0) continue; if (hexDist(j,a)+hexDist(j,b)>D+2*lim) continue;
-      const cost=1+0.25*Math.max(0,G.h[j]-ref) + (G.occ[j]>=0?50:0); const nd=dist[c]+cost; if (nd<dist[j]){ dist[j]=nd; prev[j]=c; push(j,nd); } } }
+      const dj=G.jobAt[j]>=0? jobById[G.jobAt[j]] : null;
+      const cost=1+0.25*Math.max(0,G.h[j]-ref) + (G.occ[j]>=0?50:0) + (dj&&dj.kind==='dam'?400:0) + (G.rock[j]===1||G.rock[j]===3?60:0) + (hexDist(j,a)>3? 3*Math.log(1+qOf(j)) : 0);   // never through a dam; don't ride the river you are diverting
+      const nd=dist[c]+cost; if (nd<dist[j]){ dist[j]=nd; prev[j]=c; push(j,nd); } } }
   if (prev[b]<0 && a!==b) return hexLine(a,b);
   const p=[]; for (let c=b; c>=0; c=prev[c]){ p.push(c); if (c===a) break; } return p.reverse(); }
 function widen(path, wdt){ if (wdt<=1) return path.slice(); const set=new Set(path); const out=path.slice(); const rad=wdt>=3?1:1;
@@ -576,17 +874,22 @@ function widen(path, wdt){ if (wdt<=1) return path.slice(); const set=new Set(pa
 function planJob(kind, a, b){
   let cells=[], target=[];
   if (kind==='channel'){ let p=routePath(a,b); if (G.h[p[0]]<G.h[p[p.length-1]]) p=p.reverse(); // run downhill
-    const bed=[]; let prev=G.h[p[0]]-0.8; for (let k=0;k<p.length;k++){ const v=Math.min(G.h[p[k]]-0.8, k?prev-0.03:prev); bed.push(v); prev=v; }
+    const bed=[]; let prev=G.h[p[0]]-0.8; for (let k=0;k<p.length;k++){ const v=Math.max(0.3, Math.min(G.h[p[k]]-0.8, k?prev-0.03:prev)); bed.push(v); prev=v; }   // never below sea level: the sea would flood in
     const tmap=new Map(); p.forEach((c,k)=>tmap.set(c,bed[k])); const all=widen(p,width);
-    for (const c of all){ let t=tmap.get(c); if (t===undefined){ let best=1e9; for (const d of NBa){ const v=tmap.get(c+d); if (v!==undefined) best=Math.min(best,v); } t=Math.min(G.h[c], best+0.3); } cells.push(c); target.push(Math.min(G.h[c],t)); } }
+    for (const c of all){ let t=tmap.get(c); if (t===undefined){ let best=1e9; for (const d of NBa){ const v=tmap.get(c+d); if (v!==undefined) best=Math.min(best,v); } t=Math.min(G.h[c], best+0.3); } cells.push(c); target.push(Math.min(G.h[c],t)); }
+    // banks: wherever the ground beside the channel is lower than the water would stand, build it up (an aqueduct) — except at the intake and the outlet
+    const inCh=new Set(all), bank=new Map();
+    p.forEach((c,k)=>{ if (k<1 || k>=p.length-2) return; const want=bed[k]+1.0; for (const d of NBa){ const n=c+d; if (inCh.has(n)||!G.valid[n]||G.occ[n]>=0) continue; if (G.h[n]<want) bank.set(n, Math.max(bank.get(n)||-1e9, want)); } });
+    for (const [n,t] of bank){ cells.push(n); target.push(t); } }
   else if (kind==='dam'){ const line=widen(hexLine(a,b),width); const crest=Math.min(G.h[a],G.h[b]); for (const c of line){ cells.push(c); target.push(Math.max(G.h[c],crest)); } }
   else if (kind==='levee'){ const line=widen(hexLine(a,b),width); for (const c of line){ cells.push(c); target.push(G.h[c]+1.5); } }
   else if (kind==='basin'){ const rad=Math.max(2,width+1); let floor=1e9; disk(a,rad,j=>{ floor=Math.min(floor,G.h[j]); }); floor-=1.5; disk(a,rad,j=>{ cells.push(j); target.push(Math.min(G.h[j],floor)); }); }
   const delta=target.map((t,k)=>t-G.h[cells[k]]); let cut=0, fill=0; delta.forEach(d=>{ if (d<0) cut-=d; else fill+=d; });
   const warm = kind!=='dam'&&kind!=='levee' ? cells.some((c,k)=>G.heat[c]>0.5 && G.h0[c]-(G.h[c]+delta[k])>3.5) : false;
-  return { kind, cells, delta, applied:new Float32Array(cells.length), cut, fill, mat: (kind==='dam'||kind==='levee')? mat : 'earth', warm, a, b };
+  return { kind, cells, delta, applied:new Float32Array(cells.length), cut, fill, mat: (kind==='dam'||kind==='levee')? mat : 'earth', warm, a, b, width };
 }
-function addJob(plan){ if (plan.cut+plan.fill<0.05){ flash('nothing to do there'); return; } plan.id=jobSeq++; plan.done=false; plan.stalled=''; jobs.push(plan);
+const jobById={};
+function addJob(plan){ if (plan.cut+plan.fill<0.05){ flash('nothing to do there'); return; } plan.id=jobSeq++; plan.done=false; plan.stalled=''; jobs.push(plan); jobById[plan.id]=plan;
   for (const c of plan.cells) G.jobAt[c]=plan.id; rasterDirty=true; log(`Queued <b>${EW[plan.kind].name}</b>: ${plan.cut.toFixed(0)} to cut, ${plan.fill.toFixed(0)} to fill${plan.mat==='obsidian'?' (obsidian)':''}.`); renderJobs(); }
 function workJobs(){
   let cap=ST.crew*1.5; if (cap<=0) return;
@@ -597,11 +900,23 @@ function workJobs(){
       if (rem<0){ j.applied[k]-=amt; cells.push(j.cells[k]); dhs.push(-amt); ST.earth+=amt*0.9; addFlow('earth','cuts',amt*0.9); cap-=amt; }
       else { const have=ST[j.mat]; if (have<0.05){ j.stalled='waiting for '+j.mat; break; } amt=Math.min(amt,have); ST[j.mat]-=amt; addFlow(j.mat,'fills',-amt); j.applied[k]+=amt; cells.push(j.cells[k]); dhs.push(amt); cap-=amt; } }
     if (cells.length){ pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); for (let k=0;k<cells.length;k++){ G.h[cells[k]]+=dhs[k]; baseColor(cells[k]); } }
-    if (j.delta.every((d,k)=>Math.abs(d-j.applied[k])<0.02)){ j.done=true; for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`<span class="good">${EW[j.kind].name} finished.</span>`);
+    if (j.delta.every((d,k)=>Math.abs(d-j.applied[k])<0.02)){ j.done=true; if (j.kind!=='dam') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`<span class="good">${EW[j.kind].name} finished.</span>`);
       if (j.kind==='dam') goal('dam'); if (j.kind==='channel') goal('channel'); }
     if (cap<=0.001) break; }
   rasterDirty=true; renderJobs();
 }
+function damCells(j){ const out=[]; j.cells.forEach((c,k)=>{ if (j.applied[k]>0.3) out.push(c); }); return out; }
+function checkDams(){
+  for (const j of jobs){ if (j.kind!=='dam') continue; const cells=damCells(j); if (cells.length<1) continue; const set=new Set(cells);
+    let hi=-1e9, lo=1e9, S=1e9; for (const c of cells){ S=Math.min(S, G.wallS[c]||0.5);
+      for (const d of NBa){ const n=c+d; if (set.has(n)||!G.valid[n]) continue; const H=G.h[n]+wOf(n); if (wOf(n)>0.05) hi=Math.max(hi,H); lo=Math.min(lo,H); } }
+    if (hi<-1e8) { j.head=0; continue; }
+    const head=hi-lo, limit=2.5*S*(0.6+0.4*(j.width||1)); j.head=head; j.limit=limit;
+    if (head>limit){ // piping: the weakest crest cell sags
+      let weak=cells[0]; for (const c of cells) if (G.h[c]<G.h[weak]) weak=c;
+      pendingOps.push({op:'dh', cells:[weak], dhs:[-0.35], rock:1}); G.h[weak]-=0.35;
+      if (!j.failing){ j.failing=true; log(`<b class="bad">A dam is failing</b> — ${head.toFixed(1)} m of water against a wall that holds ${limit.toFixed(1)} m. Line it with obsidian, widen it, or lower the reservoir with a spillway.`); } }
+    else { if (j.failing && head<limit*0.9) j.failing=false; if (head>0.8*limit && !j.strain){ j.strain=true; log(`<span class="warn">A dam is under strain: ${head.toFixed(1)} of ${limit.toFixed(1)} m.</span>`); } } } }
 function cancelJob(j){ j.done=true; for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`Cancelled ${EW[j.kind].name}.`); rasterDirty=true; renderJobs(); }
 
 // ---------------- events ----------------
@@ -625,9 +940,26 @@ const GOALS=[
 ];
 function goal(k){ if (goalsDone[k]||!GOALS.find(g=>g[0]===k)) return; goalsDone[k]=true; log(`<b class="good">✓ ${GOALS.find(g=>g[0]===k)[1]}</b>`); renderGoals(); }
 function checkGoals(){ if (ST.water>=50) goal('water50'); if (ST.lava>=20) goal('lava20'); if (ST.obsidian>=5) goal('obsidian'); if (ST.pop>=30) goal('pop30'); }
-function renderGoals(){ const v=exportValue(), t=charterTarget(EX.year);
+const OBJ={ S:'Bring water to the <b>capital terminal</b> ♛ on the coast — it is the realm\'s export, worth 3× in the dry season. Rivers from upstream arrive along your northern edge.',
+  C:'The middle valley passes the north\'s rivers south. Water that leaves your <b>southern edge</b> becomes the coast\'s inflow — store it so it still flows in the dry season. The Fissure\'s lava can meet the river here: obsidian.',
+  N:'The headwaters and the <b>Great Vent</b>. Everything that leaves your southern edge feeds the valley and the coast. Dams here can hold the realm\'s dry-season water; lava traps catch eruptions.' };
+const BASE_DEM=[null,{dry:100,obs:0,lava:10},{dry:250,obs:5,lava:30},{dry:500,obs:15,lava:60},{dry:900,obs:30,lava:100}];
+function realmDemand(y){ const rs=realmState(); const b = y<=4 ? BASE_DEM[y] : {dry:900+400*(y-4), obs:30+15*(y-4), lava:100+40*(y-4)};
+  const last=(rs.history||[]).find(h=>h.year===y-1); if (!last) return b; return { dry: Math.max(b.dry, Math.round(last.dry*1.2/10)*10), obs: Math.max(b.obs, Math.round(last.obs*1.2)), lava: Math.max(b.lava, Math.round(last.lava*1.2)) }; }
+function renderRealmPanel(){
+  const rs=realmState(), T=LIB.REALM_TILES[TILE], card=(rs.tiles[TILE]||{}).card;
+  const inflow=upstreamInflow(); const bin=binOfYear(); const inNow=inflow.reduce((a,x)=>a+x.bins[bin],0);
+  const dem=realmDemand(rs.year);
+  let h=`<b>Realm ${REALM} · ${T.name}</b> <span class="dim">· realm year ${rs.year} · credits ${Math.round(rs.credits||0)}</span><div style="margin:4px 0">${OBJ[TILE]}</div>`;
+  if (T.up) h+=`<div>Inflow from the ${LIB.REALM_TILES[T.up].name} now: <b>${inNow.toFixed(1)}/day</b> ${inflow.length?'':'<span class="dim">(no card yet — settle or simulate it)</span>'}</div>`;
+  if (card){ const dset=new Set(downstreamBound().map(k=>G.bound[k])); let down=0, dry=0; for (const k in card.edge){ if (!dset.has(+k)) continue; card.edge[k].forEach((v,b)=>{ down+=v*10; if (b>=17&&b<=27) dry+=v*10; }); }
+    h+=`<div class="dim" style="margin-top:3px">Last completed tile year:</div>${T.down?`<div>to the ${LIB.REALM_TILES[T.down].name}: <b>${down.toFixed(0)}</b> water (<b>${dry.toFixed(0)}</b> in the dry season)</div>`:''}${TILE==='S'?`<div>to the capital: <b>${(card.capital.reduce((a,b)=>a+b,0)*10).toFixed(0)}</b></div>`:''}<div>lava ${card.lava.toFixed(0)} · obsidian ${card.obsidian.toFixed(0)}</div>`; }
+  else h+=`<div class="dim">This tile's card is written when its year completes (day 300).</div>`;
+  h+=`<div style="margin-top:5px"><b>Capital's demand, realm year ${rs.year}:</b> dry-season water ${dem.dry} · obsidian ${dem.obs} · lava ${dem.lava}</div>`;
+  $('#goals').innerHTML=h; }
+function renderGoals(){ if (TMODE) return renderRealmPanel(); const v=exportValue(), t=charterTarget(EX.year);
   $('#goals').innerHTML=`<b>Export charter — Year ${EX.year}</b><div class="stat"><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:#7cc4ff"></i></div><span>${v.toFixed(0)} / ${t.toFixed(0)}</span></div>
-  <div class="dim" style="font-size:11px">value = water + 3×lava + 10×obsidian collected this year</div><b style="display:block;margin-top:6px">Milestones</b>`+GOALS.map(([k,t])=>`<div class="g ${goalsDone[k]?'done':''}">${goalsDone[k]?'✓':'○'} ${t}</div>`).join(''); }
+  <div class="dim" style="font-size:11px">Target = ${Math.round(100*(CHARTER_FRAC[Math.min(EX.year,5)]||0.8))}% of the island's yearly runoff (${Math.round(G.lastYearRunoff||0.14*(G.landCells||0))} water reaching the sea), valued at the average season price. Value = water × season price (1 wet · 1.5 shoulder · <b>3 dry</b>) + 3×lava + 10×obsidian. Water price now <b>×${waterPrice()}</b>.</div><b style="display:block;margin-top:6px">Milestones</b>`+GOALS.map(([k,t])=>`<div class="g ${goalsDone[k]?'done':''}">${goalsDone[k]?'✓':'○'} ${t}</div>`).join(''); }
 
 // ---------------- dates ----------------
 const yearPhase=()=>(G.step%G.yearSteps)/G.yearSteps;
@@ -665,12 +997,14 @@ function refreshTools(){
   h+='<h4>Earthworks <span class="dim" style="text-transform:none">· settlers dig</span></h4>'+['channel','dam','levee','basin'].map(k=>btn(k,EW[k].name,'',EW[k].tip)).join('');
   h+=`<label class="sl" style="grid-template-columns:44px 1fr 20px"><span class="dim">width</span><input type="range" id="rW" min="1" max="3" value="${width}"><span>${width}</span></label>`;
   h+=`<div class="dim" style="font-size:11px">Dams &amp; levees built from:</div><div style="display:flex;gap:4px"><button class="b ${mat==='earth'?'on':''}" data-mat="earth" style="flex:1">earth · holds ${ROCK_S[1]}</button><button class="b ${mat==='obsidian'?'on':''}" data-mat="obsidian" style="flex:1">obsidian · ${ROCK_S[3]}</button></div>`;
-  h+='<h4>Build</h4>'+['house','farm','lavatrap','quarry'].map(k=>btn(k,BT[k].glyph+' '+BT[k].name,costStr(BT[k].cost),BT[k].tip)).join('');
+  h+='<h4>Build</h4>'+['house','farm','lavatrap','quench','quarry'].map(k=>btn(k,BT[k].glyph+' '+BT[k].name,costStr(BT[k].cost),BT[k].tip)).join('');
+  h+=`<h4>Blueprints</h4><button class="b tool" id="bpSave" title="Record your earthworks and buildings as rules anchored to features (rivers, the sink, the vent path), so they can be re-solved on another tile."><span>Save blueprint</span><span class="c">${jobs.length} works</span></button><button class="b tool" id="bpApply"><span>Apply blueprint…</span><span class="c">${bpLoad().length} saved</span></button>`;
   h+=`<div id="jobs"></div>`;
   $('#tools').innerHTML=h;
   document.querySelectorAll('[data-tool]').forEach(el=>el.onclick=()=>{ tool=el.dataset.tool; firstClick=-1; refreshTools(); });
   document.querySelectorAll('[data-mat]').forEach(el=>el.onclick=()=>{ mat=el.dataset.mat; refreshTools(); });
   const rw=$('#rW'); if (rw) rw.oninput=()=>{ width=+rw.value; refreshTools(); };
+  $('#bpSave').onclick=saveBlueprintUI; $('#bpApply').onclick=openBlueprintUI;
   renderJobs();
 }
 function renderJobs(){ const el=$('#jobs'); if (!el) return; const open=jobs.filter(j=>!j.done);
@@ -688,8 +1022,10 @@ function renderWork(){
       h+=`<div class="wr"><span class="dim">${k+1}</span><span style="color:${bt.col}">${bt.glyph} ${bt.name}${typePaused[t]?' <span class="warn">(paused)</span>':''}</span><span>${st}</span>
         <span class="x"><button class="b mini" data-up="${k}" ${k===0?'disabled':''}>↑</button><button class="b mini" data-dn="${k}" ${k===PRIO.length-1?'disabled':''}>↓</button><button class="b mini ${typePaused[t]?'on':''}" data-tp="${t}">❚❚</button></span></div>`;
       if (!isEW){ const un=list.filter(b=>b.why==='unstaffed').length; if (un) h+=`<div class="warn" style="padding-left:20px">${un} unstaffed · needs ${bt.workers} each</div>`; } });
+    h+=`<div class="wr" style="grid-template-columns:1fr auto"><span>Hired crews <span class="dim">(0.4 food/day each)</span>: <b>${ST.hired||0}</b></span><span class="x"><button class="b mini" id="hireM">−</button><button class="b mini" id="hireP">+</button></span></div>`;
     if (ST.idle) h+=`<div class="warn" style="margin-top:3px">${ST.idle} idle — move Earthworks up, or unpause it.</div>`; }
   W.innerHTML=h; $('#workHd').onclick=()=>{ workOpen=!workOpen; renderWork(); };
+  const hp=$('#hireP'), hm=$('#hireM'); if (hp){ hp.onclick=()=>{ ST.hired=(ST.hired||0)+1; allocate(); renderWork(); }; hm.onclick=()=>{ ST.hired=Math.max(0,(ST.hired||0)-1); allocate(); renderWork(); }; }
   W.querySelectorAll('[data-up]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.up; [PRIO[k-1],PRIO[k]]=[PRIO[k],PRIO[k-1]]; allocate(); syncCollectors(); renderWork(); });
   W.querySelectorAll('[data-dn]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.dn; [PRIO[k+1],PRIO[k]]=[PRIO[k],PRIO[k+1]]; allocate(); syncCollectors(); renderWork(); });
   W.querySelectorAll('[data-tp]').forEach(e=>e.onclick=()=>{ const t=e.dataset.tp; typePaused[t]=!typePaused[t]; allocate(); syncCollectors(); renderWork(); });
@@ -704,12 +1040,14 @@ function statusOf(b){ const bt=BT[b.type];
 function yieldText(b){
   if (b.type==='camp') return 'Foragers bring +0.45 food/day. Houses 12. Cannot be destroyed.';
   if (b.type==='farm'){ const mo=avgMoist(b.i); return `Soil moisture within 2: <b>${(mo*100).toFixed(0)}%</b> → <b>${farmYield(mo).toFixed(2)} food/day</b>. Wet ground near water or under storms is best; a channel brings water to dry farmland.`; }
+  if (b.type==='capital') return `The realm's capital has received <b>${(b.got||0).toFixed(1)} water</b> here (${(b.rate||0).toFixed(2)} of 40/day lately). Dry-season deliveries are worth 3×.`;
   if (b.type==='gate') return `Exported here so far: <b>${(b.got||0).toFixed(1)} water</b> (${(b.rate||0).toFixed(2)} of 8/day capacity lately). Water only arrives if a channel leads here — run one from a river, lake or reservoir, downhill all the way.`;
-  if (b.type==='lavatrap'){ let l=0; disk(b.i,1,j=>{ l+=lOf(j); }); return `Molten lava on its hexes: <b>${l.toFixed(2)}</b>. Collects up to 3/day of hot lava. Total: ${(b.got||0).toFixed(1)}. Place it on the path lava takes from a vent; channels can steer lava too.`; }
+  if (b.type==='lavatrap'){ const held=(G.traps||{})[b.id]||0; return `Pit holds <b>${held.toFixed(1)} / 60</b> molten lava; workers ladle out 4/day (worth 3 each). Lava left in the pit freezes to slag at 2%/day. Exported so far: ${(b.got||0).toFixed(1)}. Between eruptions only a trickle arrives — the payoff is catching an eruption's flow.`; }
+  if (b.type==='quench'){ const st=b.store||{lava:0,water:0}; const card=worksCard(); return `Holds <b>${st.lava.toFixed(1)}</b> lava and <b>${st.water.toFixed(1)}</b> water. Turns up to 3 lava/day into obsidian at your ${card.sealed?'<b>sealed Works design</b>':'default design'}'s rate (${(100*(b.lastYield||card.yield[1])).toFixed(0)}% now; clog ${b.cl.toFixed(0)}). Obsidian made: ${(b.got||0).toFixed(1)}. Needs a lava path AND a water channel reaching it. <a href="works.html" style="color:#9fd0ff">Design a better one →</a>`; }
   if (b.type==='quarry'){ let n=0; disk(b.i,2,j=>{ if (G.rock[j]===3) n++; }); return `${n} obsidian hexes within 2. Cuts 0.6/day. Total: ${(b.got||0).toFixed(1)}. Make more by leading lava into water.`; }
   if (b.type==='house') return 'Houses 6.'; return ''; }
 function renderSel(){
-  const P=$('#sel'); const b=selB>=0?buildings[selB]:null; const j=selJ>=0?jobs.find(x=>x.id===selJ&&!x.done):null;
+  const P=$('#sel'); const b=selB>=0?buildings[selB]:null; const j=selJ>=0?jobs.find(x=>x.id===selJ&&(!x.done||x.kind==='dam')):null;
   if (b && b.alive){ const bt=BT[b.type];
     P.innerHTML=`<div style="display:flex;justify-content:space-between"><b style="color:${bt.col}">${bt.glyph} ${bt.name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${statusOf(b)}</div><div style="margin-top:3px">${yieldText(b)}</div><div class="dim">condition ${b.hp.toFixed(0)}%</div>
       <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?'<button class="b" id="selDemo">Demolish</button>':'<button class="b" id="selMove">Move camp</button>'}</div>`;
@@ -720,6 +1058,7 @@ function renderSel(){
     return; }
   if (j){ const tot=j.delta.reduce((a,d)=>a+Math.abs(d),0), done=j.applied.reduce((a,d)=>a+Math.abs(d),0);
     P.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${EW[j.kind].name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${(100*done/Math.max(tot,1e-6)).toFixed(0)}% done · ${j.cut.toFixed(0)} cut, ${j.fill.toFixed(0)} fill${j.mat==='obsidian'?' (obsidian)':''}</div>
+      ${j.kind==='dam'&&j.head!==undefined?`<div>Water against it: <b class="${j.head>j.limit?'bad':j.head>0.8*j.limit?'warn':''}">${j.head.toFixed(1)} m</b> of ${(j.limit||0).toFixed(1)} m it can hold (${j.mat}, width ${j.width||1}).</div>`:''}
       <div>${j.stalled?`<span class="warn">Stalled: ${j.stalled}</span>`:ST.crew?`${ST.crew} diggers at 1.5/day each`:'<span class="warn">No diggers — Earthworks gets only settlers left over (see Workforce).</span>'}</div><div class="row"><button class="b" id="selCancel">Cancel</button></div>`;
     P.classList.remove('hidden'); $('#selX').onclick=()=>{ selJ=-1; renderSel(); }; $('#selCancel').onclick=()=>{ cancelJob(j); selJ=-1; renderSel(); }; return; }
   P.classList.add('hidden'); }
@@ -735,7 +1074,11 @@ function renderAdvice(){
   const stalled=jobs.filter(j=>!j.done&&j.stalled); if (stalled.length) A.push(['warn',`Earthworks stalled: ${stalled[0].stalled}. Cuts produce earth — queue a channel or basin, or quarry obsidian.`]);
   if (jobs.some(j=>!j.done) && !ST.crew) A.push(['warn','Earthworks are queued but <b>nobody is digging</b> — every settler is in a building above Earthworks. Move Earthworks up or grow the town.']);
   if (ST.growth==='housing' && fn>0) A.push(['info','Population capped by housing — build a House (+6).']);
-  const gates=buildings.filter(b=>b.alive&&b.type==='gate'); if (gates.every(g=>(g.rate||0)<0.05)) A.push(['info','Exports need water at an <b>Export gate</b> (⇲ on the coast). Dig a <b>Channel</b> from a river or lake to a gate — click the river end first; it must run downhill.']);
+  if (TMODE){ const cap=buildings.find(b=>b.type==='capital'); if (cap && (cap.rate||0)<0.05) A.push(['info','Nothing reaches the <b>capital terminal</b> ♛ yet. Dig a <b>Channel</b> to it from the river — click the river end first.']);
+    if (TILE!=='S' && !jobs.some(j=>j.kind==='dam')) A.push(['info',`Your outflow feeds the ${LIB.REALM_TILES[LIB.REALM_TILES[TILE].down].name}. A <b>Dam</b> across a river here stores wet-season water so it keeps flowing south in the dry season (worth 3× at the capital).`]); }
+  const chans=jobs.filter(j=>j.kind==='channel'&&j.done), dams=jobs.filter(j=>j.kind==='dam');
+  if (chans.length && !dams.length && sinks().every(g=>(g.rate||0)<1)) A.push(['warn','A channel alone only <b>skims</b> a river — most of the water stays in the riverbed. <b>Dam the river just below your channel\'s intake</b> to send the whole river (and its stored wet-season water) into the channel.']);
+  const gates=buildings.filter(b=>b.alive&&b.type==='gate'); if (!TMODE && gates.every(g=>(g.rate||0)<0.05)) A.push(['info','Exports need water at an <b>Export gate</b> (⇲ on the coast). Find a river with the <b>flow</b> lens, <b>dam</b> it, and dig a <b>Channel</b> from just above the dam to a gate (click the river end first; it runs downhill).']);
   else if (!buildings.some(b=>b.alive&&b.type==='lavatrap') && ecoDays>40) A.push(['info','Lava is worth 3× water: a <b>Lava trap</b> on the path from a vent (heat lens) collects it.']);
   const col={bad:'#ff8b7b',warn:'#ffb86b',info:'#c8d0d8'};
   $('#advice').innerHTML = A.length? A.slice(0,2).map(([k,t])=>`<div class="a" style="color:${col[k]}">${t}</div>`).join('') : '<span class="dim">All quiet. Shape the land to bring water to your cisterns.</span>';
@@ -744,14 +1087,15 @@ let flashT=0, flashMsg=''; const flash=m=>{ flashMsg=m; flashT=performance.now()
 let hover=-1, plan=null;
 function renderInfo(){
   const LEG={moisture:'<b>Moisture</b>: brown &lt;15% (farms yield nothing) → blue = wet.', height:'<b>Height</b>: green low → yellow 25 m → brown → snow; lines every 5 m. Water and lava cross the lines downhill.',
-    heat:'<b>Heat</b>: red glow = hot ground near vents (lava flows and deep digs open vents here). Bright = molten lava.', rain:'<b>Rain</b>: where storms are raining right now. Storms drift with the wind.'};
+    flow:'<b>Flow</b>: where water actually runs, brighter = more water per day. Rivers carry their whole catchment\'s rain — the best place to start a channel or put a dam. Hover to read the discharge.',
+    heat:'<b>Heat</b>: red glow = hot ground near vents (deep digs here may open a vent). Bright = molten lava. Dashed line = where an eruption\'s lava will run (steepest descent) — put lava traps and levees on it.', rain:'<b>Rain</b>: where storms are raining right now. Storms drift with the wind.'};
   let s = LEG[G.lens]? `<div style="margin-bottom:4px">${LEG[G.lens]}</div>` : '';
   const ttip = EW[tool]? EW[tool].tip : BT[tool]? BT[tool].tip : tool==='movecamp'? 'Click a dry hex to move the camp.' : '';
   if (ttip) s+=`<div style="color:#9fd0ff;margin-bottom:4px"><b>${(EW[tool]||BT[tool]||{name:'Move camp'}).name}:</b> ${ttip}</div>`;
   if (plan){ s+=`<div style="color:#ffe08a">Plan: ${plan.cut.toFixed(0)} cut + ${plan.fill.toFixed(0)} fill${plan.mat==='obsidian'?' (obsidian)':''} → ~${Math.ceil((plan.cut+plan.fill)/Math.max(0.1,ST.crew*1.5))} days with ${ST.crew} diggers. Click to confirm, right-click/Esc to cancel.${plan.warm?'<br><span class="bad">Deep cut in hot ground — may open a new vent!</span>':''}${plan.kind==='dam'?'<br><span class="dim">Without a spillway, storm water can overtop and wear down an earth dam.</span>':''}</div>`; }
   if (hover<0||!G.valid[hover]){ $('#info').innerHTML=s||'<span class="dim">Hover the map.</span>'; return; }
   const i=hover, h=G.h[i], w=wOf(i), l=lOf(i), mo=G.m8[i]/255;
-  s+=`<b>${G.qOf[i]}, ${G.rOf[i]}</b> · height ${h.toFixed(1)} m · ${ROCKNAME[G.rock[i]]}${G.wallS[i]>0?` (resists ${G.wallS[i].toFixed(0)})`:''}<br>water ${w<0.01?'—':w.toFixed(2)+' m'} · soil ${(mo*100).toFixed(0)}% · rain ${G.rn8[i]>20?'falling':'—'}`;
+  const qd=qOf(i); s+=`<b>${G.qOf[i]}, ${G.rOf[i]}</b> · height ${h.toFixed(1)} m${qd>0.3?` · <span style="color:#7cc4ff">river: ${qd.toFixed(1)} water/day</span>`:''} · ${ROCKNAME[G.rock[i]]}${G.wallS[i]>0?` (resists ${G.wallS[i].toFixed(0)})`:''}<br>water ${w<0.01?'—':w.toFixed(2)+' m'} · soil ${(mo*100).toFixed(0)}% · rain ${G.rn8[i]>20?'falling':'—'}`;
   if (l>0.005) s+=`<br><b class="bad">lava ${l.toFixed(2)} m at ${(tOf(i)*1200).toFixed(0)}°C</b>`;
   if (G.heat[i]>0.5) s+=`<br><span class="warn">hot ground — deep digging may open a vent</span>`;
   if (G.occ[i]>=0){ const b=buildings[G.occ[i]]; s+=`<br><b>${BT[b.type].name}</b>`; }
@@ -774,11 +1118,17 @@ function draw(){
     ctx.fillStyle=v.state==='erupt'?'#ff5a1a':v.state==='rumble'?'#ffb84a':'#c0582a'; ctx.beginPath(); ctx.moveTo(sx,sy-sz); ctx.lineTo(sx+sz*0.9,sy+sz*0.6); ctx.lineTo(sx-sz*0.9,sy+sz*0.6); ctx.closePath(); ctx.fill();
     if (v.state!=='quiet'){ const t=performance.now()/300; ctx.strokeStyle='rgba(255,140,60,0.6)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,sz*(1.6+0.4*Math.sin(t)),0,7); ctx.stroke(); }
     if (cam.s>2.5){ ctx.font='11px system-ui'; ctx.fillStyle='#ffcf9a'; ctx.textAlign='center'; ctx.fillText(v.name, sx, sy+sz+12); } }
+  // predicted lava paths (steepest descent from each vent)
+  for (const v of (G.vents||[])){ const path=lavaPath(v.i); if (path.length<2) continue; const hot=v.state!=='quiet';
+    if (!hot && G.lens!=='heat') continue;
+    ctx.setLineDash([6,5]); ctx.strokeStyle=hot?'rgba(255,120,40,0.95)':'rgba(255,150,80,0.6)'; ctx.lineWidth=hot?2.5:1.5; ctx.beginPath();
+    path.forEach((c,k)=>{ const [x,y]=cellXY(c); const [sx,sy]=worldToScreen(x,y); k?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy); }); ctx.stroke(); ctx.setLineDash([]); }
   // buildings
   const sz=Math.max(5,Math.min(26,cam.s*1.25)); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${Math.round(sz*0.9)}px system-ui`;
   for (const b of buildings){ if (!b.alive) continue; const [x,y]=cellXY(b.i); const [sx,sy]=worldToScreen(x,y); if (sx<-30||sy<-30||sx>CW+30||sy>CH+30) continue; const bt=BT[b.type];
     ctx.fillStyle='rgba(10,12,16,0.78)'; ctx.beginPath(); ctx.arc(sx,sy,sz*0.72,0,7); ctx.fill(); ctx.lineWidth=2;
     ctx.strokeStyle=b.inLava?'#ff5a1a':b.flooded?'#7cc4ff':(b.active||!bt.workers)?bt.col:'#666'; ctx.stroke(); if (sz>=7){ ctx.fillStyle=bt.col; ctx.fillText(bt.glyph,sx,sy+1); }
+    if (b.type==='capital'){ ctx.font='12px system-ui'; ctx.fillStyle='#ffd36b'; ctx.fillText(`capital · ${(b.rate||0).toFixed(1)}/day`, sx, sy+sz+12); ctx.font=`${Math.round(sz*0.9)}px system-ui`; }
     if (b.type==='gate'){ const t=performance.now()/500; ctx.strokeStyle='rgba(124,196,255,0.55)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,sz*(1.25+0.15*Math.sin(t)),0,7); ctx.stroke();
       ctx.font='11px system-ui'; ctx.fillStyle='#9fd0ff'; ctx.fillText(`export gate · ${(b.rate||0).toFixed(1)}/8 a day`, sx, sy+sz+11); ctx.font=`${Math.round(sz*0.9)}px system-ui`; } }
   // selection / plan preview
@@ -836,10 +1186,28 @@ function chooseGates(camp){
     let river=false; disk(i,7,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; cand.push(i); }
   const pick=(dmin,dmax,avoid)=>{ let best=-1, bs=-1e9; for (const i of cand){ const d=hexDist(i,camp); if (d<dmin||d>dmax) continue; if (avoid.some(a=>hexDist(a,i)<40)) continue; const s=-Math.abs(d-(dmin+dmax)/2)+rnd()*10; if (s>bs){ bs=s; best=i; } } return best; };
   const out=[]; const g1=pick(15,45,[]); if (g1>=0) out.push(g1); const g2=pick(40,110,out); if (g2>=0) out.push(g2); const g3=pick(60,200,out); if (g3>=0) out.push(g3); return out; }
+function chooseCapital(){ // deterministic: dry coast, no river close by, nearest the tile's south-centre
+  let best=-1, bs=1e9; for (let i=0;i<G.N;i++){ if (!G.valid[i]||G.h[i]<0.8||G.h[i]>9||wOf(i)>0.02) continue; let coast=false; for (const d of NBa){ const j=i+d; if (G.h[j]<0) coast=true; } if (!coast) continue;
+    let river=false; disk(i,6,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; const [x,y]=cellXY(i); const sc=Math.hypot(x+30,y-60); if (sc<bs){ bs=sc; best=i; } } return best; }
+function restoreTile(){
+  ST.housing=0; for (const b of SAVED.buildings){ const nb=placeBuilding(b.type,b.i,true); nb.paused=b.paused; nb.got=b.got; }
+  Object.assign(ST, SAVED.ST); ST.housing=buildings.filter(b=>b.alive).reduce((a,b)=>a+(BT[b.type].housing||0),0);
+  PRIO.splice(0,PRIO.length,...SAVED.PRIO.filter(p=>p!=='cistern')); Object.assign(typePaused,SAVED.typePaused||{}); Object.assign(goalsDone,SAVED.goalsDone||{}); Object.assign(EX,SAVED.EX||{});
+  for (const sj of SAVED.jobs||[]){ const j={kind:sj.kind, a:sj.a, b:sj.b, width:sj.width, mat:sj.mat, cells:sj.cells, delta:sj.delta, applied:Float32Array.from(sj.applied), done:sj.done, cut:0, fill:0};
+    sj.delta.forEach(d=>{ if (d<0) j.cut-=d; else j.fill+=d; }); j.id=jobSeq++; jobs.push(j); jobById[j.id]=j; if (!j.done||j.kind==='dam') for (const c of j.cells) G.jobAt[c]=j.id; }
+  syncCollectors(); }
 function startGame(){
   $('#loading').classList.add('hidden'); ['#top','#tools','#log','#goals','#info','#zoom','#advice','#work'].forEach(s=>$(s).classList.remove('hidden'));
-  const s=chooseStart(); placeBuilding('camp',s,true); for (const g of chooseGates(s)) placeBuilding('gate',g,true); const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=5; camDirty=true; lastEcoStep=G.step;
-  log(`Your settlers make camp. To the ${(()=>{ const v=G.vents[0]; const [vx,vy]=cellXY(v.i); const a=Math.atan2(vy-y,vx-x)*180/Math.PI; return ['east','south-east','south','south-west','west','north-west','north','north-east'][((Math.round(a/45)%8)+8)%8]; })()} smokes the ${G.vents[0].name}.`);
+  let s;
+  if (TMODE && SAVED){ restoreTile(); s=buildings.find(b=>b.type==='camp').i; log(`Back in the ${LIB.REALM_TILES[TILE].name}.`); }
+  else { s=chooseStart(); placeBuilding('camp',s,true);
+    if (!TMODE) for (const g of chooseGates(s)) placeBuilding('gate',g,true);
+    else if (TILE==='S'){ const c=chooseCapital(); if (c>=0) placeBuilding('capital',c,true); }
+    if (TMODE) log(`Settlers arrive in the ${LIB.REALM_TILES[TILE].name}.`); if (bpLoad().length) setTimeout(()=>{ log('You have saved blueprints — <b>Apply blueprint…</b> (tools panel) re-solves them for this terrain.'); }, 500); }
+  if (TMODE){ worker.postMessage({type:'inflow', bins: upstreamInflow()}); setInterval(saveTile, 20000); window.addEventListener('beforeunload', saveTile);
+    const rb=document.createElement('button'); rb.className='b on'; rb.textContent='⬆ Realm'; rb.title='Save this tile and return to the realm map'; rb.onclick=()=>{ saveTile(); location.href='realm.html?realm='+REALM; }; $('#top .sp').prepend(rb); }
+  const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=5; camDirty=true; lastEcoStep=G.step;
+  if (!TMODE && G.vents.length) log(`Your settlers make camp. To the ${(()=>{ const v=G.vents[0]; const [vx,vy]=cellXY(v.i); const a=Math.atan2(vy-y,vx-x)*180/Math.PI; return ['east','south-east','south','south-west','west','north-west','north','north-east'][((Math.round(a/45)%8)+8)%8]; })()} smokes the ${G.vents[0].name}.`);
   refreshTools(); renderGoals(); allocate(); renderWork(); renderAdvice();
   if (!localStorage.getItem('watershed-help-seen')){ $('#help').classList.remove('hidden'); localStorage.setItem('watershed-help-seen','1'); }
 }
@@ -848,7 +1216,9 @@ function frame(){ const now=performance.now(), dt=Math.min(0.1,(now-lastT)/1000)
   if (G.ready){ keyPan(dt); draw(); uiT+=dt; if (uiT>0.25){ uiT=0; renderTop(); renderInfo(); renderGoals(); } }
   requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
-window.WS={ G, ST, EX, buildings, jobs, PRIO, cam, planJob, addJob, placeBuilding, idx, cellXY, wOf, lOf, disk, allocate, syncCollectors, setRate, goalsDone, setTool:t=>{tool=t; refreshTools();}, exportValue };
+function buildNow(plan){ const n=jobs.length; addJob(plan); if (jobs.length===n) return null; const j=jobs[jobs.length-1]; const cells=[], dhs=[]; j.cells.forEach((c,k)=>{ cells.push(c); dhs.push(j.delta[k]); j.applied[k]=j.delta[k]; G.h[c]+=j.delta[k]; baseColor(c); });
+  pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); j.done=true; if (j.kind!=='dam') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; sendOps(); return j; }
+window.WS={ damSite, qOf, buildNow, makeBlueprint, applyBlueprintPlans, previewYear, cardScore, bpLoad, saveBlueprintUI, previewBlueprint, commitBlueprint, TMODE, TILE, REALM, saveTile, realmState, upstreamInflow, G, ST, EX, buildings, jobs, PRIO, cam, planJob, addJob, placeBuilding, idx, cellXY, wOf, lOf, disk, allocate, syncCollectors, setRate, goalsDone, setTool:t=>{tool=t; refreshTools();}, exportValue };
 
 </script>
 </body>

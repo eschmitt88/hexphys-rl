@@ -408,8 +408,10 @@ const W = 2*RT+5, OFF = RT+2;
 const H = makeRealmH(REALM);
 const SETTLE_COST = { S:0, C:250, N:400 };
 // the capital's demand is a climbing share of the WILD dry-season flow reaching the coast (measured by the survey) — past 100%, only storing water upstream can meet it
-const DRY_SHARE=[0,0.10,0.40,0.80,1.20,1.60];
-function demand(y){ const wild=Math.max(50, RS.wildDry||300); const share=DRY_SHARE[Math.min(y,5)]+(y>5?0.3*(y-5):0);
+// the capital's ask climbs only when you meet it (a miss repeats the same ask), and tops out at 100% of the wild dry flow — pure conveyance;
+// anything above that is a surplus contract paying bonus credits, which only upstream storage can earn
+const DRY_SHARE=[0,0.10,0.35,0.65,1.00];
+function demand(y){ const wild=Math.max(50, RS.wildDry||300); const met=(RS.history||[]).filter(x=>x.met).length; const share=DRY_SHARE[Math.min(met+1,4)];
   const vent = ['N','C'].some(t=>(RS.tiles[t]||{}).status==='settled');
   return { dry: Math.round(wild*share/10)*10, obs: vent? [0,0,5,15,30][Math.min(y,4)]+(y>4?10*(y-4):0) : 0, lava: vent? [0,10,30,60,100][Math.min(y,4)]+(y>4?30*(y-4):0) : 0, share }; }
 const price = b => (b>=17&&b<=27) ? 3 : (b>=13&&b<=16)||(b===28||b===29) ? 1.5 : 1;   // 30 bins over the year (dry ≈ bins 17–27)
@@ -455,7 +457,10 @@ function draw(){
     for (const k in c.edge){ const i=+k; const gq=i%W-OFF+T.q, gr=((i/W)|0)-OFF+T.r; const q=gq-D.q, r=gr-D.r; if (Math.abs(q)>RT||Math.abs(r)>RT||Math.abs(q+r)>RT) continue; c.edge[k].forEach((v,b)=>out[b]+=v); } return out; };
   const size2=SQ3*(2*RT+1)*SC;
   for (const t of ['N','C']){ const D=REALM_TILES[t].down; const [x1,y1]=tileScreen(t), [x2,y2]=tileScreen(D); spark(OX-size2*0.5-160, (y1+y2)/2-30, binsInto(t), `${REALM_TILES[t].name} → ${REALM_TILES[D].name}, /day`, 0); }
-  const scd=(RS.tiles.S||{}).card; if (scd&&scd.capital){ const dem=demand(RS.year); const [sx,sy]=tileScreen('S'); spark(OX-size2*0.5-160, sy+size2*0.15, scd.capital, 'delivered at the capital, /day', dem.dry? dem.dry/110 : 0); }
+  const scd=(RS.tiles.S||{}).card; if (scd&&scd.capital){ const dem=demand(RS.year); const [sx,sy]=tileScreen('S'); const inb=binsInto('C'); const X=OX-size2*0.5-160, Y=sy+size2*0.15;
+    spark(X, Y, scd.capital, 'at the capital (blue) of what arrives (grey), /day', dem.dry? dem.dry/110 : 0);
+    const mx=Math.max(1e-6,...scd.capital,...inb, dem.dry/110||0); ctx.fillStyle='rgba(180,190,205,0.28)'; inb.forEach((v,k)=>{ const bh=44*v/mx; ctx.fillRect(X+k*150/30, Y+14+44-bh, 150/30-1, bh); });
+    ctx.fillStyle='#7cc4ff'; scd.capital.forEach((v,k)=>{ const bh=44*v/mx; ctx.fillRect(X+k*150/30, Y+14+44-bh, 150/30-1, bh); }); if (dem.dry){ const yy=Y+14+44-44*(dem.dry/110)/mx; ctx.setLineDash([4,3]); ctx.strokeStyle='#ffd36b'; ctx.beginPath(); ctx.moveTo(X,yy); ctx.lineTo(X+150,yy); ctx.stroke(); ctx.setLineDash([]); } }
   // flows between tiles
   const fl=flowsBetween(); for (const t in fl){ const D=REALM_TILES[t].down; const [x1,y1]=tileScreen(t), [x2,y2]=tileScreen(D); const mx=(x1+x2)/2, my=(y1+y2)/2; const wdt=Math.max(2,Math.min(16,Math.sqrt(fl[t].tot)/12));
     ctx.strokeStyle='rgba(124,196,255,0.85)'; ctx.lineWidth=wdt; ctx.beginPath(); ctx.moveTo(mx,my-30); ctx.lineTo(mx,my+18); ctx.stroke(); ctx.fillStyle='rgba(124,196,255,0.95)'; ctx.beginPath(); ctx.moveTo(mx-wdt-5,my+14); ctx.lineTo(mx+wdt+5,my+14); ctx.lineTo(mx,my+30); ctx.closePath(); ctx.fill();
@@ -470,7 +475,7 @@ function tileSummary(t){ const c=(RS.tiles[t]||{}).card; if (!c) return '<span c
 function render(){
   const d=demand(RS.year), last=RS.history[RS.history.length-1];
   let h=`<h2>⬡ Realm ${REALM}</h2><div class="dim">Three tiles of one landscape. Rain falls on the north; rivers run south through the valley to the coast, where the capital takes delivery. What leaves one tile's edge is the next tile's inflow.</div>
-  <div class="box"><b>Realm year ${RS.year}</b> · credits <b>${Math.round(RS.credits)}</b><div style="margin-top:4px">The capital asks for <b>${Math.round(100*(demand(RS.year).share||0))}%</b> of the dry-season water the wild rivers would bring it (${Math.round(RS.wildDry||0)}) — past 100%, only water stored upstream in the wet season can meet it. This year: <b>${d.dry}</b> dry-season water · <b>${d.obs}</b> obsidian · <b>${d.lava}</b> lava</div>
+  <div class="box"><b>Realm year ${RS.year}</b> · credits <b>${Math.round(RS.credits)}</b><div style="margin-top:4px">The capital asks for <b>${Math.round(100*(demand(RS.year).share||0))}%</b> of the dry-season water the wild rivers bring to the coast (${Math.round(RS.wildDry||0)}). Its ask rises only when you meet it, up to 100% — getting that much to the capital is the job. <b>Surplus contract:</b> every dry-season unit beyond the wild flow (only upstream storage can make it) pays 0.25 credits. This year: <b>${d.dry}</b> dry-season water · <b>${d.obs}</b> obsidian · <b>${d.lava}</b> lava</div>
   ${last?`<div class="dim" style="margin-top:4px">Last year: dry water ${Math.round(last.dry)} / ${last.dem.dry} · obsidian ${Math.round(last.obs)} / ${last.dem.obs} · lava ${Math.round(last.lava)} / ${last.dem.lava} → +${Math.round(last.value)} credits ${last.met?'<span class="good">(demand met, +50% bonus)</span>':'<span class="warn">(demand missed)</span>'}</div>`:''}
   <div style="margin-top:6px"><button class="b on" id="close">Close the realm year</button> <span class="dim" id="closeMsg">Simulates every tile for a year in order, north to south, and settles the capital's accounts.</span></div></div>`;
   for (const t of REALM_ORDER){ const st=(RS.tiles[t]||{}).status==='settled'; const cost=SETTLE_COST[t];
@@ -506,7 +511,8 @@ async function closeYear(){
   const S=cards.S; let dry=0, value=0; (S.capital||[]).forEach((v,b)=>{ const amt=v*10; value+=amt*price(b); if (b>=17&&b<=27) dry+=amt; });
   let lava=0, obs=0; for (const t of REALM_ORDER){ const c=cards[t]; if ((RS.tiles[t]||{}).status!=='settled') continue; lava+=c.lava||0; obs+=c.obsidian||0; }
   value+=3*lava+10*obs; const dem=demand(RS.year); const met = dry>=dem.dry && obs>=dem.obs && lava>=dem.lava;
-  const frac=(a,b)=>b>0? Math.min(1,a/b) : 1; value = 220*frac(dry,dem.dry) + (dem.obs?80*frac(obs,dem.obs):0) + (dem.lava?80*frac(lava,dem.lava):0) + (met?150:0) + 0.02*value;   // a met year buys the next tile
+  const frac=(a,b)=>b>0? Math.min(1,a/b) : 1; const surplus=Math.max(0, dry-(RS.wildDry||0));
+  value = 220*frac(dry,dem.dry) + (dem.obs?80*frac(obs,dem.obs):0) + (dem.lava?80*frac(lava,dem.lava):0) + (met?150:0) + 0.02*value + 0.25*surplus;   // a met year buys the next tile; dry water beyond the wild flow is a surplus contract
   RS.history.push({year:RS.year, dry, lava, obs, value, met, dem}); RS.credits+=value; RS.year++; save(RS);
   msg.innerHTML = `Year closed: <b>+${Math.round(value)}</b> credits${met?' — the capital is satisfied.':'.'}`; btn.disabled=false; render();
 }

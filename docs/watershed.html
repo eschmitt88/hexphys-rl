@@ -753,7 +753,9 @@ function commitBlueprint(instant, cost){
   log(instant? '<b class="good">Blueprint built.</b> The land has been reshaped — boom.' : `Blueprint queued: ${S.works.length} works for your settlers.`); if (instant) goal('channel'); }
 // ---------------- works card (the level below) ----------------
 const DEFAULT_CARD={ rates:[0.01,0.03,0.06], bBins:[0,10,20,35,55,80], yieldG:[[0.30,0.22,0.15,0.08,0.04,0.02],[0.25,0.18,0.12,0.07,0.04,0.02],[0.15,0.12,0.09,0.06,0.04,0.02]], clogG:[[0.7,0.7,0.7,0.7,0.7,0.7],[0.6,0.6,0.6,0.6,0.6,0.6],[0.55,0.55,0.55,0.55,0.55,0.55]], steam:[0.7,0.25,0.15], err:0.4 };
-function worksCard(){ try { const s=JSON.parse(localStorage.getItem('ws-works-card')||'null'); if (s&&s.card&&s.card.yieldG) return Object.assign({sealed:true, err:(s.val||{}).err||0.4}, s.card); } catch(e){} return DEFAULT_CARD; }
+const DEFAULT_MEASURED={ rates:[0.01,0.03,0.06], band:[0.06,0.05,0.04], steam:[0.6,0.2,0.12], measured:true };
+function worksCard(){ try { const s=JSON.parse(localStorage.getItem('ws-works-card')||'null'); if (s&&s.card&&s.card.band) return Object.assign({sealed:true}, s.card); } catch(e){} return DEFAULT_MEASURED; }
+function bandYield(card, lr){ const r=card.rates; if (lr<=r[0]) return card.band[0]; for (let k=0;k<r.length-1;k++) if (lr<=r[k+1]){ const t=(lr-r[k])/(r[k+1]-r[k]); return card.band[k]*(1-t)+card.band[k+1]*t; } return card.band[r.length-1]; }
 function interp2(G, card, lr, B){ const r=card.rates, bb=card.bBins; const row=k=>{ const b=Math.min(Math.max(B,0), bb[bb.length-1]); let j=0; while (j<bb.length-2 && b>bb[j+1]) j++; const t=(b-bb[j])/(bb[j+1]-bb[j]); return G[k][j]*(1-t)+G[k][j+1]*t; };
   if (lr<=r[0]) return row(0); for (let k=0;k<r.length-1;k++) if (lr<=r[k+1]){ const t=(lr-r[k])/(r[k+1]-r[k]); return row(k)*(1-t)+row(k+1)*t; } return row(r.length-1); }
 function yieldAtOld(card, lr, cl){ const r=card.rates; const rowAt=(k)=>{ if (!card.grid) return card.yield[k]; const bins=card.clBins; const c=Math.min(cl||0, bins[bins.length-1]); let j=0; while (j<bins.length-2 && c>bins[j+1]) j++; const t=(c-bins[j])/Math.max(1e-9,bins[j+1]-bins[j]); return card.grid[k][j]*(1-t)+card.grid[k][j+1]*t; };
@@ -845,10 +847,8 @@ function economyDay(){
     else if (b.type==='quench'){ const st=(G.quench||{})[b.id]||{lava:0,water:0}; const card=worksCard(); const steamPer=(card.steam?card.steam[1]:0.3)+0.2;
       const use=Math.min(st.lava, 3, st.water/steamPer); b.store=st; b.cl=b.cl||0;
       b.B=b.B||0;
-      if (use>0.01){ const lr=0.01+0.05*Math.min(1,use/3); const trust=1-Math.min(0.6,card.err||0); const y=interp2(card.yieldG,card,lr,b.B)*trust; const ob=use*y*6; b.yield=ob; b.lastYield=y;   // one island lava unit feeds the works like six board units
-        pendingOps.push({op:'quenchUse', id:b.id, lava:use, water:use*steamPer}); ST.obsidian+=ob; addFlow('obsidian','quench works',ob); EX.obsidian+=ob; EX.value+=10*ob; EX.obsYear=(EX.obsYear||0)+ob; b.B+=use*6*interp2(card.clogG,card,lr,b.B); b.got=(b.got||0)+ob; }
-      if (b.active) b.B=Math.max(0,b.B-1.0);    // its two workers dredge the basalt out
-      b.cl=b.B; }
+      if (use>0.01){ const lr=0.01+0.05*Math.min(1,use/3); const y=bandYield(card,lr); const ob=use*y*4; b.yield=ob; b.lastYield=y;   // the measured test-year rate; one island lava unit feeds the works like four board units
+        pendingOps.push({op:'quenchUse', id:b.id, lava:use, water:use*steamPer}); ST.obsidian+=ob; addFlow('obsidian','quench works',ob); EX.obsidian+=ob; EX.value+=10*ob; EX.obsYear=(EX.obsYear||0)+ob; b.got=(b.got||0)+ob; } }
     else if (b.type==='lavatrap'){ const held=(G.traps||{})[b.id]||0; b.held=held; if (held>0.01) pendingOps.push({op:'harvest', id:b.id, amt:4}); }
     else if (b.type==='quarry'){ const cells=[]; disk(b.i,2,j=>{ if (G.rock[j]===3) cells.push(j); }); if (cells.length) pendingOps.push({op:'mine', id:b.id, cells, amt:0.6}); else if (!b.dry){ b.dry=true; log('An obsidian quarry has cut all its rock.'); } }
   }
@@ -914,7 +914,7 @@ function planJob(kind, a, b){
     // banks: wherever the ground beside the channel is lower than the water would stand, build it up (an aqueduct) — except at the intake and the outlet
     const inCh=new Set(all), bank=new Map();
     p.forEach((c,k)=>{ if (k<1 || k>=p.length-2) return; const want=bed[k]+1.0; for (const d of NBa){ const n=c+d; if (inCh.has(n)||!G.valid[n]||G.occ[n]>=0) continue; if (G.h[n]<want) bank.set(n, Math.max(bank.get(n)||-1e9, want)); } });
-    for (const [n,t] of bank){ cells.push(n); target.push(t); } }
+    for (const [n,t] of bank){ cells.push(n); target.push(t); } extra.pathLen=all.length; extra.route=p.slice(); }
   else if (kind==='dam'){ const line=widen(hexLine(a,b),width); let low=1e9; for (const c of line) low=Math.min(low, G.h[c]+wOf(c));
     const S=mat==='obsidian'?ROCK_S[3]:ROCK_S[1]; const safe=2.5*S*(0.6+0.4*width)*0.9; let crest=Math.min(G.h[a],G.h[b], low+safe);   // never taller than the wall can hold
     let rv=null; let rc=line[0]; for (const c of line) if (G.h[c]<G.h[rc]) rc=c; const set=new Set(line);
@@ -940,7 +940,7 @@ function workJobs(){
       if (rem<0){ j.applied[k]-=amt; cells.push(j.cells[k]); dhs.push(-amt); ST.earth+=amt*0.9; addFlow('earth','cuts',amt*0.9); cap-=amt; }
       else { const have=ST[j.mat]; if (have<0.05){ j.stalled='waiting for '+j.mat; break; } amt=Math.min(amt,have); ST[j.mat]-=amt; addFlow(j.mat,'fills',-amt); j.applied[k]+=amt; cells.push(j.cells[k]); dhs.push(amt); cap-=amt; } }
     if (cells.length){ pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); for (let k=0;k<cells.length;k++){ G.h[cells[k]]+=dhs[k]; baseColor(cells[k]); } }
-    if (j.delta.every((d,k)=>Math.abs(d-j.applied[k])<0.02)){ j.done=true; if (j.kind!=='dam') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`<span class="good">${EW[j.kind].name} finished.</span>`);
+    if (j.delta.every((d,k)=>Math.abs(d-j.applied[k])<0.02)){ j.done=true; if (j.kind!=='dam'&&j.kind!=='channel') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`<span class="good">${EW[j.kind].name} finished.</span>`);
       if (j.kind==='dam') goal('dam'); if (j.kind==='channel') goal('channel'); }
     if (cap<=0.001) break; }
   rasterDirty=true; renderJobs();
@@ -984,8 +984,8 @@ const OBJ={ S:'Bring water to the <b>capital terminal</b> ♛ on the coast — i
   C:'The middle valley passes the north\'s rivers south. Water that leaves your <b>southern edge</b> becomes the coast\'s inflow — store it so it still flows in the dry season. The Fissure\'s lava can meet the river here: obsidian.',
   N:'The headwaters and the <b>Great Vent</b>. Everything that leaves your southern edge feeds the valley and the coast. Dams here can hold the realm\'s dry-season water; lava traps catch eruptions.' };
 const BASE_DEM=[null,{dry:100,obs:0,lava:10},{dry:250,obs:5,lava:30},{dry:500,obs:15,lava:60},{dry:900,obs:30,lava:100}];
-const DRY_SHARE=[0,0.10,0.40,0.80,1.20,1.60];
-function realmDemand(y){ const rs=realmState(); const wild=Math.max(50, rs.wildDry||300); const share=DRY_SHARE[Math.min(y,5)]+(y>5?0.3*(y-5):0); const vent=['N','C'].some(t=>(rs.tiles[t]||{}).status==='settled');
+const DRY_SHARE=[0,0.10,0.35,0.65,1.00];
+function realmDemand(y){ const rs=realmState(); const wild=Math.max(50, rs.wildDry||300); const met=(rs.history||[]).filter(x=>x.met).length; const share=DRY_SHARE[Math.min(met+1,4)]; const vent=['N','C'].some(t=>(rs.tiles[t]||{}).status==='settled');
   return { dry: Math.round(wild*share/10)*10, obs: vent? [0,0,5,15,30][Math.min(y,4)]+(y>4?10*(y-4):0) : 0, lava: vent? [0,10,30,60,100][Math.min(y,4)]+(y>4?30*(y-4):0) : 0 }; }
 function renderRealmPanel(){
   const rs=realmState(), T=LIB.REALM_TILES[TILE], card=(rs.tiles[TILE]||{}).card;
@@ -996,7 +996,7 @@ function renderRealmPanel(){
   if (card){ const dset=new Set(downstreamBound().map(k=>G.bound[k])); let down=0, dry=0; for (const k in card.edge){ if (!dset.has(+k)) continue; card.edge[k].forEach((v,b)=>{ down+=v*10; if (b>=17&&b<=27) dry+=v*10; }); }
     h+=`<div class="dim" style="margin-top:3px">Last completed tile year:</div>${T.down?`<div>to the ${LIB.REALM_TILES[T.down].name}: <b>${down.toFixed(0)}</b> water (<b>${dry.toFixed(0)}</b> in the dry season)</div>`:''}${TILE==='S'?`<div>to the capital: <b>${(card.capital.reduce((a,b)=>a+b,0)*10).toFixed(0)}</b></div>`:''}<div>lava ${card.lava.toFixed(0)} · obsidian ${card.obsidian.toFixed(0)}</div>`; }
   else h+=`<div class="dim">This tile's card is written when its year completes (day 300).</div>`;
-  h+=`<div style="margin-top:5px"><b>Capital's demand, realm year ${rs.year}:</b> dry-season water ${dem.dry} · obsidian ${dem.obs} · lava ${dem.lava}</div>`;
+  h+=`<div style="margin-top:5px"><b>Capital's demand now:</b> dry-season water ${dem.dry} · obsidian ${dem.obs} · lava ${dem.lava}</div>`;
   $('#goals').innerHTML=h; }
 function renderGoals(){ if (TMODE) return renderRealmPanel(); const v=exportValue(), t=charterTarget(EX.year);
   $('#goals').innerHTML=`<b>Export charter — Year ${EX.year}</b><div class="stat"><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:#7cc4ff"></i></div><span>${v.toFixed(0)} / ${t.toFixed(0)}</span></div>
@@ -1086,11 +1086,11 @@ function yieldText(b){
   if (b.type==='gate') return `Exported here so far: <b>${(b.got||0).toFixed(1)} water</b> (${(b.rate||0).toFixed(2)} of 8/day capacity lately). Water only arrives if a channel leads here — run one from a river, lake or reservoir, downhill all the way.`;
   if (b.type==='lavatrap'){ const held=(G.traps||{})[b.id]||0; return `Pit holds <b>${held.toFixed(1)} / 60</b> molten lava; workers ladle out 4/day (worth 3 each). Lava left in the pit freezes to slag at 2%/day. Exported so far: ${(b.got||0).toFixed(1)}. Between eruptions only a trickle arrives — the payoff is catching an eruption's flow.`; }
   if (b.type==='sluice'){ const f=(G.sl||{})[b.id]||{flow:0,open:false}; return `Mode: <b>${b.mode||'auto'}</b> — gate is <b>${f.open?'open':'closed'}</b>${f.open?`, ~${f.flow.toFixed(1)} water/day passing`:''}. <i>Auto</i> holds the reservoir through the wet season (opening only if it nears the top) and lets it run in the dry season. <div class="row"><button class="b" data-sm="closed">closed</button><button class="b" data-sm="open">open</button><button class="b" data-sm="auto">auto</button></div>`; }
-  if (b.type==='quench'){ const st=b.store||{lava:0,water:0}; const card=worksCard(); return `Holds <b>${st.lava.toFixed(1)}</b> lava and <b>${st.water.toFixed(1)}</b> water. Turns up to 3 lava/day into obsidian at your ${card.sealed?'<b>sealed Works design</b>':'default design'}'s rate: <b>${(100*(b.lastYield||0)).toFixed(0)}%</b> now with <b>${(b.B||0).toFixed(0)}</b> basalt in it (workers dredge 1/day; the card's error ${(100*(card.err||0)).toFixed(0)}% discounts what it's trusted to make). Obsidian made: ${(b.got||0).toFixed(1)}. Needs a lava path AND a water channel reaching it. <a href="works.html" style="color:#9fd0ff">Design a better one →</a>`; }
+  if (b.type==='quench'){ const st=b.store||{lava:0,water:0}; const card=worksCard(); return `Holds <b>${st.lava.toFixed(1)}</b> lava and <b>${st.water.toFixed(1)}</b> water. Turns up to 3 lava/day into obsidian at your ${card.sealed?'<b>sealed Works design</b>':'default design'}'s measured rate (${(100*card.band[1]).toFixed(1)} obsidian per 100 lava at flow; its workers keep it dredged). Obsidian made: ${(b.got||0).toFixed(1)}. Needs a lava path AND a water channel reaching it. <a href="works.html" style="color:#9fd0ff">Design a better one →</a>`; }
   if (b.type==='quarry'){ let n=0; disk(b.i,2,j=>{ if (G.rock[j]===3) n++; }); return `${n} obsidian hexes within 2. Cuts 0.6/day. Total: ${(b.got||0).toFixed(1)}. Make more by leading lava into water.`; }
   if (b.type==='house') return 'Houses 6.'; return ''; }
 function renderSel(){
-  const P=$('#sel'); const b=selB>=0?buildings[selB]:null; const j=selJ>=0?jobs.find(x=>x.id===selJ&&(!x.done||x.kind==='dam')):null;
+  const P=$('#sel'); const b=selB>=0?buildings[selB]:null; const j=selJ>=0?jobs.find(x=>x.id===selJ&&(!x.done||x.kind==='dam'||x.kind==='channel')):null;
   if (b && b.alive){ const bt=BT[b.type];
     P.innerHTML=`<div style="display:flex;justify-content:space-between"><b style="color:${bt.col}">${bt.glyph} ${bt.name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${statusOf(b)}</div><div style="margin-top:3px">${yieldText(b)}</div><div class="dim">condition ${b.hp.toFixed(0)}%</div>
       <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?'<button class="b" id="selDemo">Demolish</button>':'<button class="b" id="selMove">Move camp</button>'}</div>`;
@@ -1101,7 +1101,16 @@ function renderSel(){
     const sd=$('#selDemo'); if (sd) sd.onclick=()=>{ for (const k in bt.cost) ST[k]+=bt.cost[k]*0.5; destroy(b,'demolish'); allocate(); renderWork(); };
     return; }
   if (j){ const tot=j.delta.reduce((a,d)=>a+Math.abs(d),0), done=j.applied.reduce((a,d)=>a+Math.abs(d),0);
-    P.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${EW[j.kind].name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${(100*done/Math.max(tot,1e-6)).toFixed(0)}% done · ${j.cut.toFixed(0)} cut, ${j.fill.toFixed(0)} fill${j.mat==='obsidian'?' (obsidian)':''}</div>
+    let readout='';
+    if (j.kind==='channel'){ const route=j.route||j.cells.slice(0, j.pathLen||j.cells.length); const set=new Set(j.cells); const n=route.length;
+      let avail=0; disk(route[0],3,c=>{ if (!set.has(c)) avail=Math.max(avail,qOf(c)); }); avail=Math.max(avail, qOf(route[0]));
+      const carry=qOf(route[Math.min(3,n-1)]), deliv=qOf(route[Math.max(0,n-3)]);
+      let why=''; if (!j.done) why='<span class="dim">not finished yet</span>'; else if (carry<0.25*Math.max(avail,0.1) && avail>0.3) why='<span class="warn">limited at the intake</span> — most of the river goes past it. Dam the river just below the intake, or dig the intake deeper.';
+      else if (deliv<0.6*carry && carry>0.2) why='<span class="warn">losing water on the way</span> — leaks over low banks or evaporation along a long route; a shorter or lined route keeps more.';
+      else if (avail<0.3) why='<span class="warn">little water to take</span> — the source is small right now (dry season?). Check the flow lens for a bigger river.';
+      else why='<span class="good">running well</span>';
+      readout=`<div style="margin-top:3px">Available at the intake: <b>${avail.toFixed(1)}/day</b> · carrying: <b>${carry.toFixed(1)}/day</b> · arriving at the end: <b>${deliv.toFixed(1)}/day</b><br>${why}</div>`; }
+    P.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${EW[j.kind].name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div>${readout}<div>${(100*done/Math.max(tot,1e-6)).toFixed(0)}% done · ${j.cut.toFixed(0)} cut, ${j.fill.toFixed(0)} fill${j.mat==='obsidian'?' (obsidian)':''}</div>
       ${j.kind==='dam'&&j.head!==undefined?`<div>Water against it: <b class="${j.head>j.limit?'bad':j.head>0.8*j.limit?'warn':''}">${j.head.toFixed(1)} m</b> of ${(j.limit||0).toFixed(1)} m it can hold (${j.mat}, width ${j.width||1}).</div>`:''}
       <div>${j.stalled?`<span class="warn">Stalled: ${j.stalled}</span>`:ST.crew?`${ST.crew} diggers at 1.5/day each`:'<span class="warn">No diggers — Earthworks gets only settlers left over (see Workforce).</span>'}</div><div class="row"><button class="b" id="selCancel">Cancel</button></div>`;
     P.classList.remove('hidden'); $('#selX').onclick=()=>{ selJ=-1; renderSel(); }; $('#selCancel').onclick=()=>{ cancelJob(j); selJ=-1; renderSel(); }; return; }
@@ -1251,7 +1260,7 @@ function startGame(){
     { let best=-1, bm=-1; disk(s,8,j=>{ if (G.occ[j]>=0||wOf(j)>0.05||G.h[j]<0.5||lOf(j)>0.01) return; const mo=avgMoist(j); if (mo>bm){ bm=mo; best=j; } }); if (best>=0) placeBuilding('farm',best,true); }
     if (!TMODE) for (const g of chooseGates(s)) placeBuilding('gate',g,true);
     else if (TILE==='S'){ const c=chooseCapital(); if (c>=0) placeBuilding('capital',c,true); }
-    if (TMODE) log(`Settlers arrive in the ${LIB.REALM_TILES[TILE].name}.`); if (bpLoad().length) setTimeout(()=>{ log('You have saved blueprints — <b>Apply blueprint…</b> (tools panel) re-solves them for this terrain.'); }, 500); }
+    if (TMODE) log(`Settlers arrive in the ${LIB.REALM_TILES[TILE].name}.`); if (bpLoad().length) setTimeout(()=>{ log('You have saved blueprints — they can be re-solved for this terrain.'); openBlueprintUI(); }, 1500); }
   if (TMODE){ worker.postMessage({type:'inflow', bins: upstreamInflow()}); setInterval(saveTile, 20000); window.addEventListener('beforeunload', saveTile);
     const rb=document.createElement('button'); rb.className='b on'; rb.textContent='⬆ Realm'; rb.title='Save this tile and return to the realm map'; rb.onclick=()=>{ saveTile(); location.href='realm.html?realm='+REALM; }; $('#top .sp').prepend(rb); }
   const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=5; camDirty=true; lastEcoStep=G.step;
@@ -1265,7 +1274,7 @@ function frame(){ const now=performance.now(), dt=Math.min(0.1,(now-lastT)/1000)
   requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
 function buildNow(plan){ const n=jobs.length; addJob(plan); if (jobs.length===n) return null; const j=jobs[jobs.length-1]; const cells=[], dhs=[]; j.cells.forEach((c,k)=>{ cells.push(c); dhs.push(j.delta[k]); j.applied[k]=j.delta[k]; G.h[c]+=j.delta[k]; baseColor(c); });
-  pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); j.done=true; if (j.kind!=='dam') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; sendOps(); return j; }
+  pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); j.done=true; if (j.kind!=='dam'&&j.kind!=='channel') for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; sendOps(); return j; }
 window.WS={ bestDamNear, reservoirOf, syncSluices, sluiceList, damSite, qOf, buildNow, makeBlueprint, applyBlueprintPlans, previewYear, cardScore, bpLoad, saveBlueprintUI, previewBlueprint, commitBlueprint, TMODE, TILE, REALM, saveTile, realmState, upstreamInflow, G, ST, EX, buildings, jobs, PRIO, cam, planJob, addJob, placeBuilding, idx, cellXY, wOf, lOf, disk, allocate, syncCollectors, setRate, goalsDone, setTool:t=>{tool=t; refreshTools();}, exportValue };
 
 </script>

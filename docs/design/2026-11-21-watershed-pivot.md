@@ -184,3 +184,86 @@ quarries** cut obsidian rock.
 - intent blueprints that transfer to another megatile;
 - terraform-to-template;
 - an explicit way to steer lava beyond levees and channels.
+
+## Autonomous iteration with Fable reviews (2026-11-23/24)
+
+The user asked for the level above and the level below to be built, and
+for iteration against Fable's critical reviews until the user would be
+excited by every part.
+
+### What exists
+
+**`docs/watershed.html`, island and tile (the play level).** Fixes and
+additions on the island:
+- export gates no longer leak seawater;
+- dam siting uses a cross-section solver;
+- channels are aqueducts with built banks, and their routes avoid dams
+  and reservoirs;
+- the dam plan floods the would-be reservoir and reports the storage the
+  dam actually adds;
+- a sluice gate block can be set into a channel intake;
+- a flow lens shows river discharge, and a channel readout reports what
+  is available, carried and delivered, with a diagnosis;
+- the island charter is set from measured runoff;
+- other additions: dry-season water price, hired crews, lava traps as
+  freezing pits, Quench works, blueprints.
+
+A systemic bug was fixed along the way: the main thread had been
+discarding almost every terrain update from the simulation worker.
+
+**`docs/realm.html`, the level above.** Three contiguous tiles from one
+global terrain function, coupled one way across their shared edges.
+- The realm is surveyed headlessly when created.
+- The capital asks for a share of the wild dry-season flow, rising only
+  in years you meet it, from 10% up to 100%. Every dry-season unit
+  beyond the wild flow pays a surplus bonus.
+- The map shows rivers on the survey thumbnails and seasonal flow charts
+  at each border and at the capital.
+
+**`docs/works.html`, the level below.** A device board for the quench
+works. Its card is a measured test year with dredging, at three inflow
+rates. The default design makes 13.2 obsidian per 100 lava at flow rate;
+a design that routes water down the lava chute makes 19.7.
+
+### Measured findings
+
+**Physics bugs found by the scripted players**, all fixed:
+- the seawater leak through export gates;
+- channels routed through their own dam;
+- contour channels spilling over low banks;
+- dam siting walking downhill;
+- reservoirs spilling around the dam at a lower saddle;
+- natural lakes counted as storage the dam added;
+- the sluice reading the banks instead of the water level;
+- the terrain-sync bug above.
+
+**Island deliveries, water per year, three seeds:**
+
+| Strategy | Water per year |
+|---|---|
+| Nothing built | 4–125 |
+| Channel from a river | 121–247 |
+| Dam plus channel | 276–470 |
+
+**Storage is physically honest but weak.** The best sites add 500–1,350
+units of storage, but the catchments above them carry only about 1–5 per
+day. Following Fable's round 2, storage is no longer load-bearing: it
+earns the realm's surplus contract.
+
+**Blueprint transfer.** A source island delivering 450 per year was
+applied to five unseen islands. They delivered 130–651 per year against
+baselines of 1–9, a median of 44% of the source.
+
+**Works card.** Keyed by basalt alone, the card's prediction missed the
+fine board by 110–234%. The measured test year with dredging misses by
+29–44%, and that comparison is now a developer metric.
+
+### What is not solved
+
+**Realm 12's coast.** About 28 water per day of dry-season inflow
+crosses the border into a large eastern lake. The capital is on the far
+west coast. No scripted channel delivered dry-season water to it; that
+takes a long channel from the lake, which the bots never built.
+Placement of the capital relative to the inflow is the next lever.
+
+**Terraform-to-template** has not been built.

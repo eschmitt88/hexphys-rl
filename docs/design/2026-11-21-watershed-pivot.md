@@ -1,7 +1,7 @@
 ---
 kind: design
 name: "watershed-pivot"
-status: proposal (under discussion)
+status: prototype built (docs/watershed.html)
 added: "2026-11-21"
 related: ["docs/frontier.html", "docs/design/2026-11-17-physics-ladder.md", "docs/decisions/0002-ported-elements.md", "docs/decisions/0003-physics-ladder-scope.md", "concepts/physics-adversary-blight.md"]
 ---
@@ -116,3 +116,71 @@ earn their place back.
 - **Lava as a hazard:** how dangerous should it be, given that the parked
   physics adversary (concepts/physics-adversary-blight.md) is another
   candidate threat?
+
+## Decisions and the first prototype (2026-11-23)
+
+The user decided three things:
+
+- **Labor and food stay.** People already have an intuition for them.
+- **Water and lava are export currency.** They can also merge into
+  obsidian.
+- **Lava is a resource that is occasionally dangerous,** not a threat
+  system.
+
+`docs/watershed.html` implements this on one island megatile of
+67,951 hexes, running in a web worker at about 3.5 ms per step.
+
+**Weather.** Storm cells drift on a seasonal wind and rain where they
+pass. A light drizzle falls everywhere.
+
+**Lava.** Lava is a second fluid that carries heat. It is viscous, and
+cools by air and by water. When it solidifies it adds to the terrain:
+- cooled mostly by air, it becomes **basalt** (resists erosion 3);
+- quenched by water, it becomes **obsidian** (resists erosion 9);
+- quenching boils water off as steam.
+
+Vents leak a little lava all the time. They rumble for 10 to 17 days,
+then erupt at 14 to 30 times the base rate. A cut deeper than 3.5 m into
+hot ground opens a breach vent.
+
+**Erosion.** Flowing water wears down built ground (earth fill, basalt,
+obsidian) in proportion to the flow divided by its resistance. That
+makes spillways necessary.
+
+**Intent earthworks.** Four tools, each turned into terrain changes by
+a solver:
+- **channel:** routed by Dijkstra over low ground, with a bed that
+  always runs downhill;
+- **dam:** a flat crest set at the lower bank's height;
+- **levee:** a bank 1.5 m high;
+- **basin:** a flat-bottomed excavation.
+
+Earthworks are a Workforce row that takes every settler left over below
+it. Each digger moves 1.5 earth per day. Cuts produce earth and fills
+consume it, or consume obsidian.
+
+**Export gates replace collectors.** Playtest arithmetic showed that a
+cistern in a natural lake exported 2,000 water in year 1 against a
+charter of 250, with no engineering. Natural water is already collected
+water.
+
+The fix is two or three fixed gates on dry coast, at least 7 hexes from
+any river. Each gate takes at most 8 water per day, and only from land
+hexes; an earlier intake reached into shallow sea and leaked seawater.
+
+Measured, before any engineering: about 0 water per day. With one
+93-hex channel from a lake: 3.2 per day, about 1,000 per year. The
+charter is 600 in year 1, 2,400 in year 2 and 5,000 in year 3. Meeting
+the later years needs several sources, storage, lava and obsidian.
+
+**Lava traps** stay as local collectors, at 2 per day. **Obsidian
+quarries** cut obsidian rock.
+
+**Export value** is water + 3 × lava + 10 × obsidian.
+
+### Not yet in the prototype
+
+- the level above (seasonal export cards);
+- intent blueprints that transfer to another megatile;
+- terraform-to-template;
+- an explicit way to steer lava beyond levees and channels.

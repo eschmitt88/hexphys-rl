@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hexphys Watershed</title>
+<style>
+:root{--bg:#0b0e12;--panel:rgba(18,22,28,.92);--ink:#e7e9ec;--dim:#8d96a2;--line:#2a313b;--acc:#7cc4ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#map{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.pn{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;backdrop-filter:blur(4px)}
+#top{left:10px;right:10px;top:8px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 12px}
+#top .res{display:flex;gap:12px;flex-wrap:wrap}#top .r{white-space:nowrap;cursor:help}#top .r b{font-weight:650}#top .r small{font-size:11px;margin-left:2px}
+#top .sp{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.b{background:#1d232c;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
+.b:hover{border-color:#4a5563}.b.on{border-color:var(--acc);background:#1b2a3a}.b:disabled{opacity:.4;cursor:default}
+.lens{padding:4px 7px}
+#tools{left:10px;top:calc(var(--topb,52px) + 8px);width:212px;display:flex;flex-direction:column;gap:4px;max-height:calc(100% - var(--topb,52px) - 20px);overflow:auto}
+#tools h4{margin:6px 0 2px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+.tool{display:flex;justify-content:space-between;gap:6px;text-align:left;width:100%}.tool .c{color:var(--dim);font-size:11px}
+.job{display:grid;grid-template-columns:1fr auto 14px;gap:4px;font-size:12px;padding:2px 0;border-bottom:1px solid #20262e;cursor:pointer}.job .x{color:var(--dim);cursor:pointer}
+#work{left:230px;top:calc(var(--topb,52px) + 8px);width:262px;font-size:12px}
+#work .wr{display:grid;grid-template-columns:16px 1fr 66px 62px;gap:4px;align-items:center;padding:2px 0;border-bottom:1px solid #20262e}
+#work .wr .x{display:flex;gap:2px}#work .mini{padding:0 5px;font-size:11px;border-radius:5px}#work .hd{cursor:pointer;display:flex;justify-content:space-between}
+#advice{left:504px;right:320px;top:calc(var(--topb,52px) + 8px);font-size:13px;padding:6px 12px;border-color:#3a4a5c}#advice .a{margin:1px 0}
+#log{right:10px;top:calc(var(--topb,52px) + 8px);width:300px;max-height:28vh;overflow:auto;font-size:12px}
+#log .e{padding:2px 0;border-bottom:1px solid #20262e}#log .t{color:var(--dim);margin-right:5px}
+#goals{right:10px;top:calc(var(--topb,52px) + 28vh + 18px);width:300px;font-size:12px}#goals .g.done{color:#6fd38b}
+#info{right:10px;bottom:10px;width:300px;font-size:12px}
+#sel{right:320px;bottom:10px;width:310px;font-size:12px}#sel .row{display:flex;gap:6px;margin-top:6px}
+#zoom{left:230px;bottom:10px;display:flex;gap:4px;padding:5px}
+#tip{position:fixed;z-index:40;pointer-events:none;font-size:12px;min-width:200px}#tip .l{display:flex;justify-content:space-between;gap:12px}
+#help{left:50%;top:50%;transform:translate(-50%,-50%);width:min(600px,94vw);padding:18px 22px;z-index:20;max-height:88vh;overflow:auto}#help h2{margin:0 0 8px;font-size:20px}#help li{margin:3px 0}
+#loading{left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 22px;z-index:30;font-size:15px}
+.stat{display:grid;grid-template-columns:1fr 90px;gap:6px;align-items:center}.bar{height:7px;background:#0c0f13;border-radius:5px;overflow:hidden;border:1px solid #232a33}.bar>i{display:block;height:100%}
+label.sl{display:grid;grid-template-columns:62px 1fr 64px;gap:6px;align-items:center}
+.dim{color:var(--dim)}.good{color:#6fd38b}.warn{color:#ffb86b}.bad{color:#ff8b7b}.hidden{display:none!important}
+kbd{background:#0c0f13;border:1px solid #2c343e;border-radius:4px;padding:0 4px;font-size:11px}
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+<div class="pn" id="loading">Raising an island and running its first season of weather…</div>
+<div class="pn hidden" id="top">
+  <b>⬡ Watershed</b><div class="res" id="res"></div><span id="date" class="dim"></span>
+  <div class="sp">
+    <button class="b" data-rate="0">pause</button><button class="b on" data-rate="8">1×</button><button class="b" data-rate="24">3×</button><button class="b" data-rate="80">10×</button>
+    <span class="dim" style="margin-left:6px">lens</span><button class="b lens on" data-lens="map">map</button><button class="b lens" data-lens="height">height</button><button class="b lens" data-lens="moisture">moisture</button><button class="b lens" data-lens="heat">heat</button><button class="b lens" data-lens="rain">rain</button>
+    <button class="b" id="btnHelp">?</button>
+  </div>
+</div>
+<div class="pn hidden" id="tools"></div>
+<div class="pn hidden" id="work"></div>
+<div class="pn hidden" id="advice"></div>
+<div class="pn hidden" id="log"></div>
+<div class="pn hidden" id="goals"></div>
+<div class="pn hidden" id="info"></div>
+<div class="pn hidden" id="sel"></div>
+<div class="pn hidden" id="tip"></div>
+<div class="pn hidden" id="zoom"><button class="b" id="zin">+</button><button class="b" id="zout">-</button><button class="b" id="zhome">home</button><button class="b" id="zall">island</button></div>
+<div class="pn hidden" id="help">
+  <h2>⬡ Hexphys Watershed</h2>
+  <div class="dim" style="margin-bottom:8px">One island, simulated whole. Storms drift across it on the wind and rain where they pass; the land decides where that water runs. A volcano leaks lava, and now and then it erupts. You shape the land so water and lava end up where you want them — and export both.</div>
+  <b>The goal</b>
+  <ul><li><b>Export.</b> Water (worth 1) counts when it reaches an <b>Export gate</b> (⇲ on the coast; each takes up to 8/day). No river goes there by itself: you dig channels to bring it, and dams to store it for the dry season. Lava (worth 3) is caught by <b>lava traps</b>; <b>obsidian</b> (worth 10) forms where lava is quenched by water — so bring water to the lava, or lava to the water. Each year has an export charter (top right).</li></ul>
+  <b>Earthworks — say what you want, settlers dig it</b>
+  <ul>
+    <li><b>Channel</b>: click start, then end. It always runs downhill from the higher end, cutting through rises.</li>
+    <li><b>Dam</b>: click one valley side, then the other. Flat crest at the lower side's height; water pools behind. Give it a spillway, or storms overtop it and wear an earth dam down. Obsidian dams resist 9× better.</li>
+    <li><b>Levee</b>: a 1.5 m bank along a line, to keep water — or lava — out. <b>Basin</b>: a pond to catch water.</li>
+    <li>A yellow outline previews the plan with its cost in earth and days. Cuts give earth; fills use it.</li>
+  </ul>
+  <b>Settlers</b>
+  <ul>
+    <li>Each eats 0.06 food/day; the town grows ~1%/day while food &gt; 15 and housing is free. Farms yield by soil moisture.</li>
+    <li><b>Workforce</b>: rows fill top-down; <b>Earthworks takes everyone left</b> at its row. Each digger moves 1.5 earth/day.</li>
+  </ul>
+  <b>The volcano</b>
+  <ul><li>Vents leak a little lava always. Before an eruption a vent <b>rumbles</b> for days — check the <i>heat</i> lens and move what's in the way. Lava buries buildings (the camp just stops working; move it). Lava cooled in air becomes basalt; quenched in water, obsidian. Digging deep into hot ground can open a new vent.</li></ul>
+  <div class="dim">Click a building or a queued earthwork to inspect it · Pan: drag (Inspect), right-drag, <kbd>WASD</kbd> · Zoom: wheel · <kbd>Space</kbd> pause · <kbd>Esc</kbd> cancel</div>
+  <div style="margin-top:10px;text-align:right"><button class="b on" id="helpOk">Begin</button></div>
+</div>
+<script id="simsrc" type="text/plain">
+'use strict';
+// ===================== WATERSHED SIM CORE (runs in a Web Worker) =====================
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function makeNoise(seed){
+  const rnd=mulberry32(seed), perm=[]; for(let i=0;i<256;i++)perm[i]=i;
+  for(let i=255;i>0;i--){const j=(rnd()*(i+1))|0;const t=perm[i];perm[i]=perm[j];perm[j]=t;}
+  const p=new Uint8Array(512); for(let i=0;i<512;i++)p[i]=perm[i&255];
+  const GX=[1,-1,1,-1,1,-1,0,0], GY=[1,1,-1,-1,0,0,1,-1];
+  const F2=0.5*(Math.sqrt(3)-1), G2=(3-Math.sqrt(3))/6;
+  return function(x,y){
+    const s=(x+y)*F2, i=Math.floor(x+s), j=Math.floor(y+s), t=(i+j)*G2;
+    const x0=x-(i-t), y0=y-(j-t); const i1=x0>y0?1:0, j1=1-i1;
+    const x1=x0-i1+G2, y1=y0-j1+G2, x2=x0-1+2*G2, y2=y0-1+2*G2, ii=i&255, jj=j&255;
+    let n=0, a;
+    a=0.5-x0*x0-y0*y0; if(a>0){a*=a;const g=p[ii+p[jj]]&7; n+=a*a*(GX[g]*x0+GY[g]*y0);}
+    a=0.5-x1*x1-y1*y1; if(a>0){a*=a;const g=p[ii+i1+p[jj+j1]]&7; n+=a*a*(GX[g]*x1+GY[g]*y1);}
+    a=0.5-x2*x2-y2*y2; if(a>0){a*=a;const g=p[ii+1+p[jj+1]]&7; n+=a*a*(GX[g]*x2+GY[g]*y2);}
+    return 70*n;
+  };
+}
+// rock types: 0 natural, 1 earth fill, 2 basalt, 3 obsidian
+const ROCK_S = [0, 1.0, 3.0, 9.0];   // erosion resistance of built / volcanic rock
+function makeSim(R, seed){
+  const W=2*R+5, N=W*W, OFF=R+2, SQ3=Math.sqrt(3);
+  const idx=(q,r)=>(r+OFF)*W+(q+OFF);
+  const NB=[1,1-W,-W,-1,-1+W,W];
+  const valid=new Uint8Array(N), qOf=new Int16Array(N), rOf=new Int16Array(N), cx=new Float32Array(N), cy=new Float32Array(N);
+  for(let i=0;i<N;i++){ qOf[i]=i%W-OFF; rOf[i]=((i/W)|0)-OFF; cx[i]=SQ3*(qOf[i]+rOf[i]/2); cy[i]=1.5*rOf[i]; }
+  for(let r=-R;r<=R;r++) for(let q=-R;q<=R;q++) if(Math.abs(q+r)<=R) valid[idx(q,r)]=1;
+  const act=[], sea=[];
+  for(let i=0;i<N;i++){ const row=(i/W)|0, col=i%W; if(row<1||row>W-2||col<1||col>W-2) continue;
+    if(valid[i]){act.push(i);continue;} for(let d=0;d<6;d++) if(valid[i+NB[d]]){act.push(i);sea.push(i);break;} }
+  const ACT=Int32Array.from(act), SEA=Int32Array.from(sea), VAL=Int32Array.from(act.filter(i=>valid[i]));
+  const hexDist=(i,j)=>{ const dq=qOf[i]-qOf[j], dr=rOf[i]-rOf[j]; return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2; };
+  const h=new Float32Array(N), h0=new Float32Array(N), w=new Float32Array(N), m=new Float32Array(N);
+  const L=new Float32Array(N), E=new Float32Array(N), qAcc=new Float32Array(N), aAcc=new Float32Array(N), Tc=new Float32Array(N);
+  const rock=new Uint8Array(N), wallS=new Float32Array(N), heat=new Float32Array(N), rain=new Float32Array(N), flowOut=new Float32Array(N);
+  const F0=new Float32Array(N),F1=new Float32Array(N),F2=new Float32Array(N), FF=[F0,F1,F2], out=new Float32Array(N), tmp=new Float32Array(N);
+  const G0=new Float32Array(N),G1=new Float32Array(N),G2=new Float32Array(N), FL=[G0,G1,G2], lout=new Float32Array(N);
+  const rnd=mulberry32(seed^0x9e37);
+  const P={ KP:0.15, DAMP:0.985, drizzle:1.2e-5, evap:2.5e-5, KL:0.09, coolAir:0.0016, coolWater:0.035, steamK:0.6, Ts:0.32,
+            yearSteps:2400, step:0, hChanged:false, events:[], collected:{}, coll:[], vents:[], storms:[], wind:0.6 };
+
+  // ---------------- generation ----------------
+  function generate(){
+    const n1=makeNoise(seed), n2=makeNoise(seed+1), n3=makeNoise(seed+2), n4=makeNoise(seed+3);
+    const fbm=(nz,x,y,o)=>{let s=0,a=1,f=1,t=0;for(let k=0;k<o;k++){s+=a*nz(x*f,y*f);t+=a;a*=0.5;f*=2.03;}return s/t;};
+    const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
+    // main volcano somewhere in the inner half; maybe a second fissure field
+    const ang=rnd()*Math.PI*2, rad=R*(0.15+0.3*rnd());
+    const px0=rad*Math.cos(ang), py0=rad*Math.sin(ang); const vq=Math.round(SQ3/3*px0-py0/3), vr=Math.round(2/3*py0);
+    let v0=idx(vq, vr); if(!valid[v0]) v0=idx(0,0);
+    const vx=cx[v0], vy=cy[v0];
+    for(let i=0;i<N;i++){
+      if(!valid[i]){ h[i]=-30; continue; }
+      const x=cx[i], y=cy[i], d=hexDist(i, idx(0,0))/R;
+      const base=0.5+0.7*fbm(n1,x/170,y/170,4)-1.35*ss(0.62,0.98,d);
+      const rg=1-Math.abs(fbm(n2,x/70,y/70,4)); const ridge=rg*rg*rg*ss(0.1,0.5,fbm(n3,x/220+9,y/220-3,3));
+      const dv=Math.hypot(x-vx,y-vy);
+      let hh = 70*base + 120*ridge*Math.max(0,Math.min(1,base*2.5)) + 10*fbm(n4,x/22,y/22,3);
+      hh += 150*Math.exp(-dv/22) + 45*Math.exp(-dv/60) - 10*Math.exp(-(dv*dv)/6);
+      if(hh>0) hh=hh*0.6+Math.pow(hh,1.2)*0.08;
+      h[i]=hh;
+    }
+    // fill depressions with a gentle slope (keep a few big lakes)
+    const Fs=new Float32Array(N), parent=new Int32Array(N).fill(-1), seen=new Uint8Array(N), order=new Int32Array(VAL.length); let on=0;
+    const heapI=new Int32Array(N), heapV=new Float32Array(N); let hn=0;
+    const push=(i,v)=>{let k=hn++; while(k>0){const pk=(k-1)>>1; if(heapV[pk]<=v)break; heapI[k]=heapI[pk];heapV[k]=heapV[pk];k=pk;} heapI[k]=i;heapV[k]=v;};
+    const pop=()=>{const top=heapI[0]; const li=heapI[--hn], lv=heapV[hn]; let k=0; for(;;){let c=2*k+1; if(c>=hn)break; if(c+1<hn&&heapV[c+1]<heapV[c])c++; if(heapV[c]>=lv)break; heapI[k]=heapI[c];heapV[k]=heapV[c];k=c;} heapI[k]=li;heapV[k]=lv; return top;};
+    for(const s of SEA){ seen[s]=1; for(let d=0;d<6;d++){const j=s+NB[d]; if(valid[j]&&!seen[j]){seen[j]=1; Fs[j]=Math.max(h[j],0); push(j,Fs[j]);}} }
+    while(hn>0){ const c=pop(); order[on++]=c; for(let d=0;d<6;d++){ const j=c+NB[d]; if(!valid[j]||seen[j]) continue; seen[j]=1; Fs[j]=Math.max(h[j],Fs[c]+(Fs[c]>0?0.03:0)); parent[j]=c; push(j,Fs[j]); } }
+    { const lab=new Int32Array(N).fill(-1), comps=[], stack=[];
+      for(const i of VAL){ if(lab[i]>=0||Fs[i]-h[i]<0.05||Fs[i]<=0.001) continue; const id=comps.length; let area=0,depth=0; lab[i]=id; stack.push(i);
+        while(stack.length){ const c=stack.pop(); area++; depth=Math.max(depth,Fs[c]-h[c]); for(let d=0;d<6;d++){ const j=c+NB[d]; if(valid[j]&&lab[j]<0&&Fs[j]-h[j]>=0.05&&Fs[j]>0.001){lab[j]=id;stack.push(j);} } }
+        comps.push({id,area,depth}); }
+      comps.sort((a,b)=>b.area*Math.min(b.depth,15)-a.area*Math.min(a.depth,15)); const keep=new Uint8Array(comps.length); let tot=0;
+      for(const c of comps){ if(c.depth<3||c.area<25) continue; if(tot+c.area>0.03*VAL.length) continue; keep[c.id]=1; tot+=c.area; }
+      for(const i of VAL){ const l=lab[i]; if(l>=0&&!keep[l]) h[i]=Fs[i]; }
+      for(const i of VAL){ const d=Fs[i]-h[i]; w[i]=d>0.02?d:0; } }
+    for(const s of SEA) w[s]=-h[s];
+    h0.set(h);
+    // vents
+    let top=v0; for(let k=0;k<200;k++){ let best=top; for(let d=0;d<6;d++){ const j=top+NB[d]; if(valid[j]&&hexDist(j,v0)<6&&h[j]<h[best]) best=j; } if(best===top) break; top=best; }
+    addVent(top, 0.03, 'Great Vent');
+    if(rnd()<0.75){ for(let t=0;t<400;t++){ const a=rnd()*Math.PI*2, rr=40+rnd()*40; const q=Math.round(qOf[v0]+rr*Math.cos(a)), r=Math.round(rOf[v0]+rr*Math.sin(a)*0.8);
+      if(Math.abs(q)>R||Math.abs(r)>R||Math.abs(q+r)>R) continue; const j=idx(q,r); if(valid[j]&&h[j]>25&&w[j]===0){ addVent(j, 0.015, 'Fissure'); break; } } }
+    // spin up: a season of weather + lava history
+    for(let k=0;k<500;k++) step(true);
+    for(const i of VAL) m[i]=Math.min(1,m[i]);
+    P.events.length=0; P.collected={};
+  }
+  function addVent(i, base, name){ const v={ i, base, name: name+(P.vents.length?(' '+(P.vents.length+1)):''), state:'quiet', t:0, mult:1 }; P.vents.push(v); computeHeat(); return v; }
+  function computeHeat(){
+    const n=makeNoise(seed+9);
+    for(const i of VAL){ let best=0; for(const v of P.vents){ const d=Math.hypot(cx[i]-cx[v.i],cy[i]-cy[v.i]); best=Math.max(best, Math.exp(-d/24)); } heat[i]=Math.min(1,best*(1+0.35*n(cx[i]/18,cy[i]/18))); }
+  }
+
+  // ---------------- weather ----------------
+  function seasonF(){ const ph=(P.step%P.yearSteps)/P.yearSteps; return 1+0.85*Math.sin(2*Math.PI*ph); }  // wet peak 1/4, dry 3/4
+  function weather(){
+    const sf=seasonF(); const th = P.wind + 0.5*Math.sin(2*Math.PI*P.step/P.yearSteps*1.7);
+    const ux=Math.cos(th), uy=Math.sin(th);
+    const want = Math.max(0, Math.round(1 + 2.6*sf));
+    if (P.storms.length < want && rnd() < 0.02){
+      const off=(rnd()*2-1)*R*1.6, D=R*1.5+40;
+      P.storms.push({ x:-ux*D - uy*off, y:-uy*D + ux*off, vx:ux*(0.35+0.25*rnd()), vy:uy*(0.35+0.25*rnd()), r:16+rnd()*22, amp:(0.0009+0.0012*rnd())*(0.6+0.4*sf), age:0 });
+    }
+    for (const s of P.storms){ s.x+=s.vx; s.y+=s.vy; s.age++; }
+    P.storms = P.storms.filter(s => Math.hypot(s.x,s.y) < R*1.5+80 && s.age < 4000);
+    const dz = P.drizzle*Math.max(0.15,sf);
+    const lens = (P.step%4===0);
+    if (lens) for (const i of VAL) rain[i]=dz;
+    for (const i of VAL) w[i]+=dz;
+    for (const s of P.storms){
+      const r2=s.r*s.r*4, ir=1/(s.r*s.r);
+      for (let k=0;k<VAL.length;k++){ const i=VAL[k]; const dx=cx[i]-s.x, dy=cy[i]-s.y; const d2=dx*dx+dy*dy; if (d2>r2) continue;
+        const a=s.amp*Math.exp(-d2*ir); w[i]+=a; if (lens) rain[i]+=a; }
+    }
+  }
+
+  // ---------------- water ----------------
+  function waterStep(){
+    const KP=P.KP, DAMP=P.DAMP; out.fill(0);
+    for(let k=0;k<ACT.length;k++){ const i=ACT[k], Hi=h[i]+L[i]+w[i];
+      for(let d=0;d<3;d++){ const j=i+NB[d], Fd=FF[d];
+        if(!valid[i]&&!valid[j]){ Fd[i]=0; continue; }
+        let f=Fd[i]*DAMP + KP*(Hi-(h[j]+L[j]+w[j]));
+        if(f>0){ if(w[i]<=0) f=0; else out[i]+=f; } else if(f<0){ if(w[j]<=0) f=0; else out[j]-=f; }
+        Fd[i]=f; } }
+    for(let k=0;k<ACT.length;k++){ const i=ACT[k], o=out[i]; out[i]= o>w[i] ? w[i]/o : 1; }
+    for(let k=0;k<ACT.length;k++){ const i=ACT[k];
+      for(let d=0;d<3;d++){ const j=i+NB[d], Fd=FF[d]; let f=Fd[i]; if(f===0) continue;
+        f*= f>0 ? out[i] : out[j]; Fd[i]=f; w[i]-=f; w[j]+=f; if(f>0) flowOut[i]+=f; else flowOut[j]-=f; } }
+    for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
+    const ev=P.evap*(seasonF()<0.5?1.8:1);
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const x=w[i]-ev; w[i]=x>0?x:0; }
+  }
+  // ---------------- lava ----------------
+  function lavaStep(){
+    const KL=P.KL, Ts=P.Ts; lout.fill(0);
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; Tc[i]= L[i]>1e-5 ? E[i]/L[i] : 0; }
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k], Li=L[i];
+      for(let d=0;d<3;d++){ const j=i+NB[d], Fd=FL[d]; const Lj=L[j];
+        if(!valid[j] || (Li<1e-4 && Lj<1e-4)){ Fd[i]=0; continue; }
+        const dH=(h[i]+Li)-(h[j]+Lj); const don = dH>0? i : j, Ld = dH>0? Li : Lj;
+        if (Ld<1e-4){ Fd[i]=0; continue; }
+        const T=Tc[don]; const mob = T<=Ts ? 0 : (T-Ts)/(1-Ts);
+        const f = KL*Math.min(Ld,1.2)*mob*dH; Fd[i]=f; if(f>0) lout[i]+=f; else lout[j]-=f; } }
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k], o=lout[i]; lout[i] = o>L[i]*0.6 ? L[i]*0.6/o : 1; }
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k];
+      for(let d=0;d<3;d++){ let f=FL[d][i]; if(f===0) continue; const j=i+NB[d];
+        const don = f>0? i : j; f*=lout[don]; const T=Tc[don];
+        L[i]-=f; L[j]+=f; E[i]-=f*T; E[j]+=f*T; } }
+    for(const v of P.vents){ const amt = v.base*v.mult; L[v.i]+=amt; E[v.i]+=amt; }
+    // cooling, quenching, steam, solidification
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const Li=L[i]; if(Li<=0) continue;
+      if(Li<1e-4){ L[i]=0; E[i]=0; continue; }
+      let T=E[i]/Li; const air=P.coolAir/(0.25+Li); let q=0;
+      if(w[i]>0.02){ q=P.coolWater*T; const steam=Math.min(w[i], P.steamK*q*Li); w[i]-=steam; }
+      qAcc[i]+=q; aAcc[i]+=air; T-=air+q; if(T<0) T=0;
+      if(T<Ts || Li<0.004){ h[i]+=Li; const quenched = qAcc[i] > 0.6*aAcc[i]; rock[i]= quenched?3:2; wallS[i]=Math.max(wallS[i],ROCK_S[rock[i]]);
+        L[i]=0; E[i]=0; qAcc[i]=0; aAcc[i]=0; P.hChanged=true; }
+      else E[i]=T*Li; }
+  }
+  // ---------------- vents ----------------
+  function vents(){
+    for(const v of P.vents){
+      if(v.state==='quiet'){ if(rnd() < 1/(P.yearSteps*0.45)){ v.state='rumble'; v.t=80+((rnd()*60)|0); P.events.push({type:'rumble', vent:v.name, i:v.i, days:Math.round(v.t/8)}); } }
+      else if(v.state==='rumble'){ if(--v.t<=0){ v.state='erupt'; v.t=150+((rnd()*200)|0); v.mult=14+rnd()*16; P.events.push({type:'erupt', vent:v.name, i:v.i}); } }
+      else if(v.state==='erupt'){ if(--v.t<=0){ v.state='quiet'; v.mult=1; P.events.push({type:'calm', vent:v.name, i:v.i}); } }
+    }
+  }
+  // ---------------- erosion of built ground by flowing water ----------------
+  function erosion(){
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const S=wallS[i];
+      if(S>0 && w[i]>0.03 && flowOut[i]>0.4){ const e=0.012*(flowOut[i]-0.4)/S; h[i]-=e; P.hChanged=true;
+        if(h[i]<=h0[i]+0.01){ h[i]=Math.min(h[i],h0[i]); wallS[i]=0; rock[i]=0; } }
+      flowOut[i]=0; }
+  }
+  // ---------------- collectors (cisterns, lava traps) ----------------
+  function collect(){
+    for(const c of P.coll){ if(!c.active) continue; const per=c.rate/8/c.cells.length; let got=0;
+      for(const j of c.cells){
+        if(c.type==='cistern'){ const t=Math.min(w[j], per); w[j]-=t; got+=t; }
+        else { if(L[j]>1e-4 && E[j]/L[j]>0.45){ const t=Math.min(L[j], per); const T=E[j]/L[j]; L[j]-=t; E[j]-=t*T; got+=t; } } }
+      P.collected[c.id]=(P.collected[c.id]||0)+got; }
+  }
+  function moisture(){
+    const sf=seasonF();
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; let s=0; for(let d=0;d<6;d++) s+=m[i+NB[d]];
+      const wet=w[i]>0.03?1:0; const x=m[i]+0.12*(s-6*m[i])+0.25*wet*(1-m[i])+Math.min(0.03,rain[i]*15)-0.012*m[i]-(L[i]>0.01?0.2:0);
+      tmp[i]=x<0?0:x>1?1:x; }
+    for(let k=0;k<VAL.length;k++){ const i=VAL[k]; m[i]=tmp[i]; }
+  }
+  function step(spin){
+    weather(); waterStep(); lavaStep(); if(!spin) collect(); vents();
+    if(P.step%4===0){ moisture(); erosion(); }
+    P.step++;
+  }
+  // ---------------- edits from the main thread ----------------
+  function applyDh(cells, dhs, rockType){
+    const newVents=[];
+    for(let k=0;k<cells.length;k++){ const i=cells[k]; if(!valid[i]) continue; h[i]+=dhs[k];
+      if(dhs[k]>0){ rock[i]=rockType; wallS[i]=Math.max(wallS[i]*(h[i]-dhs[k]>h0[i]?1:0), ROCK_S[rockType]); }
+      else if(h[i]<=h0[i]+0.01){ rock[i]=0; wallS[i]=0; }
+      if(h0[i]-h[i]>3.5 && heat[i]>0.5 && !P.vents.some(v=>hexDist(v.i,i)<10)) newVents.push(i); }
+    for(const i of newVents.slice(0,1)){ const v=addVent(i, 0.006, 'Breach vent'); v.state='erupt'; v.t=120; v.mult=6; P.events.push({type:'newvent', vent:v.name, i}); }
+    P.hChanged=true;
+  }
+  function mineRock(cells, amt){ let got=0; for(const i of cells){ if(rock[i]!==3) continue; const t=Math.min(amt-got, 0.25); if(t<=0) break; h[i]-=t; got+=t; if(h[i]<=h0[i]+0.01){ rock[i]=0; wallS[i]=0; } } P.hChanged=true; return got; }
+  return { R, W, N, OFF, NB, valid, qOf, rOf, cx, cy, idx, hexDist, h, h0, w, m, L, E, rock, wallS, heat, rain, P, VAL, ACT, SEA,
+           generate, step, seasonF, applyDh, mineRock, addVent };
+}
+
+// ===================== worker glue =====================
+if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope) {
+  let S=null, rate=8, acc=0, last=0, lastPost=0, lastSeq=0;
+  const q6=(x)=> x<=0?0: x>=6?255: Math.round(Math.sqrt(x/6)*255);
+  function post(){
+    const N=S.N, w8=new Uint8Array(N), m8=new Uint8ClampedArray(N), L8=new Uint8Array(N), T8=new Uint8ClampedArray(N), rn8=new Uint8ClampedArray(N);
+    for(let i=0;i<N;i++){ w8[i]=q6(S.w[i]); m8[i]=S.m[i]*255; const l=S.L[i]; L8[i]=q6(l); T8[i]= l>1e-4? S.E[i]/l*255 : 0; rn8[i]=Math.sqrt(S.rain[i]/0.002)*255; }
+    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, w8, m8, L8, T8, rn8, events:S.P.events.splice(0), collected:S.P.collected,
+      vents:S.P.vents.map(v=>({i:v.i,name:v.name,state:v.state,t:v.t})), storms:S.P.storms.map(s=>({x:s.x,y:s.y,r:s.r,a:s.amp}))};
+    S.P.collected={};
+    const tr=[w8.buffer,m8.buffer,L8.buffer,T8.buffer,rn8.buffer];
+    if(S.P.hChanged){ msg.h=S.h.slice(); msg.rock=S.rock.slice(); msg.wallS=S.wallS.slice(); msg.heat=S.heat.slice(); tr.push(msg.h.buffer,msg.rock.buffer,msg.wallS.buffer,msg.heat.buffer); S.P.hChanged=false; }
+    postMessage(msg, tr);
+  }
+  function tick(){
+    const now=performance.now(); let dt=(now-last)/1000; last=now; if(dt>0.25) dt=0.25;
+    acc+=rate*dt; const t0=performance.now();
+    while(acc>=1 && performance.now()-t0<45){ S.step(false); acc-=1; }
+    if(acc>2) acc=2;
+    if(now-lastPost>90){ post(); lastPost=now; }
+    setTimeout(tick, 4);
+  }
+  onmessage=(e)=>{ const m=e.data;
+    if(m.type==='init'){ S=makeSim(m.R,m.seed); S.generate();
+      postMessage({type:'world', R:S.R, W:S.W, OFF:S.OFF, N:S.N, h:S.h.slice(), h0:S.h0.slice(), rock:S.rock.slice(), wallS:S.wallS.slice(), heat:S.heat.slice(), valid:S.valid, yearSteps:S.P.yearSteps});
+      S.P.hChanged=false; post(); last=performance.now(); tick(); }
+    else if(m.type==='rate'){ rate=m.rate; }
+    else if(m.type==='edit'){ for(const op of m.ops){
+        if(op.op==='dh') S.applyDh(op.cells, op.dhs, op.rock);
+        else if(op.op==='coll') S.P.coll=op.list;
+        else if(op.op==='mine'){ const got=S.mineRock(op.cells, op.amt); S.P.collected['mine'+op.id]=(S.P.collected['mine'+op.id]||0)+got; } }
+      lastSeq = m.seq||lastSeq; }
+  };
+}
+
+
+</script>
+<script>
+"use strict";
+// ======================================================================
+// Hexphys Watershed — main thread
+// ======================================================================
+const $ = s => document.querySelector(s);
+const clamp = (x,a,b) => x<a?a:x>b?b:x;
+const SQ3 = Math.sqrt(3);
+const SIMSRC = document.getElementById('simsrc').textContent;
+const LIB = new Function(SIMSRC + '\n;return {makeNoise, mulberry32};')();
+const R = 150, SEED = (Number(new URLSearchParams(location.search).get('seed')) || (Date.now() % 100000));
+const rnd = LIB.mulberry32(SEED ^ 0x51ed);
+const DAY = 8;                       // simulation steps per day
+const ROCKNAME = ['natural ground','earth fill','basalt','obsidian'];
+const ROCK_S = [0, 1.0, 3.0, 9.0];
+
+const G = { ready:false, W:0, OFF:0, N:0, rate:8, lens:'map' };
+let NBa = null;
+const worker = new Worker(URL.createObjectURL(new Blob([SIMSRC], {type:'text/javascript'})));
+worker.onmessage = e => { const m=e.data; if (m.type==='world') onWorld(m); else if (m.type==='state') onState(m); };
+worker.postMessage({type:'init', R, seed:SEED});
+let opSeq = 0; const pendingOps = [];
+function sendOps(){ if (pendingOps.length){ opSeq++; worker.postMessage({type:'edit', seq:opSeq, ops:pendingOps.splice(0)}); } }
+
+function idx(q,r){ return (r+G.OFF)*G.W + (q+G.OFF); }
+function inArr(q,r){ return Math.abs(q)<=G.OFF-1 && Math.abs(r)<=G.OFF-1; }
+function hexDist(i,j){ const dq=G.qOf[i]-G.qOf[j], dr=G.rOf[i]-G.rOf[j]; return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2; }
+function cellXY(i){ const q=G.qOf[i], r=G.rOf[i]; return [SQ3*(q+r/2), 1.5*r]; }
+function disk(i, rad, fn){ const q0=G.qOf[i], r0=G.rOf[i];
+  for (let dq=-rad; dq<=rad; dq++) for (let dr=Math.max(-rad,-dq-rad); dr<=Math.min(rad,-dq+rad); dr++){
+    const q=q0+dq, r=r0+dr; if (!inArr(q,r)) continue; const j=idx(q,r); if (G.valid[j]) fn(j,(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2); } }
+const dq6 = x => { const v=x/255; return v*v*6; };
+const wOf = i => dq6(G.w8[i]);
+const lOf = i => dq6(G.L8[i]);
+const tOf = i => G.T8[i]/255;
+
+function onWorld(m){
+  Object.assign(G, {W:m.W, OFF:m.OFF, N:m.N, valid:m.valid, h:m.h, h0:m.h0, rock:m.rock, wallS:m.wallS, heat:m.heat, yearSteps:m.yearSteps});
+  NBa = [1, 1-G.W, -G.W, -1, -1+G.W, G.W];
+  G.qOf=new Int16Array(G.N); G.rOf=new Int16Array(G.N);
+  for (let i=0;i<G.N;i++){ G.qOf[i]=i%G.W-G.OFF; G.rOf[i]=((i/G.W)|0)-G.OFF; }
+  G.occ=new Int32Array(G.N).fill(-1); G.jobAt=new Int32Array(G.N).fill(-1);
+  const nz=LIB.makeNoise(SEED+77), nz2=LIB.makeNoise(SEED+78); G.tex=new Float32Array(G.N);
+  for (let i=0;i<G.N;i++){ if(!G.valid[i]) continue; const [x,y]=cellXY(i); G.tex[i]=2.5*nz(x/8,y/8)+1.2*nz2(x/3,y/3); }
+  G.base=new Uint8ClampedArray(G.N*3); for (let i=0;i<G.N;i++) baseColor(i);
+}
+function onState(m){
+  G.w8=m.w8; G.m8=m.m8; G.L8=m.L8; G.T8=m.T8; G.rn8=m.rn8; G.step=m.step; G.season=m.season; G.vents=m.vents; G.storms=m.storms;
+  if (m.h && m.seq >= opSeq){ const old=G.h; G.h=m.h; G.rock=m.rock; G.wallS=m.wallS; G.heat=m.heat;
+    for (let i=0;i<G.N;i++) if (old[i]!==G.h[i]) { baseColor(i); for (const d of NBa) baseColor(i+d); } }
+  for (const k in m.collected){ const v=m.collected[k];
+    if (k.startsWith('mine')){ const id=+k.slice(4); const b=buildings[id]; if (b){ b.got=(b.got||0)+v; } ST.obsidian+=v; dayFlow.obsidian=(dayFlow.obsidian||0)+v; EX.obsidian+=v; }
+    else { const b=buildings[+k]; if (!b) continue; b.got=(b.got||0)+v; if (b.type==='gate'){ ST.water+=v; dayFlow.water=(dayFlow.water||0)+v; EX.water+=v; } else { ST.lava+=v; dayFlow.lava=(dayFlow.lava||0)+v; EX.lava+=v; } } }
+  for (const ev of m.events) onEvent(ev);
+  rasterDirty = true;
+  if (!G.ready){ G.ready=true; startGame(); } else economyCatchUp();
+}
+
+// ---------------- colours ----------------
+function baseColor(i){
+  if (i<0||i>=G.N) return;
+  const h=G.h[i], rk=G.rock[i]; let r,g,b;
+  if (!G.valid[i] || h<0){ r=28;g=50;b=84; }
+  else if (rk===3){ r=48;g=32;b=66; }
+  else if (rk===2){ r=74;g=72;b=76; }
+  else if (rk===1){ r=150;g=124;b=90; }
+  else if (h<2){ r=210;g=198;b=150; }
+  else if (h<90){ const t=h/90; r=120+30*t; g=146-12*t; b=76+16*t; }
+  else { const t=Math.min(1,(h-90)/110); r=150+40*t; g=134-6*t; b=92+40*t; }
+  const W=G.W, hs=k=>(G.valid[k]? G.h[k]+G.tex[k] : -30);
+  const s=clamp(1+0.035*((hs(i-1)-hs(i+1))+0.75*(hs(i-W)-hs(i+W))),0.55,1.45);
+  G.base[i*3]=r*s; G.base[i*3+1]=g*s; G.base[i*3+2]=b*s;
+}
+const WA=new Float32Array(256), WR=new Float32Array(256), WG=new Float32Array(256), WB=new Float32Array(256);
+for (let k=0;k<256;k++){ const d=(k/255)**2*6; const a=d<0.025?0:1-Math.exp(-d*2.4); const deep=Math.min(1,d/3.5); WA[k]=a; WR[k]=70-48*deep; WG[k]=152-92*deep; WB[k]=206-70*deep; }
+
+// ---------------- camera + raster ----------------
+const cv=$('#map'); let ctx, CW=0, CH=0; const cam={x:0,y:0,s:4};
+const B=2; let off, octx, img, blockIdx=null, BW=0, BH=0, camDirty=true, rasterDirty=true;
+function resize(){ CW=window.innerWidth; CH=window.innerHeight; cv.width=CW; cv.height=CH; ctx=cv.getContext('2d');
+  BW=Math.ceil(CW/B); BH=Math.ceil(CH/B); off=document.createElement('canvas'); off.width=BW; off.height=BH; octx=off.getContext('2d'); img=octx.createImageData(BW,BH); blockIdx=new Int32Array(BW*BH); camDirty=true; }
+window.addEventListener('resize', resize); resize();
+const screenToWorld=(sx,sy)=>[cam.x+(sx-CW/2)/cam.s, cam.y+(sy-CH/2)/cam.s];
+const worldToScreen=(x,y)=>[(x-cam.x)*cam.s+CW/2, (y-cam.y)*cam.s+CH/2];
+function worldToCell(x,y){ const q=(SQ3/3*x-y/3), r=2/3*y, s=-q-r; let Q=Math.round(q), Rr=Math.round(r), S=Math.round(s);
+  const dq=Math.abs(Q-q), dr=Math.abs(Rr-r), ds=Math.abs(S-s); if (dq>dr&&dq>ds) Q=-Rr-S; else if (dr>ds) Rr=-Q-S; if (!inArr(Q,Rr)) return -1; return idx(Q,Rr); }
+function rebuildBlocks(){ for (let by=0;by<BH;by++){ const wy=cam.y+((by+0.5)*B-CH/2)/cam.s; for (let bx=0;bx<BW;bx++){ const wx=cam.x+((bx+0.5)*B-CW/2)/cam.s; blockIdx[by*BW+bx]=worldToCell(wx,wy); } } camDirty=false; }
+const LC=[0,0,0]; const HST=[[0,[64,132,70]],[25,[176,176,96]],[70,[176,126,74]],[130,[132,104,92]],[200,[238,238,240]]];
+function lensColor(i){
+  const h=G.h[i], wv=G.w8[i], wet=wv&&WA[wv]>0.25, lv=lOf(i);
+  if (G.lens==='moisture'){ if (wet||h<=0){ LC[0]=25;LC[1]=45;LC[2]=95; return LC; } const m=G.m8[i]/255; if (m<0.15){ LC[0]=120;LC[1]=82;LC[2]=50; return LC; } const t=(m-0.15)/0.85; LC[0]=190-150*t; LC[1]=170-40*t; LC[2]=80+130*t; return LC; }
+  if (G.lens==='height'){ if (h<=0||wet){ LC[0]=25;LC[1]=45;LC[2]=95; return LC; } let k=0; while (k<HST.length-2&&h>HST[k+1][0]) k++; const t=clamp((h-HST[k][0])/(HST[k+1][0]-HST[k][0]),0,1);
+    for (let c=0;c<3;c++) LC[c]=HST[k][1][c]+(HST[k+1][1][c]-HST[k][1][c])*t; const c10=Math.floor(h/5), W=G.W;
+    if (G.h[i+1]>0&&Math.floor(G.h[i+1]/5)!==c10 || G.h[i+W]>0&&Math.floor(G.h[i+W]/5)!==c10){ LC[0]*=0.7; LC[1]*=0.7; LC[2]*=0.7; } return LC; }
+  if (G.lens==='heat'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.35; const ht=G.heat[i]; LC[0]=g0+ht*170; LC[1]=g0+ht*60; LC[2]=g0+10;
+    if (ht>0.5){ LC[0]=Math.min(255,LC[0]+40); } if (lv>0.005){ const T=tOf(i); LC[0]=255; LC[1]=80+170*T; LC[2]=30; } return LC; }
+  if (G.lens==='rain'){ const g0=(G.base[i*3]+G.base[i*3+1]+G.base[i*3+2])/3*0.4; const rn=G.rn8[i]/255; LC[0]=g0*(1-rn)+60*rn; LC[1]=g0*(1-rn)+150*rn; LC[2]=g0*(1-rn)+255*rn;
+    if (wet){ LC[0]=LC[0]*0.5+15; LC[1]=LC[1]*0.5+35; LC[2]=LC[2]*0.5+80; } return LC; }
+  return LC;
+}
+function renderRaster(){
+  if (camDirty) rebuildBlocks();
+  const d=img.data, n=blockIdx.length, base=G.base, w8=G.w8, L8=G.L8, T8=G.T8, m8=G.m8, h=G.h;
+  const t=performance.now()/140|0;
+  for (let k=0;k<n;k++){ const i=blockIdx[k], o=k*4;
+    if (i<0){ d[o]=9;d[o+1]=11;d[o+2]=15;d[o+3]=255; continue; }
+    let r,g,b;
+    if (G.lens!=='map'){ const c=lensColor(i); r=c[0]; g=c[1]; b=c[2]; }
+    else { r=base[i*3]; g=base[i*3+1]; b=base[i*3+2];
+      if (G.valid[i] && h[i]>0 && G.rock[i]===0){ const mo=m8[i]/255; const dry=Math.max(0,0.3-mo)*1.6; r+=(178-r)*dry*0.5; g+=(160-g)*dry*0.5; b+=(98-b)*dry*0.5; const v=Math.max(0,mo-0.35)*0.7; r+=(46-r)*v; g+=(96-g)*v; b+=(46-b)*v; }
+      const wv=w8[i]; if (wv){ const a=WA[wv]; r=r*(1-a)+WR[wv]*a; g=g*(1-a)+WG[wv]*a; b=b*(1-a)+WB[wv]*a; } }
+    const lv=L8[i]; if (lv){ const T=T8[i]/255; const a=Math.min(1,0.45+lv/60); const fl=((i+t)&3)*10*T; const lr=120+135*Math.min(1,T*1.4), lg=40+170*T*T+fl, lb=20+30*T*T; r=r*(1-a)+lr*a; g=g*(1-a)+lg*a; b=b*(1-a)+lb*a; }
+    if (G.jobAt[i]>=0){ r=r*0.7+255*0.3; g=g*0.7+210*0.3; b=b*0.7+80*0.3; }
+    d[o]=r; d[o+1]=g; d[o+2]=b; d[o+3]=255; }
+  octx.putImageData(img,0,0); rasterDirty=false;
+}
+const HEXV=[0,1,2,3,4,5].map(k=>{const a=Math.PI/180*(60*k-30); return [Math.cos(a),Math.sin(a)];});
+function hexPath(p,i){ const [x,y]=cellXY(i); const [sx,sy]=worldToScreen(x,y); const s=cam.s; p.moveTo(sx+s*HEXV[0][0],sy+s*HEXV[0][1]); for (let k=1;k<6;k++) p.lineTo(sx+s*HEXV[k][0],sy+s*HEXV[k][1]); p.closePath(); }
+function visibleCells(fn){ const [x0,y0]=screenToWorld(0,0), [x1,y1]=screenToWorld(CW,CH); const r0=Math.floor(y0/1.5)-1, r1=Math.ceil(y1/1.5)+1;
+  for (let r=r0;r<=r1;r++){ const q0=Math.floor(x0/SQ3-r/2)-1, q1=Math.ceil(x1/SQ3-r/2)+1; for (let q=q0;q<=q1;q++){ if(!inArr(q,r)) continue; const i=idx(q,r); if (G.valid[i]) fn(i); } } }
+
+// ---------------- economy ----------------
+const BT = {
+  camp:     { name:'Camp', cost:{}, housing:12, workers:0, col:'#f2d29b', glyph:'⌂', tip:'Your settlement. Foragers bring food without workers. Cannot be destroyed; move it if threatened.' },
+  house:    { name:'House', cost:{earth:25}, housing:6, workers:0, col:'#e8b878', glyph:'■', tip:'+6 housing.' },
+  farm:     { name:'Farm', cost:{earth:15}, workers:2, area:2, col:'#d8d060', glyph:'≋', tip:'Food ∝ soil moisture within 2 hexes. Floods and lava ruin it.' },
+  gate:     { name:'Export gate', cost:{}, workers:0, area:1, rate:8, col:'#7cc4ff', glyph:'⇲', tip:'Where water leaves the island for export, up to 8/day per gate. Rivers do not come here on their own — dig channels to it. Each gate fills separately, so feeding all of them pays.' },
+  lavatrap: { name:'Lava trap', cost:{earth:40}, workers:1, area:1, rate:2, col:'#ff8a3c', glyph:'▼', tip:'Collects molten lava on its 7 hexes, up to 2/day, for export. Lava-proof. Put it on a lava path.' },
+  quarry:   { name:'Obsidian quarry', cost:{earth:30}, workers:2, area:2, col:'#b48cff', glyph:'◆', tip:'Cuts obsidian rock within 2 hexes (0.6/day). Obsidian forms where lava is quenched by water.' },
+};
+const EW = { // earthwork intents
+  channel: { name:'Channel', two:true, tip:'Click start, then end. Digs a channel 0.8 m deep that always runs downhill from the higher end, cutting through rises.' },
+  dam:     { name:'Dam', two:true, tip:'Click one valley side, then the other. Builds a wall with a flat crest at the lower end\'s height; water pools behind it. Add a spillway channel or it may overtop.' },
+  levee:   { name:'Levee', two:true, tip:'Click start, then end. Raises a bank 1.5 m along the line to keep a river out.' },
+  basin:   { name:'Basin', two:false, tip:'Click a spot. Excavates a flat-bottomed pond (radius = width) to catch water.' },
+};
+const ST = { food:80, earth:150, obsidian:0, water:0, lava:0, pop:10, popAcc:0, housing:0, idle:0, crew:0 };
+const EX = { year:1, water:0, lava:0, obsidian:0 };
+const RATE = {}; let dayFlow = {};
+const PRIO = ['farm','lavatrap','quarry','earthworks'];
+const typePaused = {};
+const buildings=[], jobs=[]; let jobSeq=0;
+let tool='inspect', width=1, mat='earth', firstClick=-1, selB=-1, selJ=-1;
+let lastEcoStep=0, ecoDays=0; const goalsDone={};
+const GROW_R=0.01, GROW_BASE=0.03;
+function canAfford(c){ for (const k in c) if ((ST[k]||0)<c[k]) return false; return true; }
+function pay(c){ for (const k in c) ST[k]-=c[k]; }
+const costStr=c=>Object.entries(c).map(([k,v])=>`${v} ${k}`).join(', ')||'free';
+function log(msg){ const el=document.createElement('div'); el.className='e'; el.innerHTML=`<span class="t">${dateShort()}</span>${msg}`; const L=$('#log'); L.prepend(el); while (L.children.length>60) L.lastChild.remove(); }
+
+function placeBuilding(type,i,free){ const bt=BT[type]; const b={id:buildings.length,type,i,hp:100,alive:true,active:false};
+  buildings.push(b); G.occ[i]=b.id; if (!free) pay(bt.cost); if (bt.housing) ST.housing+=bt.housing; syncCollectors(); return b; }
+function validPlacement(type,i){
+  if (i<0||!G.valid[i]) return 'off the map'; if (G.h[i]<=0.3) return 'needs land';
+  if (G.occ[i]>=0) return 'occupied';
+  if (type!=='cistern' && type!=='lavatrap' && wOf(i)>0.1) return 'needs dry land';
+  if (type!=='lavatrap' && lOf(i)>0.01) return 'lava here';
+  if (type==='quarry'){ let ok=false; disk(i,2,j=>{ if (G.rock[j]===3) ok=true; }); if (!ok) return 'no obsidian rock within 2 hexes'; }
+  if (!canAfford(BT[type].cost)) return 'cannot afford ('+costStr(BT[type].cost)+')';
+  return null; }
+function syncCollectors(){
+  const list=[]; for (const b of buildings){ if (!b.alive || (b.type!=='gate'&&b.type!=='lavatrap')) continue; const cells=[]; disk(b.i,1,j=>{ if (G.h[j]>0.5) cells.push(j); });
+    list.push({id:b.id, type:b.type==='gate'?'cistern':'lavatrap', rate:BT[b.type].rate, cells, active:b.type==='gate' || (b.active&&!b.flooded)}); }
+  pendingOps.push({op:'coll', list}); sendOps(); }
+function allocate(){
+  let free=ST.pop; ST.crew=0;
+  for (const b of buildings){ if (!b.alive) continue; const w=BT[b.type].workers; b.active=!w; b.why=w?'':null; }
+  PRIO.forEach((t,rank)=>{
+    if (t==='earthworks'){ if (typePaused.earthworks){ ST.crew=0; return; } ST.crew=free; free=0; return; }
+    for (const b of buildings.filter(b=>b.alive&&b.type===t)){ const w=BT[t].workers;
+      if (typePaused[t]){ b.active=false; b.why='typepaused'; continue; } if (b.paused){ b.active=false; b.why='paused'; continue; }
+      if (free>=w){ b.active=true; b.why=''; free-=w; } else { b.active=false; b.why='unstaffed'; b.rank=rank+1; } } });
+  ST.idle=free;
+}
+function economyCatchUp(){ while (G.step-lastEcoStep>=DAY){ lastEcoStep+=DAY; economyDay(); } }
+function addFlow(r,src,v){ dayFlow[r+'|'+src]=(dayFlow[r+'|'+src]||0)+v; }
+function economyDay(){
+  ecoDays++;
+  for (const b of buildings){ if (b.type==='gate'){ const g=b.got||0; b.rate=(b.rate||0)*0.9+(g-(b.prevGot||0))*0.1; b.prevGot=g; } }
+  const prevActive = buildings.map(b=>b.active&&!b.flooded);
+  allocate();
+  for (const b of buildings){ if (!b.alive) continue; const bt=BT[b.type];
+    b.flooded = wOf(b.i)>0.3 && b.type!=='gate';
+    const lava = lOf(b.i)>0.03 && tOf(b.i)>0.35;
+    if (lava && b.type!=='lavatrap'){ if (b.type==='camp'){ b.inLava=true; } else { destroy(b,'lava'); continue; } } else b.inLava=false;
+    if (b.flooded) b.hp-=(b.type==='farm'?3:1.5); else if (b.hp<100) b.hp=Math.min(100,b.hp+0.5);
+    if (b.type==='camp' && b.hp<1) b.hp=1;
+    if (b.hp<=0){ destroy(b,'flood'); continue; }
+    b.yield=0;
+    if (!b.active || b.flooded || b.inLava) continue;
+    if (b.type==='camp'){ addFlow('food','camp foragers',0.45); }
+    else if (b.type==='farm'){ const mo=avgMoist(b.i); b.moist=mo; b.yield=farmYield(mo); addFlow('food','farms',b.yield); }
+    else if (b.type==='quarry'){ const cells=[]; disk(b.i,2,j=>{ if (G.rock[j]===3) cells.push(j); }); if (cells.length) pendingOps.push({op:'mine', id:b.id, cells, amt:0.6}); else if (!b.dry){ b.dry=true; log('An obsidian quarry has cut all its rock.'); } }
+  }
+  if (buildings.some((b,k)=>(b.active&&!b.flooded)!==prevActive[k] && b.type==='lavatrap')) syncCollectors();
+  addFlow('food','settlers eat',-0.06*ST.pop);
+  // earthworks
+  workJobs();
+  // apply food & record rates
+  for (const k in dayFlow){ const [r,src]=k.split('|'); if (r==='food') ST.food+=dayFlow[k]; }
+  for (const r of ['food','earth','water','lava','obsidian']){ RATE[r]=RATE[r]||{}; }
+  const seen={}; for (const k in dayFlow){ const [r,src]=k.includes('|')?k.split('|'):[k,'collectors']; seen[r+'|'+src]=1; RATE[r][src]=(RATE[r][src]||0)*0.85+dayFlow[k]*0.15; }
+  for (const r in RATE) for (const src in RATE[r]) if (!seen[r+'|'+src]) { RATE[r][src]*=0.85; if (Math.abs(RATE[r][src])<1e-3) delete RATE[r][src]; }
+  dayFlow={};
+  // population
+  ST.growRate=0;
+  if (ST.food<0){ ST.food=0; ST.popAcc-=GROW_BASE+GROW_R*ST.pop; ST.growth='starving'; }
+  else if (ST.food<=15) ST.growth='lowfood'; else if (ST.pop>=ST.housing) ST.growth='housing';
+  else { ST.growRate=GROW_BASE+GROW_R*ST.pop; ST.popAcc+=ST.growRate; ST.growth='growing'; }
+  while (ST.popAcc>=1 && ST.pop<ST.housing){ ST.pop++; ST.popAcc-=1; } if (ST.pop>=ST.housing&&ST.popAcc>0) ST.popAcc=0;
+  let starved=0; while (ST.popAcc<=-1&&ST.pop>0){ ST.pop--; ST.popAcc+=1; starved++; } if (starved) log(`<span class="bad">${starved} settler${starved>1?'s':''} starved.</span>`);
+  // year roll
+  const yr=1+Math.floor(G.step/G.yearSteps); if (yr!==EX.year){ const v=exportValue(); log(`<b>Year ${EX.year} closed:</b> exports worth ${v.toFixed(0)} (charter ${charterTarget(EX.year)}). ${v>=charterTarget(EX.year)?'<span class="good">Charter met.</span>':'<span class="warn">Charter missed.</span>'}`);
+    if (v>=charterTarget(EX.year)) goal('charter'+Math.min(EX.year,3)); EX.year=yr; EX.water=0; EX.lava=0; EX.obsidian=0; }
+  checkGoals(); sendOps();
+  if (ecoDays%2===0){ renderWork(); renderSel(); renderAdvice(); }
+}
+function avgMoist(i){ let s=0,n=0; disk(i,2,j=>{ s+=G.m8[j]/255; n++; }); return s/n; }
+const farmYield=mo=>1.6*Math.max(0,mo-0.15)/0.85;
+function destroy(b,why){ b.alive=false; G.occ[b.i]=-1; const bt=BT[b.type]; if (bt.housing) ST.housing-=bt.housing; if (selB===b.id){ selB=-1; renderSel(); }
+  log(why==='demolish'? `Demolished your ${bt.name}.` : `<b class="bad">Your ${bt.name} was ${why==='lava'?'buried by lava':'destroyed by flooding'}.</b>`); syncCollectors(); }
+const exportValue=()=>EX.water+3*EX.lava+10*EX.obsidian;
+const charterTarget=y=> y===1?600 : y===2?2400 : y===3?5000 : 5000*Math.pow(1.5,y-3);
+function netRate(r){ let t=0; for (const k in (RATE[r]||{})) t+=RATE[r][k]; return t; }
+
+// ---------------- earthworks ----------------
+function hexLine(a,b){ const n=hexDist(a,b); const out=[]; const ax=G.qOf[a], ay=G.rOf[a], bx=G.qOf[b], by=G.rOf[b];
+  for (let k=0;k<=n;k++){ const t=n?k/n:0; const q=ax+(bx-ax)*t+1e-6, r=ay+(by-ay)*t+1e-6, s=-q-r; let Q=Math.round(q), Rr=Math.round(r), S=Math.round(s);
+    const dq=Math.abs(Q-q), dr=Math.abs(Rr-r), ds=Math.abs(S-s); if (dq>dr&&dq>ds) Q=-Rr-S; else if (dr>ds) Rr=-Q-S; const j=idx(Q,Rr); if (G.valid[j] && out[out.length-1]!==j) out.push(j); } return out; }
+function routePath(a,b){ // Dijkstra preferring low ground
+  const ref=Math.min(G.h[a],G.h[b]); const N=G.N, dist=new Float32Array(N).fill(1e30), prev=new Int32Array(N).fill(-1); const D=hexDist(a,b), lim=D*0.8+25;
+  const hI=[], hV=[]; const push=(i,v)=>{ hI.push(i); hV.push(v); let k=hI.length-1; while(k>0){ const p=(k-1)>>1; if (hV[p]<=v) break; [hI[k],hI[p]]=[hI[p],hI[k]]; [hV[k],hV[p]]=[hV[p],hV[k]]; k=p; } };
+  const pop=()=>{ const top=hI[0]; const li=hI.pop(), lv=hV.pop(); if (hI.length){ hI[0]=li; hV[0]=lv; let k=0; for(;;){ let c=2*k+1; if (c>=hI.length) break; if (c+1<hI.length&&hV[c+1]<hV[c]) c++; if (hV[c]>=hV[k]) break; [hI[k],hI[c]]=[hI[c],hI[k]]; [hV[k],hV[c]]=[hV[c],hV[k]]; k=c; } } return top; };
+  dist[a]=0; push(a,0);
+  while (hI.length){ const c=pop(); if (c===b) break; for (const d of NBa){ const j=c+d; if (!G.valid[j]||G.h[j]<=0) continue; if (hexDist(j,a)+hexDist(j,b)>D+2*lim) continue;
+      const cost=1+0.25*Math.max(0,G.h[j]-ref) + (G.occ[j]>=0?50:0); const nd=dist[c]+cost; if (nd<dist[j]){ dist[j]=nd; prev[j]=c; push(j,nd); } } }
+  if (prev[b]<0 && a!==b) return hexLine(a,b);
+  const p=[]; for (let c=b; c>=0; c=prev[c]){ p.push(c); if (c===a) break; } return p.reverse(); }
+function widen(path, wdt){ if (wdt<=1) return path.slice(); const set=new Set(path); const out=path.slice(); const rad=wdt>=3?1:1;
+  for (const c of path){ let n=0; for (const d of NBa){ const j=c+d; if (!G.valid[j]||set.has(j)) continue; if (wdt===2 && n>=2) break; set.add(j); out.push(j); n++; } } return out; }
+function planJob(kind, a, b){
+  let cells=[], target=[];
+  if (kind==='channel'){ let p=routePath(a,b); if (G.h[p[0]]<G.h[p[p.length-1]]) p=p.reverse(); // run downhill
+    const bed=[]; let prev=G.h[p[0]]-0.8; for (let k=0;k<p.length;k++){ const v=Math.min(G.h[p[k]]-0.8, k?prev-0.03:prev); bed.push(v); prev=v; }
+    const tmap=new Map(); p.forEach((c,k)=>tmap.set(c,bed[k])); const all=widen(p,width);
+    for (const c of all){ let t=tmap.get(c); if (t===undefined){ let best=1e9; for (const d of NBa){ const v=tmap.get(c+d); if (v!==undefined) best=Math.min(best,v); } t=Math.min(G.h[c], best+0.3); } cells.push(c); target.push(Math.min(G.h[c],t)); } }
+  else if (kind==='dam'){ const line=widen(hexLine(a,b),width); const crest=Math.min(G.h[a],G.h[b]); for (const c of line){ cells.push(c); target.push(Math.max(G.h[c],crest)); } }
+  else if (kind==='levee'){ const line=widen(hexLine(a,b),width); for (const c of line){ cells.push(c); target.push(G.h[c]+1.5); } }
+  else if (kind==='basin'){ const rad=Math.max(2,width+1); let floor=1e9; disk(a,rad,j=>{ floor=Math.min(floor,G.h[j]); }); floor-=1.5; disk(a,rad,j=>{ cells.push(j); target.push(Math.min(G.h[j],floor)); }); }
+  const delta=target.map((t,k)=>t-G.h[cells[k]]); let cut=0, fill=0; delta.forEach(d=>{ if (d<0) cut-=d; else fill+=d; });
+  const warm = kind!=='dam'&&kind!=='levee' ? cells.some((c,k)=>G.heat[c]>0.5 && G.h0[c]-(G.h[c]+delta[k])>3.5) : false;
+  return { kind, cells, delta, applied:new Float32Array(cells.length), cut, fill, mat: (kind==='dam'||kind==='levee')? mat : 'earth', warm, a, b };
+}
+function addJob(plan){ if (plan.cut+plan.fill<0.05){ flash('nothing to do there'); return; } plan.id=jobSeq++; plan.done=false; plan.stalled=''; jobs.push(plan);
+  for (const c of plan.cells) G.jobAt[c]=plan.id; rasterDirty=true; log(`Queued <b>${EW[plan.kind].name}</b>: ${plan.cut.toFixed(0)} to cut, ${plan.fill.toFixed(0)} to fill${plan.mat==='obsidian'?' (obsidian)':''}.`); renderJobs(); }
+function workJobs(){
+  let cap=ST.crew*1.5; if (cap<=0) return;
+  for (const j of jobs){ if (j.done) continue; j.stalled='';
+    const cells=[], dhs=[];
+    for (let k=0;k<j.cells.length && cap>0.001;k++){ const rem=j.delta[k]-j.applied[k]; if (Math.abs(rem)<0.02) continue;
+      let amt=Math.min(Math.abs(rem), cap, 0.5);
+      if (rem<0){ j.applied[k]-=amt; cells.push(j.cells[k]); dhs.push(-amt); ST.earth+=amt*0.9; addFlow('earth','cuts',amt*0.9); cap-=amt; }
+      else { const have=ST[j.mat]; if (have<0.05){ j.stalled='waiting for '+j.mat; break; } amt=Math.min(amt,have); ST[j.mat]-=amt; addFlow(j.mat,'fills',-amt); j.applied[k]+=amt; cells.push(j.cells[k]); dhs.push(amt); cap-=amt; } }
+    if (cells.length){ pendingOps.push({op:'dh', cells, dhs, rock: j.mat==='obsidian'?3:1}); for (let k=0;k<cells.length;k++){ G.h[cells[k]]+=dhs[k]; baseColor(cells[k]); } }
+    if (j.delta.every((d,k)=>Math.abs(d-j.applied[k])<0.02)){ j.done=true; for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`<span class="good">${EW[j.kind].name} finished.</span>`);
+      if (j.kind==='dam') goal('dam'); if (j.kind==='channel') goal('channel'); }
+    if (cap<=0.001) break; }
+  rasterDirty=true; renderJobs();
+}
+function cancelJob(j){ j.done=true; for (const c of j.cells) if (G.jobAt[c]===j.id) G.jobAt[c]=-1; log(`Cancelled ${EW[j.kind].name}.`); rasterDirty=true; renderJobs(); }
+
+// ---------------- events ----------------
+function onEvent(ev){
+  if (ev.type==='rumble') log(`<b class="warn">The ${ev.vent} is rumbling.</b> Eruption in ~${ev.days} days. Lava will follow the valleys downhill (heat lens).`);
+  else if (ev.type==='erupt') log(`<b class="bad">The ${ev.vent} is erupting!</b>`);
+  else if (ev.type==='calm') log(`The ${ev.vent} has gone quiet.`);
+  else if (ev.type==='newvent'){ log(`<b class="bad">Your diggers broke into magma — a new vent has opened!</b>`); goal('breach'); }
+}
+
+// ---------------- goals ----------------
+const GOALS=[
+  ['water50','First export: 50 water collected'],
+  ['channel','Finish a channel'],
+  ['dam','Finish a dam'],
+  ['lava20','Tap the mountain: 20 lava collected'],
+  ['obsidian','Glassmaker: quarry 5 obsidian'],
+  ['pop30','Town: 30 settlers'],
+  ['charter1','Meet the Year 1 export charter'],
+  ['charter2','Meet the Year 2 export charter'],
+];
+function goal(k){ if (goalsDone[k]||!GOALS.find(g=>g[0]===k)) return; goalsDone[k]=true; log(`<b class="good">✓ ${GOALS.find(g=>g[0]===k)[1]}</b>`); renderGoals(); }
+function checkGoals(){ if (ST.water>=50) goal('water50'); if (ST.lava>=20) goal('lava20'); if (ST.obsidian>=5) goal('obsidian'); if (ST.pop>=30) goal('pop30'); }
+function renderGoals(){ const v=exportValue(), t=charterTarget(EX.year);
+  $('#goals').innerHTML=`<b>Export charter — Year ${EX.year}</b><div class="stat"><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:#7cc4ff"></i></div><span>${v.toFixed(0)} / ${t.toFixed(0)}</span></div>
+  <div class="dim" style="font-size:11px">value = water + 3×lava + 10×obsidian collected this year</div><b style="display:block;margin-top:6px">Milestones</b>`+GOALS.map(([k,t])=>`<div class="g ${goalsDone[k]?'done':''}">${goalsDone[k]?'✓':'○'} ${t}</div>`).join(''); }
+
+// ---------------- dates ----------------
+const yearPhase=()=>(G.step%G.yearSteps)/G.yearSteps;
+function seasonName(){ const p=yearPhase(); return p<0.12?'Spring rains':p<0.38?'Storm season':p<0.55?'Late rains':p<0.92?'Dry season':'Spring rains'; }
+const dayOfYear=()=>1+Math.floor((G.step%G.yearSteps)/DAY);
+const dateShort=()=>`Y${1+Math.floor((G.step||0)/(G.yearSteps||2400))} d${G.yearSteps?dayOfYear():1}`;
+
+// ---------------- UI panels ----------------
+const fmt=x=>x>=1000?(x/1000).toFixed(1)+'k':x>=100?x.toFixed(0):x.toFixed(x<10?1:0);
+const RES=[['food','food'],['earth','earth'],['obsidian','<span style="color:#b48cff">obsidian</span>'],['water','<span style="color:#7cc4ff">water</span>'],['lava','<span style="color:#ff9a5a">lava</span>']];
+let tipFor=null;
+function renderTop(){
+  const tag=r=>{ const n=netRate(r); if (Math.abs(n)<0.005) return ''; return `<small style="color:${n>0?'#6fd38b':'#ff8b7b'}">${n>0?'+':''}${n.toFixed(Math.abs(n)<1?2:1)}</small>`; };
+  let h=`<span class="r" data-res="pop"><span class="dim">settlers</span> <b>${ST.pop}/${ST.housing}</b>${ST.crew?` <small class="dim">${ST.crew} digging</small>`:''}</span>`;
+  for (const [r,l] of RES) h+=`<span class="r" data-res="${r}"><span class="dim">${l}</span> <b>${fmt(ST[r])}</b>${tag(r)}</span>`;
+  $('#res').innerHTML=h;
+  const wet=G.season; const erupt=(G.vents||[]).filter(v=>v.state!=='quiet');
+  $('#date').innerHTML=`Year ${1+Math.floor(G.step/G.yearSteps)}, day ${dayOfYear()} · ${seasonName()} <span style="color:${wet>1.4?'#7cc4ff':wet<0.4?'#ffb86b':'#c8d0d8'}">(storms ${(G.storms||[]).length})</span>`+erupt.map(v=>` · <span class="${v.state==='erupt'?'bad':'warn'}">${v.name}: ${v.state==='erupt'?'ERUPTING':'rumbling, ~'+Math.round(v.t/DAY)+' d'}</span>`).join('');
+  document.documentElement.style.setProperty('--topb', $('#top').getBoundingClientRect().bottom+'px');
+  if (tipFor){ const el=document.querySelector(`#res [data-res="${tipFor}"]`); if (el) showTip(el); }
+}
+function showTip(el){ const r=el.dataset.res, T=$('#tip'); let h='';
+  if (r==='pop'){ const why={starving:'<span class="bad">Starving — no food.</span>',lowfood:'<span class="warn">Not growing: keep food above 15.</span>',housing:'<span class="warn">Not growing: housing full — build a House (+6).</span>',growing:`<span class="good">Growing ~1%/day (+${(ST.growRate||0).toFixed(2)}/day), doubling about every 69 days.</span>`}[ST.growth]||'';
+    h=`<b>Settlers ${ST.pop} / housing ${ST.housing}</b><div>${why}</div><div class="l"><span>in buildings</span><b>${ST.pop-ST.crew-ST.idle}</b></div><div class="l"><span>digging (earthworks crew)</span><b>${ST.crew}</b></div><div class="l"><span>idle</span><b>${ST.idle}</b></div><div class="dim">Each settler eats 0.06 food/day. Each digger moves 1.5 earth/day.</div>`; }
+  else { const rows=Object.entries(RATE[r]||{}).filter(([k,v])=>Math.abs(v)>0.003).sort((a,b)=>b[1]-a[1]);
+    const what={food:'Eaten by settlers.',earth:'Dug out by cuts; spent on fills, buildings and banks.',obsidian:'Quarried glass rock. Lines strong dams; worth 10 export each.',water:'Export currency (1 each). Collected by cisterns.',lava:'Export currency (3 each). Collected by lava traps.'}[r];
+    h=`<b>${r} — net ${netRate(r)>=0?'+':''}${netRate(r).toFixed(2)}/day</b>`+(rows.length?rows.map(([k,v])=>`<div class="l"><span>${k}</span><b style="color:${v>0?'#6fd38b':'#ff8b7b'}">${v>0?'+':''}${v.toFixed(2)}</b></div>`).join(''):'<div class="dim">no steady flow yet</div>')+`<div class="dim" style="margin-top:3px">${what}</div>`; }
+  T.innerHTML=h; T.classList.remove('hidden'); const b=el.getBoundingClientRect(); T.style.left=Math.min(window.innerWidth-280,b.left)+'px'; T.style.top=(b.bottom+8)+'px'; }
+$('#res').addEventListener('mouseover', e=>{ const el=e.target.closest('[data-res]'); if (el){ tipFor=el.dataset.res; showTip(el); } });
+$('#res').addEventListener('mouseleave', ()=>{ tipFor=null; $('#tip').classList.add('hidden'); });
+
+function refreshTools(){
+  const btn=(k,label,cost,tip)=>`<button class="b tool ${tool===k?'on':''}" data-tool="${k}" title="${(tip||'').replace(/"/g,'&quot;')}"><span>${label}</span><span class="c">${cost}</span></button>`;
+  let h=btn('inspect','Inspect / pan','');
+  h+='<h4>Earthworks <span class="dim" style="text-transform:none">· settlers dig</span></h4>'+['channel','dam','levee','basin'].map(k=>btn(k,EW[k].name,'',EW[k].tip)).join('');
+  h+=`<label class="sl" style="grid-template-columns:44px 1fr 20px"><span class="dim">width</span><input type="range" id="rW" min="1" max="3" value="${width}"><span>${width}</span></label>`;
+  h+=`<div class="dim" style="font-size:11px">Dams &amp; levees built from:</div><div style="display:flex;gap:4px"><button class="b ${mat==='earth'?'on':''}" data-mat="earth" style="flex:1">earth · holds ${ROCK_S[1]}</button><button class="b ${mat==='obsidian'?'on':''}" data-mat="obsidian" style="flex:1">obsidian · ${ROCK_S[3]}</button></div>`;
+  h+='<h4>Build</h4>'+['house','farm','lavatrap','quarry'].map(k=>btn(k,BT[k].glyph+' '+BT[k].name,costStr(BT[k].cost),BT[k].tip)).join('');
+  h+=`<div id="jobs"></div>`;
+  $('#tools').innerHTML=h;
+  document.querySelectorAll('[data-tool]').forEach(el=>el.onclick=()=>{ tool=el.dataset.tool; firstClick=-1; refreshTools(); });
+  document.querySelectorAll('[data-mat]').forEach(el=>el.onclick=()=>{ mat=el.dataset.mat; refreshTools(); });
+  const rw=$('#rW'); if (rw) rw.oninput=()=>{ width=+rw.value; refreshTools(); };
+  renderJobs();
+}
+function renderJobs(){ const el=$('#jobs'); if (!el) return; const open=jobs.filter(j=>!j.done);
+  el.innerHTML = open.length? `<h4>Earthworks queue (${ST.crew} diggers)</h4>`+open.map(j=>{ const tot=j.delta.reduce((a,d)=>a+Math.abs(d),0), done=j.applied.reduce((a,d)=>a+Math.abs(d),0);
+    return `<div class="job" data-job="${j.id}"><span>${EW[j.kind].name}${j.mat==='obsidian'?' (obs.)':''}</span><span class="dim">${(100*done/Math.max(tot,1e-6)).toFixed(0)}%${j.stalled?` · <span class="warn">${j.stalled}</span>`:''}</span><span class="x" data-cj="${j.id}" title="cancel">✕</span></div>`; }).join('') : '';
+  el.querySelectorAll('[data-cj]').forEach(x=>x.onclick=()=>cancelJob(jobs.find(j=>j.id===+x.dataset.cj)));
+  el.querySelectorAll('[data-job]').forEach(x=>x.onclick=(e)=>{ if (e.target.dataset.cj) return; const j=jobs.find(j=>j.id===+x.dataset.job); const [wx,wy]=cellXY(j.cells[0]); cam.x=wx; cam.y=wy; camDirty=true; }); }
+
+let workOpen=true;
+function renderWork(){
+  const W=$('#work'); let h=`<div class="hd" id="workHd"><b>Workforce</b><span class="dim">${ST.pop} settlers ${workOpen?'▾':'▸'}</span></div>`;
+  if (workOpen){ h+=`<div class="dim" style="margin:3px 0 4px">Settlers fill rows top-down. <b>Earthworks takes everyone left</b> at its row; rows below it get nobody. ↑↓ reorder · ❚❚ pause.</div>`;
+    PRIO.forEach((t,k)=>{ const isEW=t==='earthworks'; const bt=BT[t]||{name:'Earthworks',glyph:'⚒',col:'#e0c080'}; const list=isEW?[]:buildings.filter(b=>b.alive&&b.type===t); const on=list.filter(b=>b.active).length;
+      const st = isEW? `${ST.crew} digging` : list.length?`${on}/${list.length} on`:'<span class="dim">none</span>';
+      h+=`<div class="wr"><span class="dim">${k+1}</span><span style="color:${bt.col}">${bt.glyph} ${bt.name}${typePaused[t]?' <span class="warn">(paused)</span>':''}</span><span>${st}</span>
+        <span class="x"><button class="b mini" data-up="${k}" ${k===0?'disabled':''}>↑</button><button class="b mini" data-dn="${k}" ${k===PRIO.length-1?'disabled':''}>↓</button><button class="b mini ${typePaused[t]?'on':''}" data-tp="${t}">❚❚</button></span></div>`;
+      if (!isEW){ const un=list.filter(b=>b.why==='unstaffed').length; if (un) h+=`<div class="warn" style="padding-left:20px">${un} unstaffed · needs ${bt.workers} each</div>`; } });
+    if (ST.idle) h+=`<div class="warn" style="margin-top:3px">${ST.idle} idle — move Earthworks up, or unpause it.</div>`; }
+  W.innerHTML=h; $('#workHd').onclick=()=>{ workOpen=!workOpen; renderWork(); };
+  W.querySelectorAll('[data-up]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.up; [PRIO[k-1],PRIO[k]]=[PRIO[k],PRIO[k-1]]; allocate(); syncCollectors(); renderWork(); });
+  W.querySelectorAll('[data-dn]').forEach(e=>e.onclick=()=>{ const k=+e.dataset.dn; [PRIO[k+1],PRIO[k]]=[PRIO[k],PRIO[k+1]]; allocate(); syncCollectors(); renderWork(); });
+  W.querySelectorAll('[data-tp]').forEach(e=>e.onclick=()=>{ const t=e.dataset.tp; typePaused[t]=!typePaused[t]; allocate(); syncCollectors(); renderWork(); });
+}
+function statusOf(b){ const bt=BT[b.type];
+  if (b.inLava) return '<span class="bad">Lava on site</span> — foragers can\'t work. <b>Move camp</b> to safety.';
+  if (b.flooded) return `<span style="color:#7cc4ff">Flooded</span> — ${wOf(b.i).toFixed(2)} m of water. No output, taking damage.`;
+  if (b.why==='paused') return '<span class="warn">Paused by you.</span>';
+  if (b.why==='typepaused') return `<span class="warn">Paused</span> — all ${bt.name}s paused in Workforce.`;
+  if (b.why==='unstaffed') return `<span class="bad">Unstaffed</span> — needs ${bt.workers}; rows above it took everyone (it is #${b.rank}).`;
+  return `<span class="good">Working</span>${bt.workers?` · ${bt.workers} workers`:''}`; }
+function yieldText(b){
+  if (b.type==='camp') return 'Foragers bring +0.45 food/day. Houses 12. Cannot be destroyed.';
+  if (b.type==='farm'){ const mo=avgMoist(b.i); return `Soil moisture within 2: <b>${(mo*100).toFixed(0)}%</b> → <b>${farmYield(mo).toFixed(2)} food/day</b>. Wet ground near water or under storms is best; a channel brings water to dry farmland.`; }
+  if (b.type==='gate') return `Exported here so far: <b>${(b.got||0).toFixed(1)} water</b> (${(b.rate||0).toFixed(2)} of 8/day capacity lately). Water only arrives if a channel leads here — run one from a river, lake or reservoir, downhill all the way.`;
+  if (b.type==='lavatrap'){ let l=0; disk(b.i,1,j=>{ l+=lOf(j); }); return `Molten lava on its hexes: <b>${l.toFixed(2)}</b>. Collects up to 3/day of hot lava. Total: ${(b.got||0).toFixed(1)}. Place it on the path lava takes from a vent; channels can steer lava too.`; }
+  if (b.type==='quarry'){ let n=0; disk(b.i,2,j=>{ if (G.rock[j]===3) n++; }); return `${n} obsidian hexes within 2. Cuts 0.6/day. Total: ${(b.got||0).toFixed(1)}. Make more by leading lava into water.`; }
+  if (b.type==='house') return 'Houses 6.'; return ''; }
+function renderSel(){
+  const P=$('#sel'); const b=selB>=0?buildings[selB]:null; const j=selJ>=0?jobs.find(x=>x.id===selJ&&!x.done):null;
+  if (b && b.alive){ const bt=BT[b.type];
+    P.innerHTML=`<div style="display:flex;justify-content:space-between"><b style="color:${bt.col}">${bt.glyph} ${bt.name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${statusOf(b)}</div><div style="margin-top:3px">${yieldText(b)}</div><div class="dim">condition ${b.hp.toFixed(0)}%</div>
+      <div class="row">${bt.workers?`<button class="b" id="selPause">${b.paused?'Resume':'Pause'}</button>`:''}${b.type!=='camp'?'<button class="b" id="selDemo">Demolish</button>':'<button class="b" id="selMove">Move camp</button>'}</div>`;
+    P.classList.remove('hidden'); $('#selX').onclick=()=>{ selB=-1; renderSel(); };
+    const sp=$('#selPause'); if (sp) sp.onclick=()=>{ b.paused=!b.paused; allocate(); syncCollectors(); renderSel(); renderWork(); };
+    const sm=$('#selMove'); if (sm) sm.onclick=()=>{ tool='movecamp'; refreshTools(); flash('click a dry hex to move the camp'); };
+    const sd=$('#selDemo'); if (sd) sd.onclick=()=>{ for (const k in bt.cost) ST[k]+=bt.cost[k]*0.5; destroy(b,'demolish'); allocate(); renderWork(); };
+    return; }
+  if (j){ const tot=j.delta.reduce((a,d)=>a+Math.abs(d),0), done=j.applied.reduce((a,d)=>a+Math.abs(d),0);
+    P.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${EW[j.kind].name}</b><span class="dim" style="cursor:pointer" id="selX">✕</span></div><div>${(100*done/Math.max(tot,1e-6)).toFixed(0)}% done · ${j.cut.toFixed(0)} cut, ${j.fill.toFixed(0)} fill${j.mat==='obsidian'?' (obsidian)':''}</div>
+      <div>${j.stalled?`<span class="warn">Stalled: ${j.stalled}</span>`:ST.crew?`${ST.crew} diggers at 1.5/day each`:'<span class="warn">No diggers — Earthworks gets only settlers left over (see Workforce).</span>'}</div><div class="row"><button class="b" id="selCancel">Cancel</button></div>`;
+    P.classList.remove('hidden'); $('#selX').onclick=()=>{ selJ=-1; renderSel(); }; $('#selCancel').onclick=()=>{ cancelJob(j); selJ=-1; renderSel(); }; return; }
+  P.classList.add('hidden'); }
+function renderAdvice(){
+  const A=[]; const fn=netRate('food'); const camp=buildings.find(b=>b.alive&&b.type==='camp');
+  const rumbling=(G.vents||[]).filter(v=>v.state==='rumble'), erupting=(G.vents||[]).filter(v=>v.state==='erupt');
+  if (camp && camp.inLava) A.push(['bad','Lava has reached your <b>camp</b>. Click it → <b>Move camp</b>.']);
+  if (erupting.length) A.push(['bad',`The <b>${erupting[0].name}</b> is erupting — lava is spreading downhill. A <b>lava trap</b> in its path turns it into exports; a levee can turn it aside.`]);
+  else if (rumbling.length) A.push(['warn',`The <b>${rumbling[0].name}</b> is rumbling: eruption in ~${Math.round(rumbling[0].t/DAY)} days. Check the heat lens for which valleys it will follow.`]);
+  if (ST.food<5 && fn<0) A.push(['bad','Settlers are <b>starving</b>. Build farms on moist ground (moisture lens).']);
+  else if (fn<-0.01) A.push(['warn',`Food falling ${(-fn).toFixed(2)}/day — ${Math.floor(ST.food/(-fn))} days left. Build or staff farms.`]);
+  const unst=buildings.filter(b=>b.alive&&b.why==='unstaffed'); if (unst.length) A.push(['warn',`${unst.length} building${unst.length>1?'s':''} unstaffed — Earthworks above them in Workforce takes everyone, or you need more settlers.`]);
+  const stalled=jobs.filter(j=>!j.done&&j.stalled); if (stalled.length) A.push(['warn',`Earthworks stalled: ${stalled[0].stalled}. Cuts produce earth — queue a channel or basin, or quarry obsidian.`]);
+  if (jobs.some(j=>!j.done) && !ST.crew) A.push(['warn','Earthworks are queued but <b>nobody is digging</b> — every settler is in a building above Earthworks. Move Earthworks up or grow the town.']);
+  if (ST.growth==='housing' && fn>0) A.push(['info','Population capped by housing — build a House (+6).']);
+  const gates=buildings.filter(b=>b.alive&&b.type==='gate'); if (gates.every(g=>(g.rate||0)<0.05)) A.push(['info','Exports need water at an <b>Export gate</b> (⇲ on the coast). Dig a <b>Channel</b> from a river or lake to a gate — click the river end first; it must run downhill.']);
+  else if (!buildings.some(b=>b.alive&&b.type==='lavatrap') && ecoDays>40) A.push(['info','Lava is worth 3× water: a <b>Lava trap</b> on the path from a vent (heat lens) collects it.']);
+  const col={bad:'#ff8b7b',warn:'#ffb86b',info:'#c8d0d8'};
+  $('#advice').innerHTML = A.length? A.slice(0,2).map(([k,t])=>`<div class="a" style="color:${col[k]}">${t}</div>`).join('') : '<span class="dim">All quiet. Shape the land to bring water to your cisterns.</span>';
+}
+let flashT=0, flashMsg=''; const flash=m=>{ flashMsg=m; flashT=performance.now(); };
+let hover=-1, plan=null;
+function renderInfo(){
+  const LEG={moisture:'<b>Moisture</b>: brown &lt;15% (farms yield nothing) → blue = wet.', height:'<b>Height</b>: green low → yellow 25 m → brown → snow; lines every 5 m. Water and lava cross the lines downhill.',
+    heat:'<b>Heat</b>: red glow = hot ground near vents (lava flows and deep digs open vents here). Bright = molten lava.', rain:'<b>Rain</b>: where storms are raining right now. Storms drift with the wind.'};
+  let s = LEG[G.lens]? `<div style="margin-bottom:4px">${LEG[G.lens]}</div>` : '';
+  const ttip = EW[tool]? EW[tool].tip : BT[tool]? BT[tool].tip : tool==='movecamp'? 'Click a dry hex to move the camp.' : '';
+  if (ttip) s+=`<div style="color:#9fd0ff;margin-bottom:4px"><b>${(EW[tool]||BT[tool]||{name:'Move camp'}).name}:</b> ${ttip}</div>`;
+  if (plan){ s+=`<div style="color:#ffe08a">Plan: ${plan.cut.toFixed(0)} cut + ${plan.fill.toFixed(0)} fill${plan.mat==='obsidian'?' (obsidian)':''} → ~${Math.ceil((plan.cut+plan.fill)/Math.max(0.1,ST.crew*1.5))} days with ${ST.crew} diggers. Click to confirm, right-click/Esc to cancel.${plan.warm?'<br><span class="bad">Deep cut in hot ground — may open a new vent!</span>':''}${plan.kind==='dam'?'<br><span class="dim">Without a spillway, storm water can overtop and wear down an earth dam.</span>':''}</div>`; }
+  if (hover<0||!G.valid[hover]){ $('#info').innerHTML=s||'<span class="dim">Hover the map.</span>'; return; }
+  const i=hover, h=G.h[i], w=wOf(i), l=lOf(i), mo=G.m8[i]/255;
+  s+=`<b>${G.qOf[i]}, ${G.rOf[i]}</b> · height ${h.toFixed(1)} m · ${ROCKNAME[G.rock[i]]}${G.wallS[i]>0?` (resists ${G.wallS[i].toFixed(0)})`:''}<br>water ${w<0.01?'—':w.toFixed(2)+' m'} · soil ${(mo*100).toFixed(0)}% · rain ${G.rn8[i]>20?'falling':'—'}`;
+  if (l>0.005) s+=`<br><b class="bad">lava ${l.toFixed(2)} m at ${(tOf(i)*1200).toFixed(0)}°C</b>`;
+  if (G.heat[i]>0.5) s+=`<br><span class="warn">hot ground — deep digging may open a vent</span>`;
+  if (G.occ[i]>=0){ const b=buildings[G.occ[i]]; s+=`<br><b>${BT[b.type].name}</b>`; }
+  if (BT[tool]){ const why=validPlacement(tool,i); s+=`<br>${why?'<span class="bad">✗ '+why+'</span>':'<span class="good">✓ click to build</span>'}`;
+    if (tool==='farm') s+=` · expected ${farmYield(avgMoist(i)).toFixed(2)} food/day`; }
+  $('#info').innerHTML=s;
+}
+
+// ---------------- drawing ----------------
+function draw(){
+  if (!G.ready) return;
+  if (rasterDirty||camDirty) renderRaster();
+  ctx.imageSmoothingEnabled = cam.s*SQ3<5; ctx.drawImage(off,0,0,BW*B,BH*B);
+  if (cam.s*SQ3>=16){ const p=new Path2D(); visibleCells(i=>hexPath(p,i)); ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1; ctx.stroke(p); }
+  // storms (cloud shadows)
+  if (G.lens==='map' && G.storms){ for (const s of G.storms){ const [sx,sy]=worldToScreen(s.x,s.y); const rr=s.r*cam.s*1.6; if (sx<-rr||sy<-rr||sx>CW+rr||sy>CH+rr) continue;
+      const g=ctx.createRadialGradient(sx,sy,0,sx,sy,rr); g.addColorStop(0,`rgba(225,232,242,${0.10+s.a*80})`); g.addColorStop(1,'rgba(225,232,242,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,rr,0,7); ctx.fill(); } }
+  // vents
+  for (const v of (G.vents||[])){ const [x,y]=cellXY(v.i); const [sx,sy]=worldToScreen(x,y); const sz=Math.max(6,cam.s*1.4);
+    ctx.fillStyle=v.state==='erupt'?'#ff5a1a':v.state==='rumble'?'#ffb84a':'#c0582a'; ctx.beginPath(); ctx.moveTo(sx,sy-sz); ctx.lineTo(sx+sz*0.9,sy+sz*0.6); ctx.lineTo(sx-sz*0.9,sy+sz*0.6); ctx.closePath(); ctx.fill();
+    if (v.state!=='quiet'){ const t=performance.now()/300; ctx.strokeStyle='rgba(255,140,60,0.6)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,sz*(1.6+0.4*Math.sin(t)),0,7); ctx.stroke(); }
+    if (cam.s>2.5){ ctx.font='11px system-ui'; ctx.fillStyle='#ffcf9a'; ctx.textAlign='center'; ctx.fillText(v.name, sx, sy+sz+12); } }
+  // buildings
+  const sz=Math.max(5,Math.min(26,cam.s*1.25)); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${Math.round(sz*0.9)}px system-ui`;
+  for (const b of buildings){ if (!b.alive) continue; const [x,y]=cellXY(b.i); const [sx,sy]=worldToScreen(x,y); if (sx<-30||sy<-30||sx>CW+30||sy>CH+30) continue; const bt=BT[b.type];
+    ctx.fillStyle='rgba(10,12,16,0.78)'; ctx.beginPath(); ctx.arc(sx,sy,sz*0.72,0,7); ctx.fill(); ctx.lineWidth=2;
+    ctx.strokeStyle=b.inLava?'#ff5a1a':b.flooded?'#7cc4ff':(b.active||!bt.workers)?bt.col:'#666'; ctx.stroke(); if (sz>=7){ ctx.fillStyle=bt.col; ctx.fillText(bt.glyph,sx,sy+1); }
+    if (b.type==='gate'){ const t=performance.now()/500; ctx.strokeStyle='rgba(124,196,255,0.55)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,sz*(1.25+0.15*Math.sin(t)),0,7); ctx.stroke();
+      ctx.font='11px system-ui'; ctx.fillStyle='#9fd0ff'; ctx.fillText(`export gate · ${(b.rate||0).toFixed(1)}/8 a day`, sx, sy+sz+11); ctx.font=`${Math.round(sz*0.9)}px system-ui`; } }
+  // selection / plan preview
+  const outline=(cells,col)=>{ const p=new Path2D(); for (const c of cells) hexPath(p,c); ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke(p); };
+  if (selB>=0&&buildings[selB]&&buildings[selB].alive){ const b=buildings[selB], bt=BT[b.type]; if (bt.area){ const c=[]; disk(b.i,bt.area,(j,d)=>{ if (d===bt.area) c.push(j); }); outline(c,'#9fd0ffcc'); } }
+  if (plan) outline(plan.cells,'#ffe08aee');
+  else if (hover>=0 && EW[tool] && tool==='basin'){ const c=[]; disk(hover,Math.max(2,width+1),j=>c.push(j)); outline(c,'#ffffff88'); }
+  else if (hover>=0 && BT[tool]){ const p=new Path2D(); hexPath(p,hover); ctx.strokeStyle=validPlacement(tool,hover)?'#ff7b6b':'#fff'; ctx.lineWidth=1.5; ctx.stroke(p); const a=BT[tool].area; if (a){ const c=[]; disk(hover,a,(j,d)=>{ if (d===a) c.push(j); }); outline(c,'#ffffff55'); } }
+  if (firstClick>=0){ const [x,y]=cellXY(firstClick); const [sx,sy]=worldToScreen(x,y); ctx.fillStyle='#ffe08a'; ctx.beginPath(); ctx.arc(sx,sy,5,0,7); ctx.fill(); }
+  if (performance.now()-flashT<1800){ ctx.font='14px system-ui'; ctx.fillStyle='#ffb0a0'; ctx.fillText(flashMsg,CW/2,CH-40); }
+}
+
+// ---------------- input ----------------
+let drag=null, keys={}, lastPlanHover=-2;
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+function cellAt(e){ const [wx,wy]=screenToWorld(e.clientX,e.clientY); return worldToCell(wx,wy); }
+cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId);
+  if (e.button===2 && (firstClick>=0||plan)){ firstClick=-1; plan=null; return; }
+  drag={pan: e.button!==0 || tool==='inspect', x:e.clientX, y:e.clientY, cx:cam.x, cy:cam.y}; });
+cv.addEventListener('pointermove',e=>{ hover=cellAt(e);
+  if (drag&&drag.pan){ cam.x=drag.cx-(e.clientX-drag.x)/cam.s; cam.y=drag.cy-(e.clientY-drag.y)/cam.s; camDirty=true; }
+  if (EW[tool] && hover!==lastPlanHover && hover>=0 && G.valid[hover]){ lastPlanHover=hover;
+    if (EW[tool].two && firstClick>=0) plan=planJob(tool,firstClick,hover); else if (!EW[tool].two) plan=planJob(tool,hover,hover); } });
+cv.addEventListener('pointerup',e=>{ const moved=drag?Math.hypot(e.clientX-drag.x,e.clientY-drag.y):0; const wasPan=drag&&drag.pan; drag=null;
+  if (e.button!==0 || moved>5) return; const i=cellAt(e); if (i<0||!G.valid[i]) return;
+  if (tool==='inspect'){ selB=G.occ[i]>=0?G.occ[i]:-1; selJ=selB<0&&G.jobAt[i]>=0?G.jobAt[i]:-1; renderSel(); return; }
+  if (wasPan) return;
+  if (tool==='movecamp'){ const c=buildings.find(b=>b.alive&&b.type==='camp'); if (G.h[i]<=0.3||wOf(i)>0.1||lOf(i)>0.01||G.occ[i]>=0) return flash('needs dry, empty, lava-free land');
+    G.occ[c.i]=-1; c.i=i; G.occ[i]=c.id; c.inLava=false; c.flooded=false; tool='inspect'; refreshTools(); renderSel(); log('The settlers moved camp.'); return; }
+  if (BT[tool]){ const why=validPlacement(tool,i); if (why) return flash(why); placeBuilding(tool,i); log(`Built ${BT[tool].name}.`); allocate(); syncCollectors(); renderWork(); renderAdvice(); return; }
+  if (EW[tool]){ if (EW[tool].two){ if (firstClick<0){ firstClick=i; plan=planJob(tool,i,i); return; } addJob(planJob(tool,firstClick,i)); firstClick=-1; plan=null; }
+    else { addJob(planJob(tool,i,i)); plan=null; } renderAdvice(); } });
+cv.addEventListener('wheel',e=>{ e.preventDefault(); zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0015)); },{passive:false});
+function zoomAt(sx,sy,f){ const [wx,wy]=screenToWorld(sx,sy); cam.s=clamp(cam.s*f,1.2,30); cam.x=wx-(sx-CW/2)/cam.s; cam.y=wy-(sy-CH/2)/cam.s; camDirty=true; }
+window.addEventListener('keydown',e=>{ if (e.target.tagName==='INPUT') return; keys[e.key.toLowerCase()]=true;
+  if (e.key===' '){ e.preventDefault(); setRate(G.rate?0:8); } if (e.key==='Escape'){ if (firstClick>=0||plan){ firstClick=-1; plan=null; } else { tool='inspect'; refreshTools(); } } });
+window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+function keyPan(dt){ const v=600/cam.s*dt; let dx=0,dy=0; if (keys['a']||keys['arrowleft']) dx-=v; if (keys['d']||keys['arrowright']) dx+=v; if (keys['w']||keys['arrowup']) dy-=v; if (keys['s']||keys['arrowdown']) dy+=v; if (dx||dy){ cam.x+=dx; cam.y+=dy; camDirty=true; } }
+function setRate(r){ G.rate=r; worker.postMessage({type:'rate',rate:r}); document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('on',+b.dataset.rate===r)); }
+document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>setRate(+b.dataset.rate));
+document.querySelectorAll('[data-lens]').forEach(b=>b.onclick=()=>{ G.lens=b.dataset.lens; document.querySelectorAll('[data-lens]').forEach(x=>x.classList.toggle('on',x.dataset.lens===G.lens)); rasterDirty=true; });
+$('#btnHelp').onclick=()=>$('#help').classList.toggle('hidden'); $('#helpOk').onclick=()=>$('#help').classList.add('hidden');
+$('#zin').onclick=()=>zoomAt(CW/2,CH/2,1.5); $('#zout').onclick=()=>zoomAt(CW/2,CH/2,1/1.5);
+$('#zhome').onclick=()=>{ const c=buildings.find(b=>b.type==='camp'); const [x,y]=cellXY(c.i); cam.x=x; cam.y=y; cam.s=7; camDirty=true; };
+$('#zall').onclick=()=>{ cam.x=0; cam.y=0; cam.s=Math.min(CW,CH)/(SQ3*(2*R+1))*1.0; camDirty=true; };
+
+// ---------------- start ----------------
+function chooseStart(){ let best=-1, bs=-1e9;
+  for (let t=0;t<5000;t++){ const q=Math.round((rnd()*2-1)*R*0.7), r=Math.round((rnd()*2-1)*R*0.7); if (Math.abs(q+r)>R*0.7) continue; const i=idx(q,r); if (!G.valid[i]) continue;
+    const h=G.h[i]; if (h<3||h>40||wOf(i)>0.02||G.heat[i]>0.25) continue; let lowWet=1e9, river=0; disk(i,9,j=>{ if (wOf(j)>0.05){ lowWet=Math.min(lowWet,G.h[j]+wOf(j)); river++; } }); if (lowWet<1e9&&h-lowWet<2.5) continue;
+    let vd=1e9; for (const v of G.vents) vd=Math.min(vd,hexDist(v.i,i)); const s=Math.min(river,30)/30+G.m8[i]/255*0.8-Math.abs(vd-55)/80; if (s>bs){ bs=s; best=i; } }
+  return best>=0?best:idx(0,0); }
+function chooseGates(camp){
+  const cand=[]; for (let i=0;i<G.N;i++){ if (!G.valid[i]||G.h[i]<0.8||G.h[i]>10||wOf(i)>0.02) continue; let coast=false; for (const d of NBa){ const j=i+d; if (!G.valid[j]||G.h[j]<0) coast=true; } if (!coast) continue;
+    let river=false; disk(i,7,j=>{ if (G.h[j]>0 && wOf(j)>0.08) river=true; }); if (river) continue; cand.push(i); }
+  const pick=(dmin,dmax,avoid)=>{ let best=-1, bs=-1e9; for (const i of cand){ const d=hexDist(i,camp); if (d<dmin||d>dmax) continue; if (avoid.some(a=>hexDist(a,i)<40)) continue; const s=-Math.abs(d-(dmin+dmax)/2)+rnd()*10; if (s>bs){ bs=s; best=i; } } return best; };
+  const out=[]; const g1=pick(15,45,[]); if (g1>=0) out.push(g1); const g2=pick(40,110,out); if (g2>=0) out.push(g2); const g3=pick(60,200,out); if (g3>=0) out.push(g3); return out; }
+function startGame(){
+  $('#loading').classList.add('hidden'); ['#top','#tools','#log','#goals','#info','#zoom','#advice','#work'].forEach(s=>$(s).classList.remove('hidden'));
+  const s=chooseStart(); placeBuilding('camp',s,true); for (const g of chooseGates(s)) placeBuilding('gate',g,true); const [x,y]=cellXY(s); cam.x=x; cam.y=y; cam.s=5; camDirty=true; lastEcoStep=G.step;
+  log(`Your settlers make camp. To the ${(()=>{ const v=G.vents[0]; const [vx,vy]=cellXY(v.i); const a=Math.atan2(vy-y,vx-x)*180/Math.PI; return ['east','south-east','south','south-west','west','north-west','north','north-east'][((Math.round(a/45)%8)+8)%8]; })()} smokes the ${G.vents[0].name}.`);
+  refreshTools(); renderGoals(); allocate(); renderWork(); renderAdvice();
+  if (!localStorage.getItem('watershed-help-seen')){ $('#help').classList.remove('hidden'); localStorage.setItem('watershed-help-seen','1'); }
+}
+let lastT=performance.now(), uiT=0;
+function frame(){ const now=performance.now(), dt=Math.min(0.1,(now-lastT)/1000); lastT=now;
+  if (G.ready){ keyPan(dt); draw(); uiT+=dt; if (uiT>0.25){ uiT=0; renderTop(); renderInfo(); renderGoals(); } }
+  requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+window.WS={ G, ST, EX, buildings, jobs, PRIO, cam, planJob, addJob, placeBuilding, idx, cellXY, wOf, lOf, disk, allocate, syncCollectors, setRate, goalsDone, setTool:t=>{tool=t; refreshTools();}, exportValue };
+
+</script>
+</body>
+</html>

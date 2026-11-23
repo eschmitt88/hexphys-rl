@@ -226,7 +226,7 @@ function makeSim(R, seed, opts){
     if(BKIND){ for(let k=0;k<SEA.length;k++){ const s=SEA[k]; if(BKIND[k]===1){ if(w[s]>0){ P.edgeOut[k]+=w[s]; w[s]=0; } } else if(BKIND[k]===0) w[s]=-h[s]; else w[s]=0; }
       if(P.inflow){ const inf=P.inflow; for(let k=0;k<inf.cells.length;k++) w[inf.cells[k]]+=inf.rates[k]; } }
     else for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
-    const sf0=seasonF(); const ev=P.evap*(sf0<0.6? 6 : sf0<1? 2 : 1);
+    const sf0=seasonF(); const ev=P.evap*(sf0<0.6? 3 : sf0<1? 1.5 : 1);
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const x=w[i]-ev; w[i]=x>0?x:0; }
   }
   // ---------------- lava ----------------
@@ -283,6 +283,11 @@ function makeSim(R, seed, opts){
       if(c.type==='cistern') P.collected[c.id]=(P.collected[c.id]||0)+got;
       else if(c.type==='lavatrap'){ const slag=c.held*0.0025; c.held-=slag; P.slag=(P.slag||0)+slag; } }
   }
+  function sluices(){ if(!P.sluices) return; const dry=seasonF()<0.6;
+    for(const sl of P.sluices){ let up=-1e9; for(let d=0;d<6;d++){ const j=sl.cell+NB[d]; if(valid[j]&&w[j]>0.02) up=Math.max(up,h[j]+w[j]); }   // the reservoir's water level, not the banks
+      const open = sl.mode==='open' || (sl.mode==='auto' && (dry || up>sl.keep));
+      const target = open? sl.bed : sl.wall; if(h[sl.cell]!==target){ h[sl.cell]=target; wallS[sl.cell]= open?0:9; P.hChanged=true; }
+      sl.open=open; sl.flow = open? flowDay[sl.cell] : 0; } }
   function moisture(){
     const sf=seasonF();
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; let s=0; for(let d=0;d<6;d++) s+=m[i+NB[d]];
@@ -291,7 +296,7 @@ function makeSim(R, seed, opts){
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; m[i]=tmp[i]; }
   }
   function step(spin){
-    weather(); waterStep(); lavaStep(); if(!spin) collect(); vents();
+    weather(); waterStep(); sluices(); lavaStep(); if(!spin) collect(); vents();
     if(P.step%4===0){ moisture(); erosion(); }
     P.step++;
   }
@@ -341,7 +346,8 @@ if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope)
     const N=S.N, w8=new Uint8Array(N), m8=new Uint8ClampedArray(N), L8=new Uint8Array(N), T8=new Uint8ClampedArray(N), rn8=new Uint8ClampedArray(N), q8=new Uint8ClampedArray(N);
     for(let i=0;i<N;i++){ w8[i]=q6(S.w[i]); m8[i]=S.m[i]*255; const l=S.L[i]; L8[i]=q6(l); T8[i]= l>1e-4? S.E[i]/l*255 : 0; rn8[i]=Math.sqrt(S.rain[i]/0.002)*255; const fq=S.flowDay[i]; q8[i]= fq<=0.01?0 : Math.log10(fq*100)*64; }
     const traps={}, quench={}; for(const c of S.P.coll){ if(c.type==='lavatrap') traps[c.id]=c.held||0; if(c.type==='quench') quench[c.id]={lava:c.held||0, water:c.water||0}; }
-    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, traps, quench, slag:S.P.slag||0, runoff:S.P.runoff, w8, m8, L8, T8, rn8, q8, events:S.P.events.splice(0), collected:S.P.collected,
+    const sl={}; for(const x of (S.P.sluices||[])) sl[x.id]={flow:x.flow||0, open:!!x.open};
+    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, traps, quench, sl, slag:S.P.slag||0, runoff:S.P.runoff, w8, m8, L8, T8, rn8, q8, events:S.P.events.splice(0), collected:S.P.collected,
       vents:S.P.vents.map(v=>({i:v.i,name:v.name,state:v.state,t:v.t})), storms:S.P.storms.map(s=>({x:s.x,y:s.y,r:s.r,a:s.amp}))};
     S.P.collected={};
     const tr=[w8.buffer,m8.buffer,L8.buffer,T8.buffer,rn8.buffer,q8.buffer];
@@ -365,12 +371,13 @@ if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope)
     else if(m.type==='rate'){ rate=m.rate; }
     else if(m.type==='inflow'){ inflowBins=m.bins; curBin=-1; }
     else if(m.type==='runTile'){ // headless: used by the realm page and blueprint previews
-      const T=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm, quarries:m.quarries}); T.generate(); if(m.restore) T.restore(m.restore); if(m.coll) T.P.coll=m.coll;
+      const T=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm, quarries:m.quarries}); T.generate(); if(m.restore) T.restore(m.restore); if(m.coll) T.P.coll=m.coll; if(m.sluices) T.P.sluices=m.sluices;
       const card=T.runYear(m.inflow||[], true); const edge={}; for(const k in card.edge) edge[k]=Array.from(card.edge[k]);
       postMessage({type:'tileCard', id:m.id, card:{edge, capital:Array.from(card.capital), lava:card.lava, obsidian:card.obsidian}}); }
     else if(m.type==='edit'){ for(const op of m.ops){
         if(op.op==='dh') S.applyDh(op.cells, op.dhs, op.rock);
         else if(op.op==='coll'){ const old={}, oldw={}; for(const c of S.P.coll){ old[c.id]=c.held||0; oldw[c.id]=c.water||0; } S.P.coll=op.list; for(const c of S.P.coll){ c.held=old[c.id]||0; c.water=oldw[c.id]||0; } }
+        else if(op.op==='sluices'){ S.P.sluices=op.list; }
         else if(op.op==='quenchUse'){ for(const c of S.P.coll) if(c.id===op.id){ c.held=Math.max(0,(c.held||0)-op.lava); c.water=Math.max(0,(c.water||0)-op.water); } }
         else if(op.op==='harvest'){ for(const c of S.P.coll) if(c.id===op.id){ const t=Math.min(c.held||0, op.amt); c.held-=t; S.P.collected['lava'+op.id]=(S.P.collected['lava'+op.id]||0)+t; } }
         else if(op.op==='mine'){ const got=S.mineRock(op.cells, op.amt); S.P.collected['mine'+op.id]=(S.P.collected['mine'+op.id]||0)+got; } }
@@ -406,22 +413,24 @@ function makeBoard(lr){ const S=LIB.makeSim(R,1,{board:{h:design, lavaIn:LAVA_IN
 let live=makeBoard(RATES[1]), running=true, liveRate=1;
 
 // ---------- probing: the card ----------
-// the card is state-dependent: yield by inflow rate AND by how much lava the works has already swallowed (it clogs)
-const WIN=6, WSTEPS=500, CL_MAX=RATES[RATES.length-1]*WIN*WSTEPS;
-function probe(){ const card={ rates:RATES, yield:[], steam:[], clog:[], grid:[], clBins:[] };
-  for (let w=0; w<=WIN; w++) card.clBins.push(w/WIN*CL_MAX);
-  for (const lr of RATES){ const S=makeBoard(lr); const row=[]; let prev=S.boardMeasure(), cl=0, totO=0, totB=0, totS=0;
-    const pts=[]; for (let w=0; w<WIN*2; w++){ for (let k=0;k<WSTEPS;k++) S.step(false); const m=S.boardMeasure(); const lin=lr*WSTEPS; cl+=lin;
-      pts.push([cl-lin/2, (m.obs-prev.obs)/lin]); totO+=m.obs-prev.obs; totB+=m.bas-prev.bas; totS+=Math.max(0, WATER_RATE*WSTEPS-(m.out-prev.out)-(m.wst-prev.wst)); prev=m; if (cl>CL_MAX*1.05) break; }
-    for (const c of card.clBins){ let best=pts[0]; for (const p of pts) if (Math.abs(p[0]-c)<Math.abs(best[0]-c)) best=p; row.push(Math.max(0,best[1])); }
-    const lin=cl; card.grid.push(row); card.yield.push(totO/lin); card.steam.push(totS/lin); card.clog.push(totB/lin); }
+// the card is state-dependent: yield and clogging by inflow rate AND by how much basalt already sits on the board
+const BBINS=[0,10,20,35,55,80];
+function probe(){ const card={ rates:RATES, bBins:BBINS, yieldG:[], clogG:[], steam:[], yield:[] };
+  for (const lr of RATES){ const S=makeBoard(lr); const pts=[]; let prev=S.boardMeasure(); let totO=0, totS=0, lin=0;
+    for (let w=0; w<24; w++){ for (let k=0;k<300;k++) S.step(false); const m=S.boardMeasure(); const L=lr*300; lin+=L;
+      pts.push({B:(m.bas+prev.bas)/2, y:Math.max(0,(m.obs-prev.obs)/L), c:Math.max(0,(m.bas-prev.bas)/L)}); totO+=m.obs-prev.obs; totS+=Math.max(0, WATER_RATE*300-(m.out-prev.out)-(m.wst-prev.wst)); prev=m; if (m.bas>BBINS[BBINS.length-1]*1.1) break; }
+    const yRow=[], cRow=[]; for (const b of BBINS){ // average the windows nearest this basalt level (a smooth, honest summary)
+      const near=pts.slice().sort((p,q)=>Math.abs(p.B-b)-Math.abs(q.B-b)).slice(0,3); yRow.push(near.reduce((a,p)=>a+p.y,0)/near.length); cRow.push(near.reduce((a,p)=>a+p.c,0)/near.length); }
+    card.yieldG.push(yRow); card.clogG.push(cRow); card.steam.push(totS/lin); card.yield.push(totO/lin); }
   return card; }
-function yieldAt(card, lr, cl){ const r=card.rates; const rowAt=(k)=>{ if (!card.grid) return card.yield[k]; const bins=card.clBins; const c=Math.min(cl||0, bins[bins.length-1]); let j=0; while (j<bins.length-2 && c>bins[j+1]) j++; const t=(c-bins[j])/Math.max(1e-9,bins[j+1]-bins[j]); return card.grid[k][j]*(1-t)+card.grid[k][j+1]*t; };
-  if (lr<=r[0]) return rowAt(0); for (let k=0;k<r.length-1;k++) if (lr<=r[k+1]){ const t=(lr-r[k])/(r[k+1]-r[k]); return rowAt(k)*(1-t)+rowAt(k+1)*t; } return rowAt(r.length-1); }
-function validate(card){ // a changing inflow the card never saw as a whole: predicted vs simulated obsidian
-  const S=makeBoard(RATES[1]); const v=S.P.vents[0]; let pred=0, lr=0.02; const rr=LIB.makeSim? Math.random : Math.random;
-  let cl=0; for (let k=0;k<3000;k++){ if (k%150===0) lr=Math.max(0.005,Math.min(0.07, lr+(Math.random()-0.5)*0.04)); v.base=lr; S.step(false); pred+=lr*yieldAt(card,lr,cl); cl+=lr; }
-  const act=S.boardMeasure().obs; return {pred, act, err: act>0? Math.abs(pred-act)/act : 1}; }
+function interp2(G, card, lr, B){ const r=card.rates, bb=card.bBins; const row=k=>{ const b=Math.min(Math.max(B,0), bb[bb.length-1]); let j=0; while (j<bb.length-2 && b>bb[j+1]) j++; const t=(b-bb[j])/(bb[j+1]-bb[j]); return G[k][j]*(1-t)+G[k][j+1]*t; };
+  if (lr<=r[0]) return row(0); for (let k=0;k<r.length-1;k++) if (lr<=r[k+1]){ const t=(lr-r[k])/(r[k+1]-r[k]); return row(k)*(1-t)+row(k+1)*t; } return row(r.length-1); }
+const yieldAt=(card,lr,B)=>interp2(card.yieldG,card,lr,B), clogAt=(card,lr,B)=>interp2(card.clogG,card,lr,B);
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function validate(card){ // a changing inflow (seeded, so the number is repeatable): the card integrated vs the fine board
+  const S=makeBoard(RATES[1]); const v=S.P.vents[0]; const rr=mulberry(424242); let pred=0, Bp=0, lr=0.02;
+  for (let k=0;k<4000;k++){ if (k%150===0) lr=Math.max(0.005,Math.min(0.07, lr+(rr()-0.5)*0.04)); v.base=lr; S.step(false); pred+=lr*yieldAt(card,lr,Bp); Bp+=lr*clogAt(card,lr,Bp); }
+  const m=S.boardMeasure(); return {pred, act:m.obs, err: m.obs>0? Math.abs(pred-m.obs)/m.obs : 1, Bpred:Bp, Bact:m.bas}; }
 
 // ---------- drawing ----------
 const cv=$('#board'), ctx=cv.getContext('2d'); let CS=600, SC;
@@ -453,10 +462,11 @@ cv.addEventListener('pointerup', ()=>dragging=false);
 // ---------- panel ----------
 let lastCard=null;
 function cardHTML(card, val){ return `<table><tr><th>lava inflow</th>${card.rates.map((r,k)=>`<th>${['trickle','flow','eruption'][k]}</th>`).join('')}</tr>
-  <tr><td>obsidian per lava (fresh → clogged)</td>${card.grid.map(row=>`<td><b>${(100*row[0]).toFixed(0)}%</b> → ${(100*row[row.length-1]).toFixed(0)}%</td>`).join('')}</tr>
+  <tr><td>obsidian per lava (clean → choked)</td>${card.yieldG.map(row=>`<td><b>${(100*row[0]).toFixed(0)}%</b> → ${(100*row[row.length-1]).toFixed(0)}%</td>`).join('')}</tr>
   <tr><td>water boiled per lava</td>${card.steam.map(v=>`<td>${v.toFixed(2)}</td>`).join('')}</tr>
-  <tr><td>basalt (clog) per lava</td>${card.clog.map(v=>`<td>${(100*v).toFixed(0)}%</td>`).join('')}</tr></table>
-  ${val?`<div style="margin-top:6px">Honesty check — a changing inflow this card never saw: card predicts <b>${val.pred.toFixed(1)}</b> obsidian, the fine board made <b>${val.act.toFixed(1)}</b> → card error <b class="${val.err<0.15?'good':val.err<0.3?'warn':'bad'}">${(100*val.err).toFixed(0)}%</b>.</div>`:''}`; }
+  <tr><td>basalt (clog) per lava, clean</td>${card.clogG.map(row=>`<td>${(100*row[0]).toFixed(0)}%</td>`).join('')}</tr></table>
+  <div class="dim" style="margin-top:4px">On the island, the works' workers dredge basalt out (1/day), so a design that clogs slowly settles at a high yield.</div>
+  ${val?`<div style="margin-top:6px">Honesty check — a changing inflow this card never saw: card predicts <b>${val.pred.toFixed(1)}</b> obsidian, the fine board made <b>${val.act.toFixed(1)}</b> → card error <b class="${val.err<0.15?'good':val.err<0.3?'warn':'bad'}">${(100*val.err).toFixed(0)}%</b>. The island trusts the card less the bigger this is: obsidian is paid at ×${(1-Math.min(0.6,val.err)).toFixed(2)}.</div>`:''}`; }
 function render(){
   const sealed=(()=>{ try { return JSON.parse(localStorage.getItem('ws-works-card')||'null'); } catch(e){ return null; } })();
   $('#panel').innerHTML=`<h2>⬡ Works — the quench</h2>
@@ -467,7 +477,7 @@ function render(){
     <div class="row"><span class="dim">live lava</span>${RATES.map((r,k)=>`<button class="b ${liveRate===k?'on':''}" data-lr="${k}">${['trickle','flow','eruption'][k]}</button>`).join('')}<button class="b" id="play">${running?'pause':'play'}</button><button class="b" id="restart">restart</button></div>
     <div id="live" class="dim"></div></div>
   <div class="box"><b>Card</b> <span class="dim">— what the island will use instead of simulating this hex</span><div class="row"><button class="b on" id="probe">Probe (3 inflow rates)</button><button class="b" id="seal" ${lastCard?'':'disabled'}>Seal &amp; send to the island</button></div><div id="card">${lastCard?cardHTML(lastCard.card,lastCard.val):'<span class="dim">Probe to measure this design.</span>'}</div></div>
-  <div class="box dim" style="font-size:12px">On the island, a <b>Quench works</b> building fed by both a lava path and a water channel turns them into obsidian at the sealed card's rates.${sealed?` Sealed now: ${(100*sealed.card.yield[1]).toFixed(0)}% at flow rate (${new Date(sealed.created).toLocaleString()}).`:' No design sealed yet — the island uses the default design\'s card.'}</div>
+  <div class="box dim" style="font-size:12px">On the island, a <b>Quench works</b> building fed by both a lava path and a water channel turns them into obsidian at the sealed card's rates.${sealed?` Sealed now: ${(100*(sealed.card.yieldG?sealed.card.yieldG[1][0]:sealed.card.yield[1])).toFixed(0)}% clean yield at flow rate (${new Date(sealed.created).toLocaleString()}).`:' No design sealed yet — the island uses the default design\'s card.'}</div>
   <div class="row"><a class="b" href="watershed.html">→ the island</a><a class="b" href="realm.html">→ the realm</a></div>`;
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ tool=b.dataset.t; render(); });
   document.querySelectorAll('[data-br]').forEach(b=>b.onclick=()=>{ brush=+b.dataset.br; render(); });

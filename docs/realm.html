@@ -225,7 +225,7 @@ function makeSim(R, seed, opts){
     if(BKIND){ for(let k=0;k<SEA.length;k++){ const s=SEA[k]; if(BKIND[k]===1){ if(w[s]>0){ P.edgeOut[k]+=w[s]; w[s]=0; } } else if(BKIND[k]===0) w[s]=-h[s]; else w[s]=0; }
       if(P.inflow){ const inf=P.inflow; for(let k=0;k<inf.cells.length;k++) w[inf.cells[k]]+=inf.rates[k]; } }
     else for(let k=0;k<SEA.length;k++){ const s=SEA[k]; w[s]=-h[s]; }
-    const sf0=seasonF(); const ev=P.evap*(sf0<0.6? 6 : sf0<1? 2 : 1);
+    const sf0=seasonF(); const ev=P.evap*(sf0<0.6? 3 : sf0<1? 1.5 : 1);
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; const x=w[i]-ev; w[i]=x>0?x:0; }
   }
   // ---------------- lava ----------------
@@ -282,6 +282,11 @@ function makeSim(R, seed, opts){
       if(c.type==='cistern') P.collected[c.id]=(P.collected[c.id]||0)+got;
       else if(c.type==='lavatrap'){ const slag=c.held*0.0025; c.held-=slag; P.slag=(P.slag||0)+slag; } }
   }
+  function sluices(){ if(!P.sluices) return; const dry=seasonF()<0.6;
+    for(const sl of P.sluices){ let up=-1e9; for(let d=0;d<6;d++){ const j=sl.cell+NB[d]; if(valid[j]&&w[j]>0.02) up=Math.max(up,h[j]+w[j]); }   // the reservoir's water level, not the banks
+      const open = sl.mode==='open' || (sl.mode==='auto' && (dry || up>sl.keep));
+      const target = open? sl.bed : sl.wall; if(h[sl.cell]!==target){ h[sl.cell]=target; wallS[sl.cell]= open?0:9; P.hChanged=true; }
+      sl.open=open; sl.flow = open? flowDay[sl.cell] : 0; } }
   function moisture(){
     const sf=seasonF();
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; let s=0; for(let d=0;d<6;d++) s+=m[i+NB[d]];
@@ -290,7 +295,7 @@ function makeSim(R, seed, opts){
     for(let k=0;k<VAL.length;k++){ const i=VAL[k]; m[i]=tmp[i]; }
   }
   function step(spin){
-    weather(); waterStep(); lavaStep(); if(!spin) collect(); vents();
+    weather(); waterStep(); sluices(); lavaStep(); if(!spin) collect(); vents();
     if(P.step%4===0){ moisture(); erosion(); }
     P.step++;
   }
@@ -340,7 +345,8 @@ if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope)
     const N=S.N, w8=new Uint8Array(N), m8=new Uint8ClampedArray(N), L8=new Uint8Array(N), T8=new Uint8ClampedArray(N), rn8=new Uint8ClampedArray(N), q8=new Uint8ClampedArray(N);
     for(let i=0;i<N;i++){ w8[i]=q6(S.w[i]); m8[i]=S.m[i]*255; const l=S.L[i]; L8[i]=q6(l); T8[i]= l>1e-4? S.E[i]/l*255 : 0; rn8[i]=Math.sqrt(S.rain[i]/0.002)*255; const fq=S.flowDay[i]; q8[i]= fq<=0.01?0 : Math.log10(fq*100)*64; }
     const traps={}, quench={}; for(const c of S.P.coll){ if(c.type==='lavatrap') traps[c.id]=c.held||0; if(c.type==='quench') quench[c.id]={lava:c.held||0, water:c.water||0}; }
-    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, traps, quench, slag:S.P.slag||0, runoff:S.P.runoff, w8, m8, L8, T8, rn8, q8, events:S.P.events.splice(0), collected:S.P.collected,
+    const sl={}; for(const x of (S.P.sluices||[])) sl[x.id]={flow:x.flow||0, open:!!x.open};
+    const msg={type:'state', step:S.P.step, season:S.seasonF(), seq:lastSeq, traps, quench, sl, slag:S.P.slag||0, runoff:S.P.runoff, w8, m8, L8, T8, rn8, q8, events:S.P.events.splice(0), collected:S.P.collected,
       vents:S.P.vents.map(v=>({i:v.i,name:v.name,state:v.state,t:v.t})), storms:S.P.storms.map(s=>({x:s.x,y:s.y,r:s.r,a:s.amp}))};
     S.P.collected={};
     const tr=[w8.buffer,m8.buffer,L8.buffer,T8.buffer,rn8.buffer,q8.buffer];
@@ -364,12 +370,13 @@ if (typeof WorkerGlobalScope!=='undefined' && self instanceof WorkerGlobalScope)
     else if(m.type==='rate'){ rate=m.rate; }
     else if(m.type==='inflow'){ inflowBins=m.bins; curBin=-1; }
     else if(m.type==='runTile'){ // headless: used by the realm page and blueprint previews
-      const T=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm, quarries:m.quarries}); T.generate(); if(m.restore) T.restore(m.restore); if(m.coll) T.P.coll=m.coll;
+      const T=makeSim(m.R,m.seed,{tile:m.tile, realm:m.realm, quarries:m.quarries}); T.generate(); if(m.restore) T.restore(m.restore); if(m.coll) T.P.coll=m.coll; if(m.sluices) T.P.sluices=m.sluices;
       const card=T.runYear(m.inflow||[], true); const edge={}; for(const k in card.edge) edge[k]=Array.from(card.edge[k]);
       postMessage({type:'tileCard', id:m.id, card:{edge, capital:Array.from(card.capital), lava:card.lava, obsidian:card.obsidian}}); }
     else if(m.type==='edit'){ for(const op of m.ops){
         if(op.op==='dh') S.applyDh(op.cells, op.dhs, op.rock);
         else if(op.op==='coll'){ const old={}, oldw={}; for(const c of S.P.coll){ old[c.id]=c.held||0; oldw[c.id]=c.water||0; } S.P.coll=op.list; for(const c of S.P.coll){ c.held=old[c.id]||0; c.water=oldw[c.id]||0; } }
+        else if(op.op==='sluices'){ S.P.sluices=op.list; }
         else if(op.op==='quenchUse'){ for(const c of S.P.coll) if(c.id===op.id){ c.held=Math.max(0,(c.held||0)-op.lava); c.water=Math.max(0,(c.water||0)-op.water); } }
         else if(op.op==='harvest'){ for(const c of S.P.coll) if(c.id===op.id){ const t=Math.min(c.held||0, op.amt); c.held-=t; S.P.collected['lava'+op.id]=(S.P.collected['lava'+op.id]||0)+t; } }
         else if(op.op==='mine'){ const got=S.mineRock(op.cells, op.amt); S.P.collected['mine'+op.id]=(S.P.collected['mine'+op.id]||0)+got; } }
@@ -400,11 +407,11 @@ let RS = load(); if (!RS.history) RS.history=[];
 const W = 2*RT+5, OFF = RT+2;
 const H = makeRealmH(REALM);
 const SETTLE_COST = { S:0, C:250, N:400 };
-const BASE_DEM=[null,{dry:100,obs:0,lava:10},{dry:250,obs:5,lava:30},{dry:500,obs:15,lava:60},{dry:900,obs:30,lava:100}];
-function demand(y){ // a growing capital: at least the table, and at least 1.2× what you delivered last year
-  const b = y<=4 ? BASE_DEM[y] : {dry:900+400*(y-4), obs:30+15*(y-4), lava:100+40*(y-4)};
-  const last=(RS.history||[]).find(h=>h.year===y-1); if (!last) return b;
-  return { dry: Math.max(b.dry, Math.round(last.dry*1.2/10)*10), obs: Math.max(b.obs, Math.round(last.obs*1.2)), lava: Math.max(b.lava, Math.round(last.lava*1.2)) }; }
+// the capital's demand is a climbing share of the WILD dry-season flow reaching the coast (measured by the survey) — past 100%, only storing water upstream can meet it
+const DRY_SHARE=[0,0.10,0.40,0.80,1.20,1.60];
+function demand(y){ const wild=Math.max(50, RS.wildDry||300); const share=DRY_SHARE[Math.min(y,5)]+(y>5?0.3*(y-5):0);
+  const vent = ['N','C'].some(t=>(RS.tiles[t]||{}).status==='settled');
+  return { dry: Math.round(wild*share/10)*10, obs: vent? [0,0,5,15,30][Math.min(y,4)]+(y>4?10*(y-4):0) : 0, lava: vent? [0,10,30,60,100][Math.min(y,4)]+(y>4?30*(y-4):0) : 0, share }; }
 const price = b => (b>=17&&b<=27) ? 3 : (b>=13&&b<=16)||(b===28||b===29) ? 1.5 : 1;   // 30 bins over the year (dry ≈ bins 17–27)
 
 // ---------- drawing ----------
@@ -417,6 +424,10 @@ function surveyImage(t){ if (survey[t]) return survey[t];
     if (Math.abs(q)>RT||Math.abs(r)>RT||Math.abs(q+r)>RT){ im.data[o+3]=0; continue; }
     const h=H(wx+tx, wy+ty); let cr,cg,cb; if (h<0){ cr=30;cg=52;cb=86; } else { const k=Math.min(1,h/200); cr=120+70*k; cg=146-20*k; cb=76+50*k; }
     const g=(cr+cg+cb)/3; im.data[o]=g*0.55+cr*0.25; im.data[o+1]=g*0.55+cg*0.25; im.data[o+2]=g*0.55+cb*0.3; im.data[o+3]=255; }
+  const hs=new Float32Array(TH*TH), inside=new Uint8Array(TH*TH); for (let py=0;py<TH;py++) for (let px=0;px<TH;px++){ const wx=(px-TH/2)/sc, wy=(py-TH/2)/sc; const q=SQ3/3*wx-wy/3, r=2/3*wy; const k=py*TH+px; inside[k]= (Math.abs(q)<=RT&&Math.abs(r)<=RT&&Math.abs(q+r)<=RT)?1:0; hs[k]=H(wx+tx,wy+ty); }
+  const ord=[...Array(TH*TH).keys()].filter(k=>inside[k]).sort((a,b)=>hs[b]-hs[a]); const acc=new Float32Array(TH*TH).fill(1);
+  for (const k of ord){ const px=k%TH, py=(k/TH)|0; let best=-1, bh=hs[k]; for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const X=px+dx, Y=py+dy; if (X<0||Y<0||X>=TH||Y>=TH) continue; const j=Y*TH+X; if (hs[j]<bh){ bh=hs[j]; best=j; } } if (best>=0) acc[best]+=acc[k]; }
+  for (const k of ord){ if (acc[k]>60 && hs[k]>0){ const o=k*4, a=Math.min(1,Math.log(acc[k]/60)/3); im.data[o]=im.data[o]*(1-a)+70*a; im.data[o+1]=im.data[o+1]*(1-a)+150*a; im.data[o+2]=im.data[o+2]*(1-a)+235*a; } }
   x.putImageData(im,0,0); survey[t]=c; return c; }
 const thumbs = {};
 function thumbFor(t){ const s=tileSave(t); if (!s||!s.thumb) return null; if (thumbs[t]&&thumbs[t].src===s.thumb) return thumbs[t].img; const img=new Image(); img.src=s.thumb; img.onload=draw; thumbs[t]={src:s.thumb, img}; return img; }
@@ -436,6 +447,15 @@ function draw(){
   // vents and capital
   for (const v of H.vents){ const x=OX+v.x*SC, y=OY+v.y*SC; ctx.fillStyle='#ff6a2a'; ctx.beginPath(); ctx.moveTo(x,y-8); ctx.lineTo(x+7,y+5); ctx.lineTo(x-7,y+5); ctx.closePath(); ctx.fill(); ctx.font='11px system-ui'; ctx.fillStyle='#ffcf9a'; ctx.fillText(v.name, x, y+18); }
   const sSave=tileSave('S'); if (sSave){ const cap=sSave.buildings.find(b=>b.type==='capital'); if (cap){ const i=cap.i, q=i%W-OFF, r=((i/W)|0)-OFF; const [tx,ty]=tileXY('S'); const x=OX+(SQ3*(q+r/2)+tx)*SC, y=OY+(1.5*r+ty)*SC; ctx.fillStyle='#ffd36b'; ctx.font='18px system-ui'; ctx.fillText('♛', x, y+6); ctx.font='11px system-ui'; ctx.fillText('capital', x, y+20); } }
+  const spark=(x,y,bins,title,dem)=>{ const Wd=150, Hd=44; ctx.fillStyle='rgba(12,16,22,0.88)'; ctx.fillRect(x,y,Wd,Hd+16); ctx.fillStyle='rgba(255,184,107,0.13)'; ctx.fillRect(x+Wd*17/30,y+14,Wd*11/30,Hd);
+    const mx=Math.max(1e-6,...bins, dem||0); ctx.fillStyle='#7cc4ff'; bins.forEach((v,k)=>{ const bh=Hd*v/mx; ctx.fillRect(x+k*Wd/30, y+14+Hd-bh, Wd/30-1, bh); });
+    if (dem){ const yy=y+14+Hd-Hd*dem/mx; ctx.setLineDash([4,3]); ctx.strokeStyle='#ffd36b'; ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+Wd,yy); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.font='11px system-ui'; ctx.textAlign='left'; ctx.fillStyle='#cfe6ff'; ctx.fillText(title, x+3, y+11); ctx.textAlign='center'; };
+  const binsInto=(t)=>{ const T=REALM_TILES[t], c=(RS.tiles[t]||{}).card; const out=new Array(30).fill(0); if (!c||!T.down) return out; const D=REALM_TILES[T.down];
+    for (const k in c.edge){ const i=+k; const gq=i%W-OFF+T.q, gr=((i/W)|0)-OFF+T.r; const q=gq-D.q, r=gr-D.r; if (Math.abs(q)>RT||Math.abs(r)>RT||Math.abs(q+r)>RT) continue; c.edge[k].forEach((v,b)=>out[b]+=v); } return out; };
+  const size2=SQ3*(2*RT+1)*SC;
+  for (const t of ['N','C']){ const D=REALM_TILES[t].down; const [x1,y1]=tileScreen(t), [x2,y2]=tileScreen(D); spark(OX-size2*0.5-160, (y1+y2)/2-30, binsInto(t), `${REALM_TILES[t].name} → ${REALM_TILES[D].name}, /day`, 0); }
+  const scd=(RS.tiles.S||{}).card; if (scd&&scd.capital){ const dem=demand(RS.year); const [sx,sy]=tileScreen('S'); spark(OX-size2*0.5-160, sy+size2*0.15, scd.capital, 'delivered at the capital, /day', dem.dry? dem.dry/110 : 0); }
   // flows between tiles
   const fl=flowsBetween(); for (const t in fl){ const D=REALM_TILES[t].down; const [x1,y1]=tileScreen(t), [x2,y2]=tileScreen(D); const mx=(x1+x2)/2, my=(y1+y2)/2; const wdt=Math.max(2,Math.min(16,Math.sqrt(fl[t].tot)/12));
     ctx.strokeStyle='rgba(124,196,255,0.85)'; ctx.lineWidth=wdt; ctx.beginPath(); ctx.moveTo(mx,my-30); ctx.lineTo(mx,my+18); ctx.stroke(); ctx.fillStyle='rgba(124,196,255,0.95)'; ctx.beginPath(); ctx.moveTo(mx-wdt-5,my+14); ctx.lineTo(mx+wdt+5,my+14); ctx.lineTo(mx,my+30); ctx.closePath(); ctx.fill();
@@ -450,7 +470,7 @@ function tileSummary(t){ const c=(RS.tiles[t]||{}).card; if (!c) return '<span c
 function render(){
   const d=demand(RS.year), last=RS.history[RS.history.length-1];
   let h=`<h2>⬡ Realm ${REALM}</h2><div class="dim">Three tiles of one landscape. Rain falls on the north; rivers run south through the valley to the coast, where the capital takes delivery. What leaves one tile's edge is the next tile's inflow.</div>
-  <div class="box"><b>Realm year ${RS.year}</b> · credits <b>${Math.round(RS.credits)}</b><div style="margin-top:4px">The capital grows: each year it asks for at least 1.2× what you delivered. This year: <b>${d.dry}</b> dry-season water · <b>${d.obs}</b> obsidian · <b>${d.lava}</b> lava</div>
+  <div class="box"><b>Realm year ${RS.year}</b> · credits <b>${Math.round(RS.credits)}</b><div style="margin-top:4px">The capital asks for <b>${Math.round(100*(demand(RS.year).share||0))}%</b> of the dry-season water the wild rivers would bring it (${Math.round(RS.wildDry||0)}) — past 100%, only water stored upstream in the wet season can meet it. This year: <b>${d.dry}</b> dry-season water · <b>${d.obs}</b> obsidian · <b>${d.lava}</b> lava</div>
   ${last?`<div class="dim" style="margin-top:4px">Last year: dry water ${Math.round(last.dry)} / ${last.dem.dry} · obsidian ${Math.round(last.obs)} / ${last.dem.obs} · lava ${Math.round(last.lava)} / ${last.dem.lava} → +${Math.round(last.value)} credits ${last.met?'<span class="good">(demand met, +50% bonus)</span>':'<span class="warn">(demand missed)</span>'}</div>`:''}
   <div style="margin-top:6px"><button class="b on" id="close">Close the realm year</button> <span class="dim" id="closeMsg">Simulates every tile for a year in order, north to south, and settles the capital's accounts.</span></div></div>`;
   for (const t of REALM_ORDER){ const st=(RS.tiles[t]||{}).status==='settled'; const cost=SETTLE_COST[t];
@@ -458,7 +478,7 @@ function render(){
       <div style="font-size:12px;margin:3px 0">${tileSummary(t)}</div>
       ${st?`<a class="b on" href="watershed.html?realm=${REALM}&tile=${t}">Play this tile</a>`
           : `<button class="b ${RS.credits>=cost?'on':''}" data-settle="${t}" ${RS.credits>=cost?'':'disabled'}>Settle (${cost?cost+' credits':'free'})</button> <span class="dim">${cost&&RS.credits<cost?'earn credits by meeting the capital\'s demand':''}</span>`}</div>`; }
-  h+=`<div class="box dim" style="font-size:12px"><b>How it fits together.</b> Each tile is a full simulation you play like the island. When a tile finishes a year (day 300) it writes a <b>card</b>: how much water left each edge, season by season, plus its lava and obsidian. The tile downstream feels that card as inflow. Tiles you aren't playing are simulated headlessly when you close the year. Settling a new tile lets you <b>apply a blueprint</b> of what you built elsewhere — re-solved for the new terrain.</div>
+  h+=`<div class="box dim" style="font-size:12px"><b>Reading the map.</b> Blue bars: water crossing into the next tile through the year; the shaded part is the dry season (worth 3×). The dashed gold line is the daily dry-season delivery the capital wants. <b>How it fits together.</b> Each tile is a full simulation you play like the island. When a tile finishes a year (day 300) it writes a <b>card</b>: how much water left each edge, season by season, plus its lava and obsidian. The tile downstream feels that card as inflow. Tiles you aren't playing are simulated headlessly when you close the year. Settling a new tile lets you <b>apply a blueprint</b> of what you built elsewhere — re-solved for the new terrain.</div>
   <div class="box dim" style="font-size:12px">Storage: ${RS.tiles?Object.keys(RS.tiles).length:0} tiles · <button class="b" id="reset">Abandon this realm</button> · <a class="b" href="realm.html">New realm</a></div>`;
   $('#panel').innerHTML=h;
   document.querySelectorAll('[data-settle]').forEach(b=>b.onclick=()=>{ const t=b.dataset.settle; RS.credits-=SETTLE_COST[t]; RS.tiles[t]=Object.assign(RS.tiles[t]||{}, {status:'settled'}); save(RS); location.href=`watershed.html?realm=${REALM}&tile=${t}`; });
@@ -485,11 +505,16 @@ async function closeYear(){
   // the capital's accounts
   const S=cards.S; let dry=0, value=0; (S.capital||[]).forEach((v,b)=>{ const amt=v*10; value+=amt*price(b); if (b>=17&&b<=27) dry+=amt; });
   let lava=0, obs=0; for (const t of REALM_ORDER){ const c=cards[t]; if ((RS.tiles[t]||{}).status!=='settled') continue; lava+=c.lava||0; obs+=c.obsidian||0; }
-  value+=3*lava+10*obs; const dem=demand(RS.year); const met = dry>=dem.dry && obs>=dem.obs && lava>=dem.lava; value*=0.1; if (met) value*=1.5;
+  value+=3*lava+10*obs; const dem=demand(RS.year); const met = dry>=dem.dry && obs>=dem.obs && lava>=dem.lava;
+  const frac=(a,b)=>b>0? Math.min(1,a/b) : 1; value = 220*frac(dry,dem.dry) + (dem.obs?80*frac(obs,dem.obs):0) + (dem.lava?80*frac(lava,dem.lava):0) + (met?150:0) + 0.02*value;   // a met year buys the next tile
   RS.history.push({year:RS.year, dry, lava, obs, value, met, dem}); RS.credits+=value; RS.year++; save(RS);
   msg.innerHTML = `Year closed: <b>+${Math.round(value)}</b> credits${met?' — the capital is satisfied.':'.'}`; btn.disabled=false; render();
 }
-layout(); render();
+async function runSurvey(){ if (RS.surveyed) return; const msg=document.createElement('div'); msg.className='box'; msg.innerHTML='<b>Surveying the realm…</b> <span class="dim">simulating a wild year of each tile, north to south (~25 s)</span>'; $('#panel').prepend(msg);
+  const cards={}; for (const t of REALM_ORDER){ msg.innerHTML=`<b>Surveying the realm…</b> <span class="dim">${REALM_TILES[t].name}</span>`; const c=await runTile(t, inflowFor(t,cards)); c.realmYear=0; c.headless=true; cards[t]=c; RS.tiles[t]=Object.assign(RS.tiles[t]||{status:'wild'}, {card:c}); draw(); }
+  // wild dry-season flow arriving at the coast from the valley
+  const fl=flowsBetween(); RS.wildDry = fl.C? fl.C.dry : 300; RS.surveyed=true; save(RS); msg.remove(); render(); }
+layout(); render(); runSurvey();
 window.REALMPAGE={ RS:()=>RS, closeYear, runTile, inflowFor, demand };
 
 </script>

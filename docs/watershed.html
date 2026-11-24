@@ -668,7 +668,7 @@ function damSite(r, rise){ // shortest straight cross-section through river cell
 function bestDamNear(c, radius, minQ){ // survey river cells near c, keep the site that stores the most
   const cand=[]; disk(c,radius,(j,d)=>{ const q=qOf(j); if (q>(minQ||0.5)&&G.h[j]>0.5) cand.push([q,j]); }); cand.sort((x,y)=>y[0]-x[0]);
   let best=null, bv=-1; const oldW=width, oldM=mat; width=2; mat='earth';
-  for (const [,j] of cand.slice(0,30)){ const s=damSite(j)||damSite(j,1.0); if (!s) continue;   // a low diversion weir where the banks are too low for a dam const p=planJob('dam',s[0],s[1]); const v=p.reservoir?p.reservoir.vol:0; if (v>bv){ bv=v; best=Object.assign(s,{plan:p, vol:v}); } }
+  for (const [,j] of cand.slice(0,30)){ const s=damSite(j)||damSite(j,1.0); /* a low diversion weir where the banks are too low for a dam */ if (!s) continue; const p=planJob('dam',s[0],s[1]); const v=p.reservoir?p.reservoir.vol:0; if (v>bv){ bv=v; best=Object.assign(s,{plan:p, vol:v}); } }
   width=oldW; mat=oldM; return best; }
 function damAcross(c){ const b=bestDamNear(c, Math.round(R*0.28)); if (b) return b;   // the site that stores the most water near the anchor
   // fallback: a river cell near c, then walk both banks until the ground stands 3 m above the water
